@@ -5,6 +5,7 @@ una **console operatore** sul PC e un **tabellone spettatori** a schermo intero
 sul maxischermo. Funziona completamente **offline**.
 
 Il piano completo è in [PIANO.md](PIANO.md).
+**Per installarlo e usarlo al palaghiaccio** leggi [INSTALLAZIONE.md](INSTALLAZIONE.md).
 
 ## Requisiti per lo sviluppo
 
@@ -21,6 +22,7 @@ npm run format     # formatta il codice
 npm run build      # crea la versione finale in dist/
 npm run app        # avvia il programma desktop (Electron)
 npm run app:smoke  # collaudo automatico del programma desktop, con screenshot
+npm run dist       # crea installer e versione portable in release/
 ```
 
 In sviluppo la console è su `http://localhost:5173/` (premi `F1` per la guida rapida). Il pulsante
