@@ -6,26 +6,26 @@ un PC con il maxischermo collegato come schermo esteso.
 ## Obiettivi
 
 - **Funziona offline al 100%**: nessuna dipendenza da internet (font, loghi, suoni inclusi).
-- **Due pannelli**: la *console operatore* sul monitor del PC e il *tabellone spettatori* a schermo intero sul maxischermo.
+- **Due pannelli**: la _console operatore_ sul monitor del PC e il _tabellone spettatori_ a schermo intero sul maxischermo.
 - **Distribuzione semplice**: un installer `.exe` per Windows (più una versione portable).
 - **Grafica curata** per il pubblico, **console chiara e veloce** per l'operatore.
 - **Robusto**: se il programma o il PC si riavvia, la partita riprende da dove era.
 
 ## Scelte tecniche
 
-| Tema | Scelta | Perché |
-|---|---|---|
-| Interfaccia | HTML + CSS + TypeScript, build con **Vite** | grafica libera, codice tipizzato, build in file statici |
-| Framework UI | **Svelte** (leggero) | la console ha molto stato; Svelte resta semplice e veloce |
-| App desktop | **Electron** + **electron-builder** | stesso codice web, finestre multiple, scelta schermi, installer NSIS |
-| Comunicazione console → tabellone | `BroadcastChannel` in fase web, IPC in Electron (dietro un'unica interfaccia) | il codice dei pannelli non cambia passando a Electron |
-| Salvataggio stato | `localStorage` in fase web, file JSON su disco in Electron | ripresa dopo crash/riavvio |
-| Test | **Vitest** sul motore di gioco | le regole (penalità, tempo) devono essere affidabili |
+| Tema                              | Scelta                                                                        | Perché                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Interfaccia                       | HTML + CSS + TypeScript, build con **Vite**                                   | grafica libera, codice tipizzato, build in file statici              |
+| Framework UI                      | **Svelte** (leggero)                                                          | la console ha molto stato; Svelte resta semplice e veloce            |
+| App desktop                       | **Electron** + **electron-builder**                                           | stesso codice web, finestre multiple, scelta schermi, installer NSIS |
+| Comunicazione console → tabellone | `BroadcastChannel` in fase web, IPC in Electron (dietro un'unica interfaccia) | il codice dei pannelli non cambia passando a Electron                |
+| Salvataggio stato                 | `localStorage` in fase web, file JSON su disco in Electron                    | ripresa dopo crash/riavvio                                           |
+| Test                              | **Vitest** sul motore di gioco                                                | le regole (penalità, tempo) devono essere affidabili                 |
 
 ### Principi
 
 - **Un solo "motore di gioco"** in logica pura (niente grafica): tempo, periodi, punteggio, penalità.
-  Console e tabellone si limitano a *leggere* lo stato e a *mandare comandi*.
+  Console e tabellone si limitano a _leggere_ lo stato e a _mandare comandi_.
 - **Tempo calcolato da timestamp**, non "un secondo alla volta": niente ritardi accumulati, console e tabellone sempre allineati al decimo.
 - **Tabellone in 16:9 scalabile**: disegnato su 1920×1080 e adattato a qualsiasi risoluzione. Se il maxischermo ha un formato diverso, si aggiunge un layout dedicato.
 
@@ -35,12 +35,12 @@ Menu a tendina con **preset** modificabili, più **"Personalizzato"**. Ogni pres
 
 Preset iniziali (valori da confermare con chi usa il palaghiaccio):
 
-| Preset | Periodi | Durata | Intervallo | Supplementare | Rigori |
-|---|---|---|---|---|---|
-| Senior (regole IIHF) | 3 | 20' | 15' | 5' (morte improvvisa) | sì, 3 tiratori |
-| Senior playoff | 3 | 20' | 15' | 20' ripetuti | no |
-| Giovanili | 3 | 15' | 10' | nessuno / configurabile | configurabile |
-| Amatori / allenamento | configurabile | configurabile | configurabile | configurabile | configurabile |
+| Preset                | Periodi       | Durata        | Intervallo    | Supplementare           | Rigori         |
+| --------------------- | ------------- | ------------- | ------------- | ----------------------- | -------------- |
+| Senior (regole IIHF)  | 3             | 20'           | 15'           | 5' (morte improvvisa)   | sì, 3 tiratori |
+| Senior playoff        | 3             | 20'           | 15'           | 20' ripetuti            | no             |
+| Giovanili             | 3             | 15'           | 10'           | nessuno / configurabile | configurabile  |
+| Amatori / allenamento | configurabile | configurabile | configurabile | configurabile           | configurabile  |
 
 Parametri configurabili:
 
@@ -64,6 +64,7 @@ Parametri configurabili:
 ## Funzionalità
 
 ### Tabellone spettatori
+
 - Nomi squadre, colori e loghi
 - Punteggio grande e leggibile da lontano
 - Tempo di gioco e periodo (1°, 2°, 3°, OT, rigori), decimi nell'ultimo minuto
@@ -72,6 +73,7 @@ Parametri configurabili:
 - Schermate speciali: animazione **GOAL**, timeout, intervallo con countdown, rigori, fine partita
 
 ### Console operatore
+
 - Controlli grandi e chiari, con **scorciatoie da tastiera** (es. `Spazio` avvia/ferma il tempo)
 - **Anteprima dal vivo** del tabellone spettatori in alto: è lo stesso pannello rimpicciolito, quindi l'operatore vede esattamente ciò che vede il pubblico
 - Pulsanti **"?"** accanto alle funzioni principali, con una breve spiegazione
@@ -81,6 +83,7 @@ Parametri configurabili:
 - Registro eventi della partita (gol, penalità) con possibilità di annullare l'ultima azione
 
 ### Audio
+
 - Sirena di fine periodo, sirena gol, suono timeout
 - Volume regolabile e tasto silenzio
 - Suoni generati o con licenza libera, inclusi nel programma
@@ -92,7 +95,7 @@ Parametri configurabili:
 2. **Motore di gioco**: tempo, periodi, punteggio, penalità, regole configurabili. Coperto da test.
 3. **Tabellone spettatori**: grafica 16:9 scalabile, animazioni (gol, intervallo, fine partita).
 4. **Console operatore**: controlli, scorciatoie, anteprima dal vivo, aiuti "?".
-   → *A questo punto si può provare tutto nel browser con due schede.*
+   → _A questo punto si può provare tutto nel browser con due schede._
 5. **Configurazione**: preset di regole, squadre (nomi, colori, loghi), salvataggio impostazioni.
 6. **Audio**: sirene, volume.
 7. **Electron**:
@@ -104,6 +107,7 @@ Parametri configurabili:
 9. **Prova al palaghiaccio**: verifica risoluzione reale, audio, leggibilità da lontano; ritocchi.
 
 ### Idee per dopo
+
 - Sponsor a rotazione durante le pause
 - Archivio partite e statistiche
 - Libreria squadre con loghi salvati
@@ -111,6 +115,7 @@ Parametri configurabili:
 - Telecomando da telefono (in rete locale, sempre senza internet)
 
 ## Da verificare al palaghiaccio
+
 - Risoluzione e formato reali del maxischermo
 - Versione di Windows e permessi di installazione
 - Collegamento audio (uscita del PC verso l'impianto)

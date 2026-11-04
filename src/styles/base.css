@@ -1,0 +1,38 @@
+:root {
+  --ice-950: #050d18;
+  --ice-900: #0b1d33;
+  --ice-800: #12304f;
+  --ice-600: #2c6aa3;
+  --ice-300: #9cc3ea;
+  --ice-50: #e8f1fb;
+  --ok: #3ccf7a;
+  --warn: #ffb020;
+  --danger: #ff4d4f;
+
+  --font-ui: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --font-digits: 'Segoe UI', system-ui, sans-serif;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--ice-950);
+  color: var(--ice-50);
+  font-family: var(--font-ui);
+}
+
+#app {
+  height: 100%;
+}
