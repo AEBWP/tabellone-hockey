@@ -40,7 +40,7 @@ src/
   shared/           comunicazione tra console e tabellone
   console/          interfaccia della console operatore
   display/          finestra del tabellone spettatori (e demo)
-  scoreboard/       grafica del tabellone, riusata anche come anteprima nella console
+  scoreboard/       grafica del tabellone spettatori
   styles/           stili comuni
 public/             file statici (icone, suoni, loghi)
 ```

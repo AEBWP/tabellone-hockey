@@ -75,7 +75,7 @@ Parametri configurabili:
 ### Console operatore
 
 - Controlli grandi e chiari, con **scorciatoie da tastiera** (es. `Spazio` avvia/ferma il tempo)
-- **Anteprima dal vivo** del tabellone spettatori in alto: è lo stesso pannello rimpicciolito, quindi l'operatore vede esattamente ciò che vede il pubblico
+- Tutti i dati della partita (tempo, punteggi, penalità) mostrati direttamente nei pannelli della console, senza anteprima del maxischermo (occupava spazio e ripeteva gli stessi dati)
 - Pulsanti **"?"** accanto alle funzioni principali, con una breve spiegazione
 - Schermata di aiuto con tutte le scorciatoie (`F1`)
 - Correzioni rapide: modifica punteggio, tempo, periodo
@@ -94,7 +94,7 @@ Parametri configurabili:
 1. **Base del progetto**: Vite + TypeScript + Svelte, struttura cartelle, test, lint.
 2. **Motore di gioco**: tempo, periodi, punteggio, penalità, regole configurabili. Coperto da test.
 3. **Tabellone spettatori**: grafica 16:9 scalabile, animazioni (gol, intervallo, fine partita).
-4. **Console operatore**: controlli, scorciatoie, anteprima dal vivo, aiuti "?".
+4. **Console operatore**: controlli, scorciatoie, aiuti "?".
    → _A questo punto si può provare tutto nel browser con due schede._
 5. **Configurazione**: preset di regole, squadre (nomi, colori, loghi), salvataggio impostazioni.
 6. **Audio**: sirene, volume.

@@ -13,8 +13,6 @@
     type HistoryEntry,
     type Rules,
   } from '../engine'
-  import Stage from '../display/Stage.svelte'
-  import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import { createChannel } from '../shared/channel'
   import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
   import { loadGame, saveGame } from '../shared/persist'
@@ -260,20 +258,6 @@
       <TeamControls id="home" {view} rules={game.rules} {run} />
 
       <div class="center">
-        <section class="panel preview-panel">
-          <h2 class="panel-title">
-            Anteprima maxischermo
-            <HelpTip title="Anteprima">
-              È esattamente ciò che vede il pubblico sul maxischermo, rimpicciolito.
-            </HelpTip>
-          </h2>
-          <div class="preview">
-            <Stage>
-              <Scoreboard {view} />
-            </Stage>
-          </div>
-        </section>
-
         <ClockPanel
           {view}
           {run}
@@ -450,16 +434,6 @@
     flex-direction: column;
     gap: 1rem;
     min-width: 0;
-  }
-
-  .preview-panel {
-    padding-bottom: 0.75rem;
-  }
-
-  .preview {
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    border-radius: 8px;
   }
 
   .page {
