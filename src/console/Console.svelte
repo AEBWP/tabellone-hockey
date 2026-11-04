@@ -16,6 +16,7 @@
   import { createChannel } from '../shared/channel'
   import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
   import { loadGame, saveGame } from '../shared/persist'
+  import { desktop } from '../shared/desktop'
   import { now } from '../shared/time'
   import ClockEditDialog from './ClockEditDialog.svelte'
   import ClockPanel from './ClockPanel.svelte'
@@ -152,8 +153,12 @@
   }
 
   function openDisplay() {
-    window.open('./display.html', 'tabellone-hockey-display')
+    if (desktop) void desktop.openDisplay()
+    else window.open('./display.html', 'tabellone-hockey-display')
   }
+
+  // Nel programma installato l'audio è permesso subito, senza aspettare un clic.
+  if (desktop) audio.unlock()
 
   const anyDialogOpen = $derived(helpOpen || clockEditOpen || newGameOpen || !!confirmRequest)
 
@@ -247,6 +252,16 @@
       </HelpTip>
     </span>
     <button type="button" class="btn btn-primary" onclick={openDisplay}>Apri tabellone</button>
+    {#if desktop}
+      <button
+        type="button"
+        class="btn"
+        title="Scegli su quale schermo mostrare console e tabellone"
+        onclick={() => desktop?.chooseScreens()}
+      >
+        Schermi…
+      </button>
+    {/if}
     <button type="button" class="btn" onclick={() => (newGameOpen = true)}>Nuova partita…</button>
     <button type="button" class="btn btn-ghost" onclick={() => (helpOpen = true)}>
       Guida <kbd>F1</kbd>

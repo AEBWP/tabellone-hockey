@@ -19,6 +19,8 @@ npm test           # esegue i test del motore di gioco
 npm run check      # controllo dei tipi TypeScript/Svelte
 npm run format     # formatta il codice
 npm run build      # crea la versione finale in dist/
+npm run app        # avvia il programma desktop (Electron)
+npm run app:smoke  # collaudo automatico del programma desktop, con screenshot
 ```
 
 In sviluppo la console è su `http://localhost:5173/` (premi `F1` per la guida rapida). Il pulsante
@@ -29,6 +31,21 @@ Per vedere la grafica del tabellone senza la console apri
 `http://localhost:5173/display.html?demo`: i tasti da `1` a `8` mostrano le
 varie situazioni (penalità, ultimo minuto, timeout, intervallo, supplementare,
 rigori, finale), `G` e `H` simulano un gol, `L` mostra o nasconde i loghi.
+
+## Programma desktop
+
+`npm run app` avvia la versione desktop. Al primo avvio si sceglie su quale
+schermo mostrare la console e su quale il tabellone (pulsante **Mostra il
+numero su ogni schermo** per riconoscerli); la scelta può essere ricordata e
+cambiata in seguito dal pulsante **Schermi…** nella console.
+
+- il tabellone si apre a schermo intero sul maxischermo, senza rubare il
+  focus alla console; se il maxischermo viene scollegato torna in finestra
+- le sirene suonano subito, senza dover prima cliccare
+- la partita è salvata anche su file (`partita.json` nella cartella dati
+  dell'app, `%APPDATA%\tabellone-hockey`)
+- niente standby dello schermo mentre il programma è aperto
+- un solo programma aperto alla volta
 
 ## Struttura
 
@@ -42,5 +59,8 @@ src/
   display/          finestra del tabellone spettatori (e demo)
   scoreboard/       grafica del tabellone spettatori
   styles/           stili comuni
-public/             file statici (icone, suoni, loghi)
+  setup/            scelta degli schermi all'avvio (programma desktop)
+electron/           processo principale del programma desktop
+public/             file statici (icona, identificazione schermi)
+scripts/            strumenti di sviluppo (collaudo automatico)
 ```

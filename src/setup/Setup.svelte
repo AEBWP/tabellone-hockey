@@ -1,0 +1,325 @@
+<script lang="ts">
+  import { onMount } from 'svelte'
+  import { desktop, type ScreenItem } from '../shared/desktop'
+
+  let screens = $state<ScreenItem[]>([])
+  let consoleId = $state<number | null>(null)
+  let displayId = $state<number | null>(null)
+  let remember = $state(true)
+  let starting = $state(false)
+  let error = $state<string | null>(null)
+
+  async function load() {
+    if (!desktop) return
+    const data = await desktop.listScreens()
+    screens = data.screens
+    remember = data.remember
+    consoleId = data.choice?.consoleId ?? screens[0]?.id ?? null
+    displayId = data.choice?.displayId ?? screens[0]?.id ?? null
+  }
+
+  onMount(() => {
+    void load()
+    // Se si collega o scollega uno schermo mentre questa finestra è aperta.
+    const timer = setInterval(load, 3000)
+    return () => clearInterval(timer)
+  })
+
+  // Disegno in scala degli schermi, disposti come in Windows.
+  const layout = $derived.by(() => {
+    if (!screens.length) return null
+    const minX = Math.min(...screens.map((s) => s.bounds.x))
+    const minY = Math.min(...screens.map((s) => s.bounds.y))
+    const maxX = Math.max(...screens.map((s) => s.bounds.x + s.bounds.width))
+    const maxY = Math.max(...screens.map((s) => s.bounds.y + s.bounds.height))
+    return { minX, minY, width: maxX - minX, height: maxY - minY }
+  })
+
+  const single = $derived(screens.length === 1)
+
+  async function start() {
+    if (!desktop || consoleId === null || displayId === null) return
+    starting = true
+    error = null
+    const ok = await desktop.startWithScreens({ consoleId, displayId, remember })
+    if (!ok) {
+      error = 'Uno degli schermi scelti non è più collegato. Riprova.'
+      starting = false
+      await load()
+    }
+  }
+</script>
+
+<main>
+  <header>
+    <h1>Tabellone Hockey</h1>
+    <p>Scegli dove mostrare la console dell’operatore e dove il tabellone per il pubblico.</p>
+  </header>
+
+  {#if !desktop}
+    <p class="warn">Questa schermata funziona solo nel programma installato.</p>
+  {:else if !screens.length}
+    <p class="muted">Ricerca degli schermi…</p>
+  {:else}
+    {#if layout}
+      <div class="map" style:aspect-ratio="{layout.width} / {layout.height}">
+        {#each screens as s (s.id)}
+          <div
+            class="screen"
+            class:is-console={s.id === consoleId}
+            class:is-display={s.id === displayId}
+            style:left="{((s.bounds.x - layout.minX) / layout.width) * 100}%"
+            style:top="{((s.bounds.y - layout.minY) / layout.height) * 100}%"
+            style:width="{(s.bounds.width / layout.width) * 100}%"
+            style:height="{(s.bounds.height / layout.height) * 100}%"
+          >
+            <span class="num">{s.number}</span>
+            <span class="res">{s.resolution}</span>
+            <span class="roles">
+              {#if s.id === consoleId}<span class="tag console">Console</span>{/if}
+              {#if s.id === displayId}<span class="tag display">Tabellone</span>{/if}
+            </span>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    <button type="button" class="btn identify" onclick={() => desktop?.identifyScreens()}>
+      Mostra il numero su ogni schermo
+    </button>
+
+    <div class="choices">
+      <fieldset>
+        <legend><span class="tag console">Console</span> per l’operatore</legend>
+        {#each screens as s (s.id)}
+          <label class="option" class:selected={s.id === consoleId}>
+            <input type="radio" name="console" value={s.id} bind:group={consoleId} />
+            <span>
+              <strong>{s.title}</strong>
+              <small>{s.resolution}</small>
+            </span>
+          </label>
+        {/each}
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="tag display">Tabellone</span> per il pubblico (maxischermo)</legend>
+        {#each screens as s (s.id)}
+          <label class="option" class:selected={s.id === displayId}>
+            <input type="radio" name="display" value={s.id} bind:group={displayId} />
+            <span>
+              <strong>{s.title}</strong>
+              <small>{s.resolution}</small>
+            </span>
+          </label>
+        {/each}
+      </fieldset>
+    </div>
+
+    {#if single}
+      <p class="note">
+        È collegato un solo schermo: il tabellone si aprirà in una finestra normale, comoda per le
+        prove. Collega il maxischermo per averlo a schermo intero.
+      </p>
+    {:else if consoleId === displayId}
+      <p class="note">
+        Console e tabellone sullo stesso schermo: il tabellone si aprirà in una finestra normale.
+      </p>
+    {/if}
+
+    <footer>
+      <label class="remember">
+        <input type="checkbox" bind:checked={remember} />
+        Ricorda la scelta e avvia direttamente la prossima volta
+      </label>
+      {#if error}<p class="error">{error}</p>{/if}
+      <button type="button" class="btn btn-primary start" disabled={starting} onclick={start}>
+        {starting ? 'Avvio…' : 'Avvia il tabellone'}
+      </button>
+    </footer>
+    <p class="muted hint">
+      Potrai cambiare la scelta in qualsiasi momento dal pulsante <b>Schermi</b> nella console.
+    </p>
+  {/if}
+</main>
+
+<style>
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.25rem 2rem 1.5rem;
+  }
+
+  header h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.6rem;
+  }
+
+  header p {
+    margin: 0;
+    color: var(--ice-300);
+  }
+
+  /* Altezza fissa e compatta: la larghezza segue le proporzioni degli schermi. */
+  .map {
+    position: relative;
+    height: 150px;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .screen {
+    position: absolute;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    border: 3px solid #23476e;
+    border-radius: 8px;
+    background: var(--ice-900);
+    outline: 4px solid var(--ice-950);
+  }
+
+  .screen.is-console {
+    border-color: #3ccf7a;
+  }
+
+  .screen.is-display {
+    border-color: #ffb020;
+  }
+
+  .num {
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .res {
+    font-size: 0.8rem;
+    color: var(--ice-300);
+  }
+
+  .roles {
+    display: flex;
+    gap: 0.3rem;
+  }
+
+  .tag {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #06121f;
+  }
+
+  .tag.console {
+    background: #3ccf7a;
+  }
+
+  .tag.display {
+    background: #ffb020;
+  }
+
+  .identify {
+    align-self: center;
+  }
+
+  .choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 1rem;
+    border: 1px solid var(--ice-800);
+    border-radius: 14px;
+    background: var(--ice-900);
+  }
+
+  legend {
+    padding: 0 0.4rem;
+    font-weight: 600;
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: var(--ice-950);
+    cursor: pointer;
+  }
+
+  .option.selected {
+    border-color: var(--ice-600);
+  }
+
+  .option span {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .option small {
+    color: var(--ice-300);
+  }
+
+  .option input {
+    width: 18px;
+    height: 18px;
+  }
+
+  .note {
+    margin: 0;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    background: rgba(255, 176, 32, 0.12);
+    color: #ffd166;
+  }
+
+  footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .remember {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+
+  .remember input {
+    width: 18px;
+    height: 18px;
+  }
+
+  .start {
+    padding: 0.85rem 1.6rem;
+    font-size: 1.15rem;
+  }
+
+  .error,
+  .warn {
+    color: #ff8a8c;
+  }
+
+  .hint {
+    margin: 0;
+    font-size: 0.88rem;
+  }
+</style>

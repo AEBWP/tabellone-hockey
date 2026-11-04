@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Identifica schermo</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+      }
+      .box {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        min-width: 360px;
+        padding: 32px 56px 40px;
+        border: 6px solid #9cc3ea;
+        border-radius: 32px;
+        background: rgba(5, 13, 24, 0.92);
+        color: #fff;
+        text-align: center;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+      }
+      .n {
+        font-size: 280px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .t {
+        font-size: 36px;
+        font-weight: 600;
+      }
+      .r {
+        margin-top: 6px;
+        font-size: 28px;
+        color: #9cc3ea;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="n" id="n"></div>
+      <div class="t" id="t"></div>
+      <div class="r" id="r"></div>
+    </div>
+    <script>
+      const q = new URLSearchParams(location.search)
+      document.getElementById('n').textContent = q.get('n') ?? '?'
+      document.getElementById('t').textContent = q.get('title') ?? ''
+      document.getElementById('r').textContent = q.get('res') ?? ''
+    </script>
+  </body>
+</html>

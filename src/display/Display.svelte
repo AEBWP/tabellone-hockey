@@ -4,6 +4,7 @@
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import { createChannel } from '../shared/channel'
   import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
+  import { desktop } from '../shared/desktop'
   import { now } from '../shared/time'
   import { DEMO_GOAL_KEYS, DEMO_SCENES, DEMO_TEAMS } from './demo'
   import Stage from './Stage.svelte'
@@ -79,6 +80,7 @@
   // Nella versione browser: doppio clic per lo schermo intero.
   // In Electron la finestra si aprirà già a schermo intero sul maxischermo.
   function toggleFullscreen() {
+    if (desktop) return
     if (document.fullscreenElement) document.exitFullscreen()
     else document.documentElement.requestFullscreen()
   }

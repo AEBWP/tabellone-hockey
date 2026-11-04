@@ -11,12 +11,15 @@
     "test:watch": "vitest",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "app": "vite build && electron .",
+    "app:smoke": "vite build && node scripts/smoke.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.19.2",
+    "electron": "^45.2.2",
     "prettier": "^3.9.10",
     "prettier-plugin-svelte": "^4.1.1",
     "svelte": "^5.57.2",
@@ -28,5 +31,6 @@
   "description": "Tabellone segnapunti per hockey su ghiaccio, funzionante offline",
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0"
-  }
+  },
+  "main": "electron/main.cjs"
 }
