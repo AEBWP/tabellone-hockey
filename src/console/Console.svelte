@@ -1,34 +1,71 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
-  import { apply, createGame, deriveView, type Command, type GameState } from '../engine'
+  import {
+    advance,
+    apply,
+    canUndo,
+    createGame,
+    deriveView,
+    pushHistory,
+    undo,
+    type Command,
+    type GameState,
+    type HistoryEntry,
+    type Rules,
+  } from '../engine'
   import Stage from '../display/Stage.svelte'
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import { createChannel } from '../shared/channel'
-  import { HEARTBEAT_INTERVAL_MS } from '../shared/messages'
+  import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
+  import { loadGame, saveGame } from '../shared/persist'
   import { now } from '../shared/time'
+  import ClockEditDialog from './ClockEditDialog.svelte'
+  import ClockPanel from './ClockPanel.svelte'
+  import type { ConfirmRequest } from './confirm'
+  import EventLog from './EventLog.svelte'
+  import HelpOverlay from './HelpOverlay.svelte'
+  import HelpTip from './HelpTip.svelte'
+  import Modal from './Modal.svelte'
+  import NewGameDialog from './NewGameDialog.svelte'
+  import { actionForKey, isTypingTarget } from './shortcuts'
+  import TeamControls from './TeamControls.svelte'
   import TeamEditor from './TeamEditor.svelte'
 
-  // Stato della partita. `$state.raw`: viene sempre sostituito per intero,
-  // mai modificato, e così si può inviare tale e quale al tabellone.
-  let game = $state.raw<GameState>(createGame())
+  // ── Stato ─────────────────────────────────────────────────────────────
+  // `$state.raw`: lo stato viene sempre sostituito per intero, mai modificato,
+  // così si può salvare e inviare al tabellone tale e quale.
+  let game = $state.raw<GameState>(loadGame() ?? createGame())
+  let history = $state.raw<HistoryEntry[]>([])
   let t = $state(now())
+  let lastDisplaySeen = $state(0)
 
   const view = $derived(deriveView(game, t))
+  const displayConnected = $derived(t - lastDisplaySeen < HEARTBEAT_TIMEOUT_MS)
+  const undoLabel = $derived(
+    canUndo(history, advance(game, t)) ? (history.at(-1)?.label ?? null) : null,
+  )
 
+  let tab = $state<'game' | 'teams'>('game')
+  let helpOpen = $state(false)
+  let clockEditOpen = $state(false)
+  let newGameOpen = $state(false)
+  let confirmRequest = $state<ConfirmRequest | null>(null)
+  let toast = $state<string | null>(null)
+  let toastTimer: ReturnType<typeof setTimeout> | undefined
+
+  // ── Comunicazione con il tabellone ───────────────────────────────────
   const channel = createChannel()
-  const broadcast = () => channel.send({ type: 'state', state: game })
 
-  /** Applica un comando e aggiorna subito il tabellone. */
-  function run(command: Command) {
-    game = apply(game, command, now())
-    broadcast()
+  function publish() {
+    saveGame(game)
+    channel.send({ type: 'state', state: game })
   }
 
-  // Un tabellone appena aperto chiede subito lo stato.
   const unsubscribe = channel.subscribe((message) => {
-    if (message.type === 'hello') broadcast()
+    if (message.type === 'hello') channel.send({ type: 'state', state: game })
+    if (message.type === 'hello' || message.type === 'displayHeartbeat') lastDisplaySeen = now()
   })
-  const timer = setInterval(
+  const heartbeat = setInterval(
     () => channel.send({ type: 'heartbeat', sentAt: now() }),
     HEARTBEAT_INTERVAL_MS,
   )
@@ -40,37 +77,164 @@
 
   onDestroy(() => {
     cancelAnimationFrame(frame)
-    clearInterval(timer)
+    clearInterval(heartbeat)
+    clearTimeout(toastTimer)
     unsubscribe()
     channel.close()
   })
 
+  // ── Azioni ────────────────────────────────────────────────────────────
+
+  /**
+   * Applica un comando. Se ha un'etichetta è un'azione di gioco annullabile
+   * (gol, penalità, tiri…); i comandi del cronometro non lo sono.
+   */
+  function run(command: Command, label?: string) {
+    const before = game
+    const after = apply(before, command, now())
+    // Comando senza effetto (es. timeout già usato): niente da registrare.
+    if (JSON.stringify(after) === JSON.stringify(advance(before, now()))) return
+    game = after
+    if (label) history = pushHistory(history, label, before)
+    publish()
+  }
+
+  function doUndo() {
+    const result = undo(history, advance(game, now()))
+    if (!result) return
+    game = result.state
+    history = result.history
+    publish()
+    showToast(`Annullato: ${result.label}`)
+  }
+
+  function startNewGame(rules: Rules) {
+    run({ type: 'newGame', rules })
+    history = []
+    tab = 'game'
+    showToast('Nuova partita pronta')
+  }
+
+  function showToast(text: string) {
+    toast = text
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => (toast = null), 2500)
+  }
+
   function openDisplay() {
     window.open('./display.html', 'tabellone-hockey-display')
   }
+
+  const anyDialogOpen = $derived(helpOpen || clockEditOpen || newGameOpen || !!confirmRequest)
+
+  function onKeydown(e: KeyboardEvent) {
+    const action = actionForKey(e)
+    if (!action) return
+    if (action === 'help') {
+      e.preventDefault()
+      helpOpen = !helpOpen
+      return
+    }
+    if (anyDialogOpen || isTypingTarget(e.target)) return
+    // Lo spazio su un pulsante lo "cliccherebbe": lo usiamo solo per il tempo.
+    e.preventDefault()
+
+    const teamName = (id: 'home' | 'away') => game.teams[id].name
+    switch (action) {
+      case 'toggleClock':
+        run({ type: 'toggleClock' })
+        break
+      case 'goalHome':
+      case 'goalAway': {
+        const team = action === 'goalHome' ? 'home' : 'away'
+        if (view.phase === 'shootout') break
+        run({ type: 'goal', team }, `Gol ${teamName(team)}`)
+        showToast(`Gol ${teamName(team)}`)
+        break
+      }
+      case 'shotHome':
+      case 'shotAway': {
+        const team = action === 'shotHome' ? 'home' : 'away'
+        run({ type: 'shot', team, delta: 1 }, `Tiro ${teamName(team)}`)
+        break
+      }
+      case 'undo':
+        doUndo()
+        break
+    }
+  }
 </script>
 
-<main>
-  <header>
-    <h1>Console operatore</h1>
-    <button type="button" onclick={openDisplay}>Apri tabellone</button>
+<svelte:window onkeydown={onKeydown} />
+
+<div class="console">
+  <header class="topbar">
+    <h1>Tabellone Hockey</h1>
+
+    <nav class="tabs" aria-label="Sezioni">
+      <button type="button" class:active={tab === 'game'} onclick={() => (tab = 'game')}>
+        Partita
+      </button>
+      <button type="button" class:active={tab === 'teams'} onclick={() => (tab = 'teams')}>
+        Squadre
+      </button>
+    </nav>
+
+    <div class="spacer"></div>
+
+    <span class="status" class:ok={displayConnected}>
+      <span class="dot"></span>
+      {displayConnected ? 'Tabellone collegato' : 'Tabellone non aperto'}
+      <HelpTip title="Tabellone" align="right">
+        Indica se la finestra del tabellone (quella per il maxischermo) è aperta. Se l’hai chiusa
+        per sbaglio, premi <b>Apri tabellone</b>: riprende subito con il punteggio e il tempo
+        giusti.
+      </HelpTip>
+    </span>
+    <button type="button" class="btn btn-primary" onclick={openDisplay}>Apri tabellone</button>
+    <button type="button" class="btn" onclick={() => (newGameOpen = true)}>Nuova partita…</button>
+    <button type="button" class="btn btn-ghost" onclick={() => (helpOpen = true)}>
+      Guida <kbd>F1</kbd>
+    </button>
   </header>
 
-  <div class="content">
-    <section class="preview-section">
-      <h2>Anteprima tabellone</h2>
-      <div class="preview">
-        <Stage>
-          <Scoreboard {view} animations={false} />
-        </Stage>
-      </div>
-      <p class="hint">
-        I controlli di gioco (tempo, punteggio, penalità) arriveranno con la fase 4.
-      </p>
-    </section>
+  {#if tab === 'game'}
+    <main class="game">
+      <TeamControls id="home" {view} rules={game.rules} {run} />
 
-    <section class="teams">
-      <h2>Squadre</h2>
+      <div class="center">
+        <section class="panel preview-panel">
+          <h2 class="panel-title">
+            Anteprima maxischermo
+            <HelpTip title="Anteprima">
+              È esattamente ciò che vede il pubblico sul maxischermo, rimpicciolito.
+            </HelpTip>
+          </h2>
+          <div class="preview">
+            <Stage>
+              <Scoreboard {view} />
+            </Stage>
+          </div>
+        </section>
+
+        <ClockPanel
+          {view}
+          {run}
+          confirm={(r) => (confirmRequest = r)}
+          onEditClock={() => (clockEditOpen = true)}
+          onNewGame={() => (newGameOpen = true)}
+        />
+
+        <EventLog {game} {undoLabel} onundo={doUndo} />
+      </div>
+
+      <TeamControls id="away" {view} rules={game.rules} {run} />
+    </main>
+  {:else}
+    <main class="teams">
+      <p class="muted">
+        Le modifiche compaiono subito sul tabellone e restano salvate anche per le prossime partite.
+      </p>
       <div class="team-grid">
         <TeamEditor
           id="home"
@@ -83,81 +247,193 @@
           onchange={(setup) => run({ type: 'setTeam', team: 'away', setup })}
         />
       </div>
-    </section>
-  </div>
-</main>
+    </main>
+  {/if}
+</div>
+
+{#if toast}
+  <div class="toast" role="status">{toast}</div>
+{/if}
+
+<HelpOverlay open={helpOpen} onclose={() => (helpOpen = false)} />
+
+<ClockEditDialog
+  open={clockEditOpen}
+  currentMs={view.clockMs}
+  maxMs={game.clock.periodEndMs - game.clock.periodStartMs}
+  onclose={() => (clockEditOpen = false)}
+  onsave={(remainingMs) => run({ type: 'setClock', remainingMs })}
+/>
+
+<NewGameDialog open={newGameOpen} onclose={() => (newGameOpen = false)} onstart={startNewGame} />
+
+<Modal
+  open={!!confirmRequest}
+  title={confirmRequest?.title ?? ''}
+  onclose={() => (confirmRequest = null)}
+>
+  <p>{confirmRequest?.message}</p>
+  {#snippet actions()}
+    <button type="button" class="btn" onclick={() => (confirmRequest = null)}>Annulla</button>
+    <button
+      type="button"
+      class="btn {confirmRequest?.danger ? 'btn-stop' : 'btn-primary'}"
+      onclick={() => {
+        confirmRequest?.action()
+        confirmRequest = null
+      }}
+    >
+      {confirmRequest?.confirmLabel}
+    </button>
+  {/snippet}
+</Modal>
 
 <style>
-  main {
+  .console {
     display: flex;
     flex-direction: column;
     height: 100%;
   }
 
-  header {
+  .topbar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem 1.5rem;
-    background: var(--ice-900);
+    gap: 0.6rem 0.9rem;
+    padding: 0.7rem 1.25rem;
     border-bottom: 1px solid var(--ice-800);
+    background: var(--ice-900);
   }
 
   h1 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
+    margin: 0 0.5rem 0 0;
+    font-size: 1.1rem;
+    font-weight: 700;
   }
 
-  h2 {
-    margin: 0 0 0.75rem;
-    font-size: 1rem;
-    font-weight: 600;
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.2rem;
+    border-radius: 10px;
+    background: var(--ice-950);
+  }
+
+  .tabs button {
+    padding: 0.4rem 1rem;
+    border: 0;
+    border-radius: 8px;
+    background: none;
     color: var(--ice-300);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
   }
 
-  .content {
+  .tabs button.active {
+    background: var(--ice-600);
+    color: #fff;
+  }
+
+  .spacer {
     flex: 1;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.9rem;
+    color: var(--warn);
+  }
+
+  .status.ok {
+    color: var(--ok);
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .game {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) minmax(420px, 1.35fr) minmax(300px, 1fr);
+    gap: 1rem;
+    padding: 1rem;
     overflow: auto;
+  }
+
+  .center {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-    padding: 1.5rem;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .preview-panel {
+    padding-bottom: 0.75rem;
   }
 
   .preview {
-    width: min(100%, 640px);
     aspect-ratio: 16 / 9;
-    border: 1px solid var(--ice-800);
-    border-radius: 10px;
     overflow: hidden;
+    border-radius: 8px;
   }
 
-  .hint {
-    color: var(--ice-300);
+  .teams {
+    flex: 1;
+    overflow: auto;
+    padding: 1rem 1.5rem;
   }
 
   .team-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1rem;
+    max-width: 1100px;
   }
 
-  header button {
-    padding: 0.6rem 1.1rem;
-    border: 0;
-    border-radius: 8px;
-    background: var(--ice-600);
-    color: white;
-    font: inherit;
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    padding: 0.7rem 1.2rem;
+    border-radius: 12px;
+    background: #0e2440;
+    border: 1px solid var(--ice-600);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
     font-weight: 600;
-    cursor: pointer;
+    animation: toast-in 180ms ease-out;
   }
 
-  header button:hover {
-    background: #3a7dbb;
+  @keyframes toast-in {
+    from {
+      transform: translate(-50%, 10px);
+      opacity: 0;
+    }
+  }
+
+  /* Monitor piccoli: le squadre affiancate sopra, il centro sotto. */
+  @media (max-width: 1100px) {
+    .game {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .center {
+      grid-column: 1 / -1;
+      grid-row: 1;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .game {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

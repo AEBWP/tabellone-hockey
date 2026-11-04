@@ -11,7 +11,7 @@
   const goals = $derived(shots.filter(Boolean).length)
 </script>
 
-<div class="panel" class:winner>
+<div class="so-panel" class:winner>
   <div class="title">RIGORI · {goals}</div>
   <div class="dots">
     {#each slots as shot, i (i)}
@@ -26,7 +26,7 @@
 </div>
 
 <style>
-  .panel {
+  .so-panel {
     display: flex;
     flex-direction: column;
     align-items: center;

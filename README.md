@@ -21,7 +21,7 @@ npm run format     # formatta il codice
 npm run build      # crea la versione finale in dist/
 ```
 
-In sviluppo la console è su `http://localhost:5173/`. Il pulsante
+In sviluppo la console è su `http://localhost:5173/` (premi `F1` per la guida rapida). Il pulsante
 **Apri tabellone** apre il tabellone in una nuova finestra: trascinala sul
 secondo schermo e fai **doppio clic** per lo schermo intero.
 

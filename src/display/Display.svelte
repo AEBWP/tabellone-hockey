@@ -3,7 +3,7 @@
   import { apply, deriveView, type GameState } from '../engine'
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import { createChannel } from '../shared/channel'
-  import { HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
+  import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
   import { now } from '../shared/time'
   import { DEMO_GOAL_KEYS, DEMO_SCENES, DEMO_TEAMS } from './demo'
   import Stage from './Stage.svelte'
@@ -60,7 +60,12 @@
       }
     })
     channel.send({ type: 'hello' })
+    const beat = setInterval(
+      () => channel.send({ type: 'displayHeartbeat' }),
+      HEARTBEAT_INTERVAL_MS,
+    )
     cleanup = () => {
+      clearInterval(beat)
       unsubscribe()
       channel.close()
     }

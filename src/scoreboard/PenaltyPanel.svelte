@@ -9,7 +9,7 @@
   const waiting = $derived(team.penalties.length - shown.length)
 </script>
 
-<div class="panel" style:--team={team.color}>
+<div class="pen-panel" style:--team={team.color}>
   {#if team.penalties.length > 0}
     <div class="title">PENALITÀ</div>
     {#each shown as p (p.id)}
@@ -25,7 +25,7 @@
 </div>
 
 <style>
-  .panel {
+  .pen-panel {
     display: flex;
     flex-direction: column;
     gap: 6px;
