@@ -25,6 +25,10 @@ describe('scorciatoie', () => {
     expect(actionForKey(key('KeyO', { shiftKey: true }))).toBe('shotAway')
   })
 
+  it('M attiva e disattiva l’audio', () => {
+    expect(actionForKey(key('KeyM'))).toBe('mute')
+  })
+
   it('Ctrl+Z annulla, F1 apre la guida', () => {
     expect(actionForKey(key('KeyZ', { ctrlKey: true }))).toBe('undo')
     expect(actionForKey({ ...key('F1'), key: 'F1' })).toBe('help')

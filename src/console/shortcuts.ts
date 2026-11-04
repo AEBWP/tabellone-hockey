@@ -5,7 +5,7 @@
  * grandi o facili da ricordare (C = Casa, O = Ospiti).
  */
 export type ShortcutAction =
-  'toggleClock' | 'goalHome' | 'goalAway' | 'shotHome' | 'shotAway' | 'undo' | 'help'
+  'toggleClock' | 'goalHome' | 'goalAway' | 'shotHome' | 'shotAway' | 'undo' | 'mute' | 'help'
 
 export interface Shortcut {
   action: ShortcutAction
@@ -21,6 +21,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: 'shotHome', keys: ['Maiusc', 'C'], description: 'Tiro in porta casa' },
   { action: 'shotAway', keys: ['Maiusc', 'O'], description: 'Tiro in porta ospiti' },
   { action: 'undo', keys: ['Ctrl', 'Z'], description: 'Annulla l’ultima azione' },
+  { action: 'mute', keys: ['M'], description: 'Audio sì / no' },
   { action: 'help', keys: ['F1'], description: 'Apri / chiudi la guida' },
 ]
 
@@ -51,6 +52,8 @@ export function actionForKey(e: KeyInput): ShortcutAction | null {
       return e.shiftKey ? 'shotHome' : 'goalHome'
     case 'KeyO':
       return e.shiftKey ? 'shotAway' : 'goalAway'
+    case 'KeyM':
+      return e.shiftKey ? null : 'mute'
   }
   return null
 }

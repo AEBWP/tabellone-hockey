@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { onDestroy, untrack } from 'svelte'
   import {
     advance,
     apply,
@@ -29,7 +29,10 @@
   import NewGameDialog from './NewGameDialog.svelte'
   import { actionForKey, isTypingTarget } from './shortcuts'
   import TeamControls from './TeamControls.svelte'
+  import { audio } from './audio.svelte'
+  import AudioTab from './AudioTab.svelte'
   import BackupTab from './BackupTab.svelte'
+  import { snapshot, soundEvents } from './sound-events'
   import RulesTab from './RulesTab.svelte'
   import TeamsTab from './TeamsTab.svelte'
 
@@ -47,11 +50,12 @@
     canUndo(history, advance(game, t)) ? (history.at(-1)?.label ?? null) : null,
   )
 
-  type Tab = 'game' | 'teams' | 'rules' | 'backup'
+  type Tab = 'game' | 'teams' | 'rules' | 'audio' | 'backup'
   const TABS: { id: Tab; label: string }[] = [
     { id: 'game', label: 'Partita' },
     { id: 'teams', label: 'Squadre' },
     { id: 'rules', label: 'Regolamento' },
+    { id: 'audio', label: 'Audio' },
     { id: 'backup', label: 'Backup' },
   ]
   let tab = $state<Tab>('game')
@@ -82,6 +86,16 @@
     if (message.type === 'hello') channel.send({ type: 'state', state: game })
     if (message.type === 'hello' || message.type === 'displayHeartbeat') lastDisplaySeen = now()
   })
+  // ── Suoni ─────────────────────────────────────────────────────────────
+  // Controllo ogni 100 ms (indipendente dal disegno dello schermo): confronta lo
+  // stato con quello precedente e fa partire sirene e segnali al momento giusto.
+  let lastSound = untrack(() => snapshot(game, deriveView(game, now())))
+  const soundTimer = setInterval(() => {
+    const cur = snapshot(game, deriveView(game, now()))
+    for (const id of soundEvents(lastSound, cur)) audio.play(id)
+    lastSound = cur
+  }, 100)
+
   const heartbeat = setInterval(
     () => channel.send({ type: 'heartbeat', sentAt: now() }),
     HEARTBEAT_INTERVAL_MS,
@@ -95,6 +109,7 @@
   onDestroy(() => {
     cancelAnimationFrame(frame)
     clearInterval(heartbeat)
+    clearInterval(soundTimer)
     clearTimeout(toastTimer)
     unsubscribe()
     channel.close()
@@ -175,6 +190,10 @@
         run({ type: 'shot', team, delta: 1 }, `Tiro ${teamName(team)}`)
         break
       }
+      case 'mute':
+        audio.toggleMute()
+        showToast(audio.settings.muted ? 'Audio disattivato' : 'Audio attivo')
+        break
       case 'undo':
         doUndo()
         break
@@ -182,7 +201,14 @@
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<!-- Ogni clic o tasto sblocca l'audio (i browser lo richiedono prima di suonare). -->
+<svelte:window
+  onkeydown={(e) => {
+    audio.unlock()
+    onKeydown(e)
+  }}
+  onpointerdown={() => audio.unlock()}
+/>
 
 <div class="console">
   <header class="topbar">
@@ -197,6 +223,21 @@
     </nav>
 
     <div class="spacer"></div>
+
+    {#if !audio.unlocked && !audio.settings.muted}
+      <button type="button" class="btn btn-sm audio-locked" onclick={() => audio.unlock()}>
+        🔈 Clicca per attivare l’audio
+      </button>
+    {/if}
+    <button
+      type="button"
+      class="btn btn-ghost mute"
+      title={audio.settings.muted ? 'Audio disattivato (M)' : 'Audio attivo (M)'}
+      aria-label={audio.settings.muted ? 'Attiva audio' : 'Disattiva audio'}
+      onclick={() => audio.toggleMute()}
+    >
+      {audio.settings.muted ? '🔇' : '🔊'}
+    </button>
 
     <span class="status" class:ok={displayConnected}>
       <span class="dot"></span>
@@ -260,6 +301,10 @@
         gameStarted={periodStarted}
         onapply={(rules) => run({ type: 'setRules', rules })}
       />
+    </main>
+  {:else if tab === 'audio'}
+    <main class="page">
+      <AudioTab />
     </main>
   {:else}
     <main class="page">
@@ -359,6 +404,16 @@
 
   .spacer {
     flex: 1;
+  }
+
+  .audio-locked {
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+
+  .mute {
+    padding: 0.35rem 0.6rem;
+    font-size: 1.15rem;
   }
 
   .status {
