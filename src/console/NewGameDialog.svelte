@@ -1,19 +1,36 @@
 <script lang="ts">
-  import { PRESETS, rulesFromPreset, type Rules } from '../engine'
+  import { describeRules, PRESETS, rulesFromPreset, type Rules } from '../engine'
+  import { library } from './library.svelte'
   import Modal from './Modal.svelte'
 
   /** Nuova partita: si sceglie il regolamento, squadre e loghi restano. */
   let {
     open,
+    currentRules,
     onclose,
     onstart,
-  }: { open: boolean; onclose: () => void; onstart: (rules: Rules) => void } = $props()
+  }: {
+    open: boolean
+    currentRules: Rules
+    onclose: () => void
+    onstart: (rules: Rules) => void
+  } = $props()
 
-  let presetId = $state(PRESETS[0].id)
-  const preset = $derived(PRESETS.find((p) => p.id === presetId) ?? PRESETS[0])
+  // "current" = stesso regolamento della partita appena giocata (scelta più comune).
+  let choice = $state('current')
+
+  $effect(() => {
+    if (open) choice = 'current'
+  })
+
+  const selected = $derived.by((): Rules => {
+    if (choice.startsWith('b:')) return rulesFromPreset(choice.slice(2))
+    const saved = library.presets.find((p) => `s:${p.id}` === choice)
+    return saved ? structuredClone(saved.rules) : structuredClone(currentRules)
+  })
 
   function start() {
-    onstart(rulesFromPreset(presetId))
+    onstart(selected)
     onclose()
   }
 </script>
@@ -23,17 +40,24 @@
 
   <label class="field">
     Regolamento
-    <select class="input" bind:value={presetId}>
-      {#each PRESETS as p (p.id)}
-        <option value={p.id}>{p.name}</option>
-      {/each}
+    <select class="input" bind:value={choice}>
+      <option value="current">Come la partita attuale</option>
+      <optgroup label="Predefiniti">
+        {#each PRESETS as p (p.id)}
+          <option value="b:{p.id}">{p.name}</option>
+        {/each}
+      </optgroup>
+      {#if library.presets.length}
+        <optgroup label="Salvati da te">
+          {#each library.presets as p (p.id)}
+            <option value="s:{p.id}">{p.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
     </select>
   </label>
-  <p class="muted desc">{preset.description}</p>
-  <p class="muted small">
-    Le singole regole (durata dei periodi, penalità, timeout…) si potranno personalizzare nelle
-    impostazioni.
-  </p>
+  <p class="muted desc">{describeRules(selected)}</p>
+  <p class="muted small">Puoi modificare ogni regola nella scheda <b>Regolamento</b>.</p>
 
   {#snippet actions()}
     <button type="button" class="btn" onclick={onclose}>Annulla</button>

@@ -29,7 +29,9 @@
   import NewGameDialog from './NewGameDialog.svelte'
   import { actionForKey, isTypingTarget } from './shortcuts'
   import TeamControls from './TeamControls.svelte'
-  import TeamEditor from './TeamEditor.svelte'
+  import BackupTab from './BackupTab.svelte'
+  import RulesTab from './RulesTab.svelte'
+  import TeamsTab from './TeamsTab.svelte'
 
   // ── Stato ─────────────────────────────────────────────────────────────
   // `$state.raw`: lo stato viene sempre sostituito per intero, mai modificato,
@@ -45,7 +47,22 @@
     canUndo(history, advance(game, t)) ? (history.at(-1)?.label ?? null) : null,
   )
 
-  let tab = $state<'game' | 'teams'>('game')
+  type Tab = 'game' | 'teams' | 'rules' | 'backup'
+  const TABS: { id: Tab; label: string }[] = [
+    { id: 'game', label: 'Partita' },
+    { id: 'teams', label: 'Squadre' },
+    { id: 'rules', label: 'Regolamento' },
+    { id: 'backup', label: 'Backup' },
+  ]
+  let tab = $state<Tab>('game')
+
+  /** Il periodo in corso è già iniziato? (le nuove durate varranno dal prossimo) */
+  const periodStarted = $derived(
+    game.phase === 'final' ||
+      game.phase === 'shootout' ||
+      game.clock.runningSince !== null ||
+      game.clock.baseMs !== game.clock.periodStartMs,
+  )
   let helpOpen = $state(false)
   let clockEditOpen = $state(false)
   let newGameOpen = $state(false)
@@ -172,12 +189,11 @@
     <h1>Tabellone Hockey</h1>
 
     <nav class="tabs" aria-label="Sezioni">
-      <button type="button" class:active={tab === 'game'} onclick={() => (tab = 'game')}>
-        Partita
-      </button>
-      <button type="button" class:active={tab === 'teams'} onclick={() => (tab = 'teams')}>
-        Squadre
-      </button>
+      {#each TABS as t (t.id)}
+        <button type="button" class:active={tab === t.id} onclick={() => (tab = t.id)}>
+          {t.label}
+        </button>
+      {/each}
     </nav>
 
     <div class="spacer"></div>
@@ -230,23 +246,24 @@
 
       <TeamControls id="away" {view} rules={game.rules} {run} />
     </main>
+  {:else if tab === 'teams'}
+    <main class="page">
+      <TeamsTab
+        teams={game.teams}
+        onchange={(team, setup) => run({ type: 'setTeam', team, setup })}
+      />
+    </main>
+  {:else if tab === 'rules'}
+    <main class="page">
+      <RulesTab
+        rules={game.rules}
+        gameStarted={periodStarted}
+        onapply={(rules) => run({ type: 'setRules', rules })}
+      />
+    </main>
   {:else}
-    <main class="teams">
-      <p class="muted">
-        Le modifiche compaiono subito sul tabellone e restano salvate anche per le prossime partite.
-      </p>
-      <div class="team-grid">
-        <TeamEditor
-          id="home"
-          team={game.teams.home}
-          onchange={(setup) => run({ type: 'setTeam', team: 'home', setup })}
-        />
-        <TeamEditor
-          id="away"
-          team={game.teams.away}
-          onchange={(setup) => run({ type: 'setTeam', team: 'away', setup })}
-        />
-      </div>
+    <main class="page">
+      <BackupTab />
     </main>
   {/if}
 </div>
@@ -265,7 +282,12 @@
   onsave={(remainingMs) => run({ type: 'setClock', remainingMs })}
 />
 
-<NewGameDialog open={newGameOpen} onclose={() => (newGameOpen = false)} onstart={startNewGame} />
+<NewGameDialog
+  open={newGameOpen}
+  currentRules={game.rules}
+  onclose={() => (newGameOpen = false)}
+  onstart={startNewGame}
+/>
 
 <Modal
   open={!!confirmRequest}
@@ -385,17 +407,10 @@
     border-radius: 8px;
   }
 
-  .teams {
+  .page {
     flex: 1;
     overflow: auto;
     padding: 1rem 1.5rem;
-  }
-
-  .team-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 1rem;
-    max-width: 1100px;
   }
 
   .toast {

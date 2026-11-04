@@ -138,3 +138,86 @@ export function rulesFromPreset(id: string): Rules {
 export function periodLengthMs(rules: Rules, period: number): number {
   return period <= rules.periods ? rules.periodMs : rules.overtime.periodMs
 }
+
+/** Limiti ragionevoli per ogni valore, usati per controllare le regole personalizzate. */
+export const RULE_LIMITS = {
+  periods: { min: 1, max: 10 },
+  periodMs: { min: SEC, max: 60 * MIN },
+  intermissionMs: { min: 0, max: 60 * MIN },
+  skaters: { min: 3, max: 6 },
+  maxPenalizedOnIce: { min: 1, max: 3 },
+  overtimePeriodMs: { min: SEC, max: 60 * MIN },
+  overtimeMaxPeriods: { min: 0, max: 10 },
+  overtimeSkaters: { min: 3, max: 6 },
+  overtimeBreakMs: { min: 0, max: 60 * MIN },
+  shootoutRounds: { min: 1, max: 10 },
+  penaltyMs: { min: 10 * SEC, max: 30 * MIN },
+  timeoutMs: { min: 5 * SEC, max: 5 * MIN },
+  timeoutsPerTeam: { min: 0, max: 5 },
+} as const
+
+/** Controlla le regole: restituisce l'elenco dei problemi (vuoto se tutto va bene). */
+export function validateRules(r: Rules): string[] {
+  const errors: string[] = []
+  const check = (value: number, limit: { min: number; max: number }, message: string) => {
+    if (!Number.isFinite(value) || value < limit.min || value > limit.max) errors.push(message)
+  }
+  const L = RULE_LIMITS
+  const minutes = (ms: number) => (ms >= MIN ? `${ms / MIN} min` : `${ms / SEC} s`)
+
+  check(r.periods, L.periods, `I periodi devono essere da ${L.periods.min} a ${L.periods.max}.`)
+  if (!Number.isInteger(r.periods)) errors.push('Il numero di periodi deve essere intero.')
+  check(r.periodMs, L.periodMs, `La durata del periodo va da 1 s a ${minutes(L.periodMs.max)}.`)
+  check(
+    r.intermissionMs,
+    L.intermissionMs,
+    `L'intervallo va da 0 a ${minutes(L.intermissionMs.max)}.`,
+  )
+  check(r.skaters, L.skaters, 'I giocatori in pista devono essere da 3 a 6.')
+  check(r.maxPenalizedOnIce, L.maxPenalizedOnIce, 'I penalizzati contemporanei vanno da 1 a 3.')
+
+  if (r.overtime.enabled) {
+    check(
+      r.overtime.periodMs,
+      L.overtimePeriodMs,
+      `Il supplementare va da 1 s a ${minutes(L.overtimePeriodMs.max)}.`,
+    )
+    check(
+      r.overtime.maxPeriods,
+      L.overtimeMaxPeriods,
+      'I supplementari vanno da 0 (illimitati) a 10.',
+    )
+    check(r.overtime.skaters, L.overtimeSkaters, 'I giocatori nel supplementare vanno da 3 a 6.')
+    check(
+      r.overtime.breakMs,
+      L.overtimeBreakMs,
+      'La pausa prima del supplementare va da 0 a 60 min.',
+    )
+  }
+  if (r.shootout.enabled) {
+    check(r.shootout.rounds, L.shootoutRounds, 'I tiratori ai rigori vanno da 1 a 10.')
+  }
+
+  check(r.penaltyMs.minor, L.penaltyMs, 'La penalità minore va da 10 s a 30 min.')
+  check(r.penaltyMs.major, L.penaltyMs, 'La penalità maggiore va da 10 s a 30 min.')
+  check(r.penaltyMs.misconduct, L.penaltyMs, 'La cattiva condotta va da 10 s a 30 min.')
+  check(r.timeoutMs, L.timeoutMs, 'Il timeout va da 5 s a 5 min.')
+  check(r.timeoutsPerTeam, L.timeoutsPerTeam, 'I timeout per squadra vanno da 0 a 5.')
+  return errors
+}
+
+/** Descrizione breve di un regolamento, es. "3 × 20′, supplementare 5′, rigori". */
+export function describeRules(r: Rules): string {
+  const len = (ms: number) => {
+    const s = Math.round(ms / SEC)
+    return s % 60 === 0 ? `${s / 60}′` : `${Math.floor(s / 60)}′${String(s % 60).padStart(2, '0')}″`
+  }
+  const parts = [`${r.periods} × ${len(r.periodMs)}`]
+  if (r.overtime.enabled) {
+    const many = r.overtime.maxPeriods === 0 ? ' a oltranza' : ''
+    parts.push(`supplementare ${len(r.overtime.periodMs)}${many}`)
+  }
+  if (r.shootout.enabled) parts.push('rigori')
+  if (!r.overtime.enabled && !r.shootout.enabled) parts.push('pareggio possibile')
+  return parts.join(', ')
+}

@@ -46,6 +46,11 @@ export type Command =
   | { type: 'undoShootoutAttempt'; team: TeamId }
   | { type: 'endGame' }
   | { type: 'setTeam'; team: TeamId; setup: Partial<TeamSetup> }
+  /**
+   * Cambia le regole della partita in corso. Valgono dal prossimo periodo;
+   * se il periodo attuale non è ancora iniziato, anche la sua durata si adegua.
+   */
+  | { type: 'setRules'; rules: Rules }
   | { type: 'newGame'; rules?: Rules; teams?: Partial<Record<TeamId, TeamSetup>> }
 
 export const DEFAULT_TEAMS: Record<TeamId, TeamSetup> = {
@@ -370,6 +375,19 @@ export function apply(state: GameState, command: Command, now: number): GameStat
     case 'setTeam':
       Object.assign(s.teams[command.team], command.setup)
       break
+
+    case 'setRules': {
+      s.rules = structuredClone(command.rules)
+      const notStarted =
+        s.phase !== 'final' &&
+        s.phase !== 'shootout' &&
+        !isClockRunning(s) &&
+        s.clock.baseMs === s.clock.periodStartMs
+      if (notStarted) {
+        s.clock.periodEndMs = s.clock.periodStartMs + periodLengthMs(s.rules, s.period)
+      }
+      break
+    }
 
     case 'newGame': {
       const teams = command.teams ?? {

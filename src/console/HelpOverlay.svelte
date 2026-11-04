@@ -46,8 +46,10 @@
         <li>Errore? <kbd>Ctrl</kbd> + <kbd>Z</kbd> annulla l’ultima azione.</li>
       </ol>
       <p class="muted">
-        La partita viene salvata automaticamente: se ricarichi la pagina o il PC si riavvia, riparte
-        da dov’era. Accanto alle funzioni trovi i pulsanti <b>?</b> con spiegazioni più dettagliate.
+        Squadre, loghi e regolamenti si salvano nell’archivio (schede Squadre e Regolamento) e si
+        possono esportare dalla scheda Backup. La partita viene salvata automaticamente: se
+        ricarichi la pagina o il PC si riavvia, riparte da dov’era. Accanto alle funzioni trovi i
+        pulsanti <b>?</b> con spiegazioni più dettagliate.
       </p>
     </section>
   </div>
