@@ -25,6 +25,11 @@ In sviluppo la console è su `http://localhost:5173/`. Il pulsante
 **Apri tabellone** apre il tabellone in una nuova finestra: trascinala sul
 secondo schermo e fai **doppio clic** per lo schermo intero.
 
+Per vedere la grafica del tabellone senza la console apri
+`http://localhost:5173/display.html?demo`: i tasti da `1` a `8` mostrano le
+varie situazioni (penalità, ultimo minuto, timeout, intervallo, supplementare,
+rigori, finale), `G` e `H` simulano un gol.
+
 ## Struttura
 
 ```
@@ -34,7 +39,8 @@ src/
   engine/           motore di gioco: sola logica, coperto da test
   shared/           comunicazione tra console e tabellone
   console/          interfaccia della console operatore
-  display/          grafica del tabellone spettatori
+  display/          finestra del tabellone spettatori (e demo)
+  scoreboard/       grafica del tabellone, riusata anche come anteprima nella console
   styles/           stili comuni
 public/             file statici (icone, suoni, loghi)
 ```

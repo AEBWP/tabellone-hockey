@@ -25,5 +25,8 @@
     "vite": "^8.3.5",
     "vitest": "^5.1.0"
   },
-  "description": "Tabellone segnapunti per hockey su ghiaccio, funzionante offline"
+  "description": "Tabellone segnapunti per hockey su ghiaccio, funzionante offline",
+  "dependencies": {
+    "@fontsource/barlow-condensed": "^5.3.0"
+  }
 }

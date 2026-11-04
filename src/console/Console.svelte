@@ -2,14 +2,18 @@
   import { onDestroy } from 'svelte'
   import { createChannel } from '../shared/channel'
   import { HEARTBEAT_INTERVAL_MS } from '../shared/messages'
+  import { createGame } from '../engine'
+
+  // Stato della partita: i controlli per modificarlo arriveranno nella fase 4.
+  const game = createGame()
 
   const channel = createChannel()
 
   const sendHeartbeat = () => channel.send({ type: 'heartbeat', sentAt: Date.now() })
 
-  // Un tabellone appena aperto chiede subito lo stato: rispondiamo senza aspettare il prossimo giro.
+  // Un tabellone appena aperto chiede subito lo stato.
   const unsubscribe = channel.subscribe((message) => {
-    if (message.type === 'hello') sendHeartbeat()
+    if (message.type === 'hello') channel.send({ type: 'state', state: game })
   })
   const timer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS)
   sendHeartbeat()
