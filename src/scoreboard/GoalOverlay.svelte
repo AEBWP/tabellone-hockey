@@ -37,8 +37,16 @@
 {#if goal}
   {@const t = view.teams[goal.team]}
   {#key goal.key}
-    <div class="overlay" style:--team={t.color} style:--on-team={textColorOn(t.color)}>
+    <div
+      class="overlay"
+      class:with-logo={!!t.logo}
+      style:--team={t.color}
+      style:--on-team={textColorOn(t.color)}
+    >
       <div class="rays"></div>
+      {#if t.logo}
+        <img class="logo" src={t.logo} alt="" />
+      {/if}
       <div class="word">GOAL!</div>
       <div class="team">{t.name.toUpperCase()}</div>
       <div class="score">{view.teams.home.score} – {view.teams.away.score}</div>
@@ -74,6 +82,20 @@
       transparent 8deg 20deg
     );
     animation: spin 14s linear infinite;
+  }
+
+  .logo {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    object-fit: contain;
+    filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.5));
+    animation: logo-in 800ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+
+  /* Con il logo la scritta si rimpicciolisce per far stare tutto. */
+  .with-logo .word {
+    font-size: 320px;
   }
 
   .word {
@@ -142,6 +164,13 @@
     }
   }
 
+  @keyframes logo-in {
+    from {
+      transform: scale(0.3) rotate(-20deg);
+      opacity: 0;
+    }
+  }
+
   @keyframes spin {
     to {
       transform: rotate(360deg);
@@ -150,6 +179,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .rays,
+    .logo,
     .word,
     .team,
     .score {

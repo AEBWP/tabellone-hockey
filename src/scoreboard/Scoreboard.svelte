@@ -142,13 +142,15 @@
 
   .main {
     display: grid;
-    grid-template-columns: 600px 1fr 600px;
-    gap: 20px;
+    /* Colonne fisse: il centro non può mai spingere fuori le squadre. */
+    grid-template-columns: 560px minmax(0, 1fr) 560px;
+    gap: 24px;
     height: 600px;
-    padding: 0 20px;
+    padding: 0 24px;
   }
 
   .center {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -157,8 +159,8 @@
   }
 
   .clock {
-    padding: 0 40px;
-    font-size: 300px;
+    font-size: 270px;
+    white-space: nowrap;
     font-weight: 800;
     line-height: 1;
     letter-spacing: 0.01em;
@@ -193,6 +195,9 @@
   }
 
   .powerplay {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
     display: flex;
     align-items: center;
     gap: 20px;
@@ -213,10 +218,11 @@
 
   .bottom {
     display: grid;
-    grid-template-columns: 600px 1fr 600px;
-    gap: 20px;
+    /* Colonne fisse: il centro non può mai spingere fuori le squadre. */
+    grid-template-columns: 560px minmax(0, 1fr) 560px;
+    gap: 24px;
     height: 340px;
-    padding: 0 20px 40px;
+    padding: 0 24px 40px;
   }
 
   .stats {

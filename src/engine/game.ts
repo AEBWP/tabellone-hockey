@@ -49,8 +49,8 @@ export type Command =
   | { type: 'newGame'; rules?: Rules; teams?: Partial<Record<TeamId, TeamSetup>> }
 
 export const DEFAULT_TEAMS: Record<TeamId, TeamSetup> = {
-  home: { name: 'Casa', shortName: 'CASA', color: '#d62839' },
-  away: { name: 'Ospiti', shortName: 'OSP', color: '#1f6feb' },
+  home: { name: 'Casa', shortName: 'CASA', color: '#d62839', logo: null },
+  away: { name: 'Ospiti', shortName: 'OSP', color: '#1f6feb', logo: null },
 }
 
 function team(setup: TeamSetup): TeamState {
@@ -383,6 +383,6 @@ export function apply(state: GameState, command: Command, now: number): GameStat
   return advance(s, now)
 }
 
-function pickSetup({ name, shortName, color }: TeamState): TeamSetup {
-  return { name, shortName, color }
+function pickSetup({ name, shortName, color, logo }: TeamState): TeamSetup {
+  return { name, shortName, color, logo }
 }

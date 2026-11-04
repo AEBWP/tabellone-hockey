@@ -15,9 +15,12 @@
   <div class="title">RIGORI · {goals}</div>
   <div class="dots">
     {#each slots as shot, i (i)}
-      <span class="dot" class:goal={shot === true} class:miss={shot === false}>
-        {shot === true ? '●' : shot === false ? '✕' : ''}
-      </span>
+      <span
+        class="dot"
+        class:goal={shot === true}
+        class:miss={shot === false}
+        title={shot === true ? 'Gol' : shot === false ? 'Sbagliato' : 'Da tirare'}
+      ></span>
     {/each}
   </div>
 </div>
@@ -49,25 +52,23 @@
     gap: 18px;
   }
 
+  /* Vuoto = da tirare, verde = gol, rosso = sbagliato. */
   .dot {
-    display: grid;
-    place-items: center;
-    width: 96px;
-    height: 96px;
+    width: 88px;
+    height: 88px;
     border: 5px solid rgba(156, 195, 234, 0.5);
     border-radius: 50%;
-    font-size: 56px;
-    font-weight: 800;
   }
 
   .dot.goal {
     border-color: #3ccf7a;
-    color: #3ccf7a;
-    background: rgba(60, 207, 122, 0.15);
+    background: radial-gradient(circle at 35% 35%, #7cf0ab, #2fb868 70%);
+    box-shadow: 0 0 30px rgba(60, 207, 122, 0.55);
   }
 
   .dot.miss {
     border-color: #ff5d5d;
-    color: #ff5d5d;
+    background: radial-gradient(circle at 35% 35%, #ff9a9a, #e04848 70%);
+    box-shadow: 0 0 30px rgba(255, 93, 93, 0.45);
   }
 </style>

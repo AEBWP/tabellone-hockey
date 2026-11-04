@@ -62,11 +62,7 @@ export interface Penalty {
   periodElapsedMs: number
 }
 
-export interface TeamState {
-  name: string
-  /** Sigla breve (es. "HCB"). */
-  shortName: string
-  color: string
+export interface TeamState extends TeamSetup {
   goals: number
   shots: number
   timeoutsUsed: number
@@ -126,6 +122,12 @@ export interface GameState {
 
 export interface TeamSetup {
   name: string
+  /** Sigla breve (es. "HCB"). */
   shortName: string
   color: string
+  /**
+   * Logo della squadra come immagine incorporata (data URL), già
+   * ridimensionata al caricamento; null = nessun logo.
+   */
+  logo: string | null
 }

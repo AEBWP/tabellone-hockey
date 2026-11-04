@@ -6,7 +6,10 @@
 </script>
 
 <div class="team" class:dimmed style:--team={team.color} style:--on-team={textColorOn(team.color)}>
-  <div class="name-bar">
+  <div class="name-bar" class:with-logo={!!team.logo}>
+    {#if team.logo}
+      <img class="logo" src={team.logo} alt="" />
+    {/if}
     <span class="short">{team.shortName}</span>
   </div>
   <div class="full-name">{team.name}</div>
@@ -33,8 +36,13 @@
   }
 
   .name-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
     width: 100%;
-    padding: 6px 24px;
+    height: 130px;
+    padding: 0 24px;
     border-radius: 18px;
     text-align: center;
     background: linear-gradient(180deg, var(--team), color-mix(in srgb, var(--team) 70%, black));
@@ -42,8 +50,16 @@
     box-shadow: 0 0 50px color-mix(in srgb, var(--team) 45%, transparent);
   }
 
+  .logo {
+    flex: none;
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+  }
+
   .short {
-    display: block;
+    min-width: 0;
     overflow: hidden;
     font-size: 104px;
     font-weight: 800;

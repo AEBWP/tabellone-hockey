@@ -272,6 +272,21 @@ describe('nuova partita', () => {
   })
 })
 
+describe('logo squadra', () => {
+  it('si imposta, si rimuove e resta con una nuova partita', () => {
+    const logo = 'data:image/png;base64,AAAA'
+    const g = game().do({ type: 'setTeam', team: 'away', setup: { logo } })
+    expect(g.view().teams.away.logo).toBe(logo)
+    expect(g.view().teams.home.logo).toBeNull()
+
+    g.do({ type: 'newGame' })
+    expect(g.view().teams.away.logo).toBe(logo)
+
+    g.do({ type: 'setTeam', team: 'away', setup: { logo: null } })
+    expect(g.view().teams.away.logo).toBeNull()
+  })
+})
+
 describe('immutabilità', () => {
   it('apply e advance non modificano lo stato ricevuto', () => {
     const start = createGame()

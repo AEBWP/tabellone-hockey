@@ -27,6 +27,7 @@ export interface TeamView {
   name: string
   shortName: string
   color: string
+  logo: string | null
   /** Punteggio da mostrare (include il gol del vincitore ai rigori). */
   score: number
   goals: number
@@ -90,6 +91,7 @@ export function deriveView(state: GameState, now: number): GameView {
       name: t.name,
       shortName: t.shortName,
       color: t.color,
+      logo: t.logo,
       score: t.goals + (winner === id ? 1 : 0),
       goals: t.goals,
       shots: t.shots,

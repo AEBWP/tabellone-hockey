@@ -28,7 +28,7 @@ secondo schermo e fai **doppio clic** per lo schermo intero.
 Per vedere la grafica del tabellone senza la console apri
 `http://localhost:5173/display.html?demo`: i tasti da `1` a `8` mostrano le
 varie situazioni (penalità, ultimo minuto, timeout, intervallo, supplementare,
-rigori, finale), `G` e `H` simulano un gol.
+rigori, finale), `G` e `H` simulano un gol, `L` mostra o nasconde i loghi.
 
 ## Struttura
 

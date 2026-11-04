@@ -8,15 +8,36 @@ import { apply, createGame, rulesFromPreset, type Command, type GameState } from
 const SEC = 1_000
 const MIN = 60 * SEC
 
-const TEAMS = {
-  home: { name: 'Aquile Valle', shortName: 'AQUILE', color: '#d62839' },
-  away: { name: 'Lupi del Lago', shortName: 'LUPI', color: '#1f6feb' },
+/** Logo dimostrativo: uno scudo con l'iniziale, disegnato in SVG. */
+function demoLogo(letter: string, fill: string, accent: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110">
+    <path d="M50 4 L94 18 V54 C94 80 74 98 50 106 C26 98 6 80 6 54 V18 Z" fill="${accent}"/>
+    <path d="M50 12 L86 24 V54 C86 76 70 91 50 98 C30 91 14 76 14 54 V24 Z" fill="${fill}"/>
+    <text x="50" y="72" font-family="Arial Black, Arial, sans-serif" font-size="52"
+      font-weight="900" text-anchor="middle" fill="${accent}">${letter}</text>
+  </svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
+export const DEMO_TEAMS = {
+  home: {
+    name: 'Aquile Valle',
+    shortName: 'AQUILE',
+    color: '#d62839',
+    logo: demoLogo('A', '#d62839', '#ffffff'),
+  },
+  away: {
+    name: 'Lupi del Lago',
+    shortName: 'LUPI',
+    color: '#1f6feb',
+    logo: demoLogo('L', '#0b2f6b', '#9cc3ea'),
+  },
 }
 
 function run(
   commands: Command[],
   at: number,
-  start = createGame(rulesFromPreset('senior'), TEAMS),
+  start = createGame(rulesFromPreset('senior'), DEMO_TEAMS),
 ) {
   let s = start
   for (const c of commands) s = apply(s, c, at)

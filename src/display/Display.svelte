@@ -5,7 +5,7 @@
   import { createChannel } from '../shared/channel'
   import { HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
   import { now } from '../shared/time'
-  import { DEMO_GOAL_KEYS, DEMO_SCENES } from './demo'
+  import { DEMO_GOAL_KEYS, DEMO_SCENES, DEMO_TEAMS } from './demo'
   import Stage from './Stage.svelte'
 
   const demo = new URLSearchParams(location.search).has('demo')
@@ -39,6 +39,14 @@
       }
       const team = DEMO_GOAL_KEYS[e.key.toLowerCase()]
       if (team && game) game = apply(game, { type: 'goal', team }, now())
+      // L: mostra/nasconde i loghi, per vedere entrambe le versioni.
+      if (e.key.toLowerCase() === 'l' && game) {
+        const hide = game.teams.home.logo !== null
+        for (const id of ['home', 'away'] as const) {
+          const logo = hide ? null : DEMO_TEAMS[id].logo
+          game = apply(game, { type: 'setTeam', team: id, setup: { logo } }, now())
+        }
+      }
     }
     window.addEventListener('keydown', onKey)
     cleanup = () => window.removeEventListener('keydown', onKey)
@@ -96,7 +104,7 @@
       {#each DEMO_SCENES as scene (scene.key)}
         <span><kbd>{scene.key}</kbd> {scene.label}</span>
       {/each}
-      <span><kbd>G</kbd> gol casa · <kbd>H</kbd> gol ospiti</span>
+      <span><kbd>G</kbd> gol casa · <kbd>H</kbd> gol ospiti · <kbd>L</kbd> loghi sì/no</span>
     </aside>
   {/if}
 </div>
