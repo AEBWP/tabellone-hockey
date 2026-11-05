@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { TeamView } from '../../engine'
   import { textColorOn } from '../../shared/color'
+  import { fitFontSize } from '../../shared/labels'
 
   let {
     team,
@@ -23,7 +24,11 @@
       <div class="logo"><img src={team.logo} alt="" /></div>
     {/if}
     <div class="names">
-      <span class="short">{team.shortName}</span>
+      <span
+        class="short"
+        style:font-size="{fitFontSize(team.shortName, 104, team.logo ? 350 : 500)}px"
+        >{team.shortName}</span
+      >
       <span class="full">{team.name}</span>
     </div>
   </div>

@@ -260,12 +260,12 @@ describe('timeout', () => {
 describe('nuova partita', () => {
   it('azzera tutto mantenendo squadre e regole', () => {
     const g = game()
-      .do({ type: 'setTeam', team: 'home', setup: { name: 'Aquile' } })
+      .do({ type: 'setTeam', team: 'home', setup: { name: 'Castori' } })
       .do({ type: 'startClock' })
       .wait(MIN)
       .do({ type: 'goal', team: 'home' }, { type: 'newGame' })
     const v = g.view()
-    expect(v.teams.home.name).toBe('Aquile')
+    expect(v.teams.home.name).toBe('Castori')
     expect(v.teams.home.score).toBe(0)
     expect(v.clockText).toBe('20:00')
     expect(v.phase).toBe('ready')
@@ -313,6 +313,33 @@ describe('mostra/nascondi loghi', () => {
       .do({ type: 'setShowLogos', show: false }, { type: 'newGame' })
     expect(g.state.showLogos).toBe(true)
     expect(g.view().teams.home.logo).toBe(logo)
+  })
+})
+
+describe('presentazione prima della partita', () => {
+  it('è attiva finché il tempo non parte', () => {
+    const g = game()
+    expect(g.view().pregame).toBe(true)
+    g.do({ type: 'setTeam', team: 'home', setup: { name: 'Castori' } })
+    expect(g.view().pregame).toBe(true)
+    g.do({ type: 'startClock' })
+    expect(g.view().pregame).toBe(false)
+  })
+
+  it('non torna se si ferma il tempo o in un periodo successivo', () => {
+    const g = game()
+      .do({ type: 'startClock' })
+      .wait(5 * SEC)
+      .do({ type: 'stopClock' })
+    expect(g.view().pregame).toBe(false)
+    g.do({ type: 'endPeriod' }, { type: 'endIntermission' })
+    expect(g.view().phase).toBe('ready')
+    expect(g.view().pregame).toBe(false)
+  })
+
+  it('torna con una nuova partita', () => {
+    const g = game().do({ type: 'startClock' }, { type: 'newGame' })
+    expect(g.view().pregame).toBe(true)
   })
 })
 

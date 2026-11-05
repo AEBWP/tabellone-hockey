@@ -34,3 +34,14 @@ describe('periodo concluso', () => {
     )
   })
 })
+
+describe('adattamento del nome alla larghezza', () => {
+  it('lascia la dimensione piena ai nomi corti e riduce quelli lunghi', async () => {
+    const { fitFontSize } = await import('./labels')
+    expect(fitFontSize('LUPI', 96, 300)).toBe(96)
+    expect(fitFontSize('CASTORI', 96, 300)).toBeLessThan(96)
+    expect(fitFontSize('CASTORI', 96, 300) * 7 * 0.52).toBeLessThanOrEqual(300)
+    // mai sotto poco più di metà, anche con 10 lettere
+    expect(fitFontSize('ABCDEFGHIJ', 96, 100)).toBe(53)
+  })
+})

@@ -338,7 +338,7 @@
     overflow: hidden;
     border: 2px solid var(--team);
     border-radius: 4px;
-    font-size: 46px;
+    font-size: 40px;
     font-weight: 800;
     line-height: 1;
     white-space: nowrap;
@@ -347,8 +347,9 @@
 
   .powerplay > span {
     display: flex;
+    flex: none;
     align-items: center;
-    padding: 12px 22px 10px;
+    padding: 12px 18px 10px;
   }
 
   .pp-label {
@@ -357,7 +358,12 @@
     background: #0a101a;
   }
 
+  /* La sigla si accorcia per prima se il riquadro è stretto. */
   .pp-team {
+    flex: 0 1 auto !important;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     letter-spacing: 0.06em;
     color: var(--on-team);
     background: var(--team);

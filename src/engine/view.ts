@@ -7,6 +7,11 @@ import { TEAM_IDS, type GameState, type Phase, type PenaltyKind, type TeamId } f
 /** Tutto ciò che serve per disegnare tabellone e console all'istante `now`. */
 export interface GameView {
   phase: Phase
+  /**
+   * Partita non ancora iniziata (tempo mai avviato, nessun evento): il
+   * tabellone mostra la presentazione “squadra A VS squadra B”.
+   */
+  pregame: boolean
   period: number
   /** `regular` = tempo regolamentare, `overtime` = supplementare. */
   periodKind: 'regular' | 'overtime'
@@ -114,6 +119,7 @@ export function deriveView(state: GameState, now: number): GameView {
 
   return {
     phase: s.phase,
+    pregame: s.phase === 'ready' && s.period === 1 && s.clock.baseMs === 0 && s.events.length === 0,
     period: s.period,
     periodKind: overtime ? 'overtime' : 'regular',
     overtimeNumber: overtime ? s.period - s.rules.periods : 0,

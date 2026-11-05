@@ -29,7 +29,7 @@ function memoryStorage(limit = Infinity): Storage {
 
 const sample: LibraryData = {
   teams: [
-    { id: 't1', name: 'Aquile', shortName: 'AQU', color: '#d62839', logo: null },
+    { id: 't1', name: 'Castori', shortName: 'CAS', color: '#d62839', logo: null },
     {
       id: 't2',
       name: 'Lupi',
@@ -87,6 +87,6 @@ describe('backup su file', () => {
       { id: 't2', name: 'Lupi del Lago', shortName: 'LUP', color: '#1f6feb', logo: null },
       { id: 't3', name: 'Orsi', shortName: 'ORS', color: '#333333', logo: null },
     ])
-    expect(merged.map((t) => t.name)).toEqual(['Aquile', 'Lupi del Lago', 'Orsi'])
+    expect(merged.map((t) => t.name)).toEqual(['Castori', 'Lupi del Lago', 'Orsi'])
   })
 })

@@ -6,6 +6,9 @@
 
   let { current, onchoose }: { current: BoardStyle; onchoose: (style: BoardStyle) => void } =
     $props()
+
+  /** Demo in riproduzione: una sola alla volta. */
+  let playing = $state<BoardStyle | null>(null)
 </script>
 
 <div class="style-tab">
@@ -13,9 +16,9 @@
     Scegli l’aspetto del tabellone sul maxischermo. Il cambio è immediato, anche a partita in corso,
     e resta per le partite successive.
     <HelpTip title="Stile del tabellone">
-      Le funzioni sono identiche in tutti gli stili: cambia solo la grafica. Le demo qui sotto
-      mostrano a ciclo una fase di gioco con penalità, un gol (alternando le due squadre) e
-      l’intervallo.
+      Le funzioni sono identiche in tutti gli stili: cambia solo la grafica. Premi ▶ per vedere la
+      demo: presentazione delle squadre, inizio partita, gioco, gol e intervallo. Parte una demo
+      alla volta.
     </HelpTip>
   </p>
 
@@ -26,7 +29,14 @@
           <h2>{STYLE_INFO[id].name}</h2>
           {#if id === current}<span class="in-use">✓ In uso</span>{/if}
         </header>
-        <StyleDemo style={id} />
+        <StyleDemo
+          style={id}
+          playing={playing === id}
+          onplay={() => (playing = id)}
+          onend={() => {
+            if (playing === id) playing = null
+          }}
+        />
         <p class="desc">{STYLE_INFO[id].description}</p>
         <button
           type="button"
@@ -58,7 +68,7 @@
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 360px));
     gap: 1rem;
   }
 

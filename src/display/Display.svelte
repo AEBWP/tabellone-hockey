@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
-  import { apply, deriveView, type GameState } from '../engine'
+  import { apply, BOARD_STYLES, deriveView, type GameState } from '../engine'
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import { createChannel } from '../shared/channel'
   import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
@@ -31,18 +31,24 @@
 
   if (demo) {
     game = DEMO_SCENES[0].build(now())
+    // Lo stile scelto con S resta anche cambiando scena.
+    let demoStyle: GameState['boardStyle'] = 'arena'
     const onKey = (e: KeyboardEvent) => {
       const scene = DEMO_SCENES.find((s) => s.key === e.key)
       if (scene) {
-        game = scene.build(now())
+        game = apply(scene.build(now()), { type: 'setBoardStyle', style: demoStyle }, now())
         // Cambiare scena non è un gol: si riparte senza animazione.
         sceneVersion++
       }
       const team = DEMO_GOAL_KEYS[e.key.toLowerCase()]
       if (team && game) game = apply(game, { type: 'goal', team }, now())
-      // S: cambia stile del tabellone.
+      // P: avvia il tempo (dalla scena 0 si vede la transizione all'inizio partita).
+      if (e.key.toLowerCase() === 'p' && game) game = apply(game, { type: 'startClock' }, now())
+      // S: cambia stile del tabellone (a giro).
       if (e.key.toLowerCase() === 's' && game) {
-        const style = game.boardStyle === 'arena' ? 'classico' : 'arena'
+        const style =
+          BOARD_STYLES[(BOARD_STYLES.indexOf(game.boardStyle) + 1) % BOARD_STYLES.length]
+        demoStyle = style
         game = apply(game, { type: 'setBoardStyle', style }, now())
       }
       // L: mostra/nasconde i loghi, per vedere entrambe le versioni.
@@ -117,7 +123,8 @@
         <span><kbd>{scene.key}</kbd> {scene.label}</span>
       {/each}
       <span
-        ><kbd>G</kbd> gol casa · <kbd>H</kbd> gol ospiti · <kbd>L</kbd> loghi sì/no · <kbd>S</kbd> stile</span
+        ><kbd>G</kbd> gol casa · <kbd>H</kbd> gol ospiti · <kbd>L</kbd> loghi sì/no · <kbd>S</kbd>
+        stile · <kbd>P</kbd> avvia tempo</span
       >
     </aside>
   {/if}

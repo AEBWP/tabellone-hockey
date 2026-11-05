@@ -7,6 +7,11 @@ export const STYLE_INFO: Record<BoardStyle, { name: string; description: string 
     description:
       'Pannelli incorniciati e cifre da display, come nei palazzetti professionistici. Gol in stile TV con fascia diagonale e barra del punteggio.',
   },
+  broadcast: {
+    name: 'Broadcast',
+    description:
+      'Grafica piatta da diretta TV: colori pieni, punteggi su riquadri bianchi, tempo grande al centro. Gol con due ante che si chiudono sul tabellone.',
+  },
   classico: {
     name: 'Classico',
     description:

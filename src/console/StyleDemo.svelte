@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { untrack } from 'svelte'
   import { apply, deriveView, type BoardStyle, type GameState } from '../engine'
   import { DEMO_SCENES } from '../display/demo'
   import Stage from '../display/Stage.svelte'
@@ -7,29 +7,46 @@
   import { now } from '../shared/time'
 
   /**
-   * Piccola demo animata di uno stile del tabellone, in ciclo continuo:
-   * gioco con penalità → gol (alternando casa e ospiti) → intervallo.
-   * È generata dal tabellone stesso: sempre fedele alla grafica reale.
+   * Demo animata di uno stile del tabellone. Parte con Play, mostra una volta
+   * la sequenza (presentazione → inizio partita → gioco → gol → intervallo) e
+   * si ferma. È generata dal tabellone stesso: sempre fedele alla grafica reale.
    */
-  let { style }: { style: BoardStyle } = $props()
+  let {
+    style,
+    playing,
+    onplay,
+    onend,
+  }: {
+    style: BoardStyle
+    /** True mentre questa demo è in riproduzione (una sola alla volta). */
+    playing: boolean
+    onplay: () => void
+    onend: () => void
+  } = $props()
 
   const STEPS = [
-    { id: 'play', label: 'Partita', ms: 4_000 },
+    { id: 'intro', label: 'Presentazione', ms: 2_800 },
+    { id: 'start', label: 'Inizio', ms: 2_600 },
+    { id: 'play', label: 'Gioco', ms: 3_000 },
     { id: 'goal', label: 'Gol', ms: 6_500 },
-    { id: 'pause', label: 'Intervallo', ms: 3_500 },
+    { id: 'pause', label: 'Intervallo', ms: 3_000 },
   ] as const
-  const LOOP_MS = STEPS.reduce((sum, s) => sum + s.ms, 0)
+  const TOTAL_MS = STEPS.reduce((sum, s) => sum + s.ms, 0)
 
-  const playScene = DEMO_SCENES.find((s) => s.key === '1')!
-  const pauseScene = DEMO_SCENES.find((s) => s.key === '5')!
+  const scene = (key: string) => DEMO_SCENES.find((s) => s.key === key)!
 
-  let game = $state.raw<GameState>(playScene.build(now()))
-  let t = $state(now())
-  let step = $state(0)
-  let loop = 0
-  const start = now()
+  /** Fermo immagine mostrato quando la demo non è in riproduzione. */
+  const posterTime = now()
+  const posterGame = scene('1').build(posterTime)
+
+  let game = $state.raw<GameState>(posterGame)
+  let t = $state(posterTime)
+  let step = $state(-1)
+  let frame = 0
+  let startedAt = 0
 
   const view = $derived(deriveView(game, t))
+  const progress = $derived(step < 0 ? 0 : Math.min(1, (t - startedAt) / TOTAL_MS))
 
   function stepAt(elapsed: number): number {
     let acc = 0
@@ -37,39 +54,84 @@
       acc += STEPS[i].ms
       if (elapsed < acc) return i
     }
-    return 0
+    return STEPS.length
   }
 
-  let frame = requestAnimationFrame(function tick() {
-    t = now()
-    const elapsed = t - start
-    const currentLoop = Math.floor(elapsed / LOOP_MS)
-    const next = stepAt(elapsed % LOOP_MS)
-    if (next !== step || currentLoop !== loop) {
-      loop = currentLoop
-      step = next
-      const id = STEPS[next].id
-      if (id === 'play') game = playScene.build(t)
-      if (id === 'goal') {
-        // Un giro gol della squadra di casa, quello dopo degli ospiti.
-        game = apply(game, { type: 'goal', team: loop % 2 === 0 ? 'home' : 'away' }, t)
-      }
-      if (id === 'pause') game = pauseScene.build(t)
+  function enter(i: number, at: number) {
+    switch (STEPS[i].id) {
+      case 'intro':
+        game = scene('0').build(at)
+        break
+      case 'start':
+        game = apply(game, { type: 'startClock' }, at)
+        break
+      case 'play':
+        game = scene('1').build(at)
+        break
+      case 'goal':
+        game = apply(game, { type: 'goal', team: 'home' }, at)
+        break
+      case 'pause':
+        game = scene('5').build(at)
+        break
     }
-    frame = requestAnimationFrame(tick)
-  })
+  }
 
-  onDestroy(() => cancelAnimationFrame(frame))
+  function stop() {
+    cancelAnimationFrame(frame)
+    step = -1
+    game = posterGame
+    t = posterTime
+  }
+
+  function start() {
+    cancelAnimationFrame(frame)
+    startedAt = now()
+    step = -1
+    const tick = () => {
+      t = now()
+      const next = stepAt(t - startedAt)
+      if (next >= STEPS.length) {
+        stop()
+        onend()
+        return
+      }
+      if (next !== step) {
+        step = next
+        enter(next, t)
+      }
+      frame = requestAnimationFrame(tick)
+    }
+    tick()
+  }
+
+  // Avvio e arresto comandati dalla scheda (una demo alla volta).
+  // untrack: l'effetto deve dipendere solo da `playing`, non dallo stato della demo.
+  $effect(() => {
+    const shouldPlay = playing
+    untrack(() => (shouldPlay ? start() : stop()))
+    return () => cancelAnimationFrame(frame)
+  })
 </script>
 
 <div class="demo">
   <div class="screen">
     <Stage>
-      <Scoreboard {view} {style} />
+      <Scoreboard {view} {style} animations={playing} />
     </Stage>
-    <span class="badge">DEMO</span>
+
+    {#if playing}
+      <button type="button" class="stop" onclick={onend} aria-label="Ferma la demo">■</button>
+      <div class="progress" style:width="{progress * 100}%"></div>
+    {:else}
+      <button type="button" class="play" onclick={onplay} aria-label="Guarda la demo">
+        <span class="play-icon">▶</span>
+        <span>Guarda la demo</span>
+      </button>
+    {/if}
   </div>
-  <div class="steps">
+
+  <div class="steps" class:idle={!playing}>
     {#each STEPS as s, i (s.id)}
       <span class="step" class:active={i === step}>{s.label}</span>
     {/each}
@@ -80,7 +142,7 @@
   .demo {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .screen {
@@ -91,35 +153,81 @@
     background: #000;
   }
 
-  .badge {
+  .play {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    padding: 0.1rem 0.45rem;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 0;
+    background: rgba(2, 6, 12, 0.55);
     color: #fff;
-    background: rgba(0, 0, 0, 0.6);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 150ms;
+  }
+
+  .play:hover {
+    background: rgba(2, 6, 12, 0.35);
+  }
+
+  .play-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    padding-left: 4px;
+    border-radius: 50%;
+    background: var(--ice-600);
+    font-size: 1.3rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .stop {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 4px;
+    background: var(--ice-300);
   }
 
   .steps {
     display: flex;
-    gap: 0.35rem;
+    gap: 0.25rem;
+  }
+
+  .steps.idle {
+    opacity: 0.5;
   }
 
   .step {
     flex: 1;
-    padding: 0.2rem 0;
+    padding: 0.15rem 0;
     border-radius: 999px;
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     text-align: center;
     color: var(--ice-300);
     background: var(--ice-950);
-    transition:
-      background 200ms,
-      color 200ms;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .step.active {

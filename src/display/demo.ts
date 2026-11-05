@@ -21,10 +21,10 @@ function demoLogo(letter: string, fill: string, accent: string): string {
 
 export const DEMO_TEAMS = {
   home: {
-    name: 'Aquile Valle',
-    shortName: 'AQUILE',
+    name: 'Castori Valle',
+    shortName: 'CASTORI',
     color: '#d62839',
-    logo: demoLogo('A', '#d62839', '#ffffff'),
+    logo: demoLogo('C', '#d62839', '#ffffff'),
   },
   away: {
     name: 'Lupi del Lago',
@@ -58,6 +58,13 @@ export interface DemoScene {
 }
 
 export const DEMO_SCENES: DemoScene[] = [
+  {
+    key: '0',
+    label: 'Prima della partita (P per iniziare)',
+    build(now) {
+      return run([], now)
+    },
+  },
   {
     key: '1',
     label: 'Gioco con penalità',
