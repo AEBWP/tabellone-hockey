@@ -68,6 +68,7 @@ nella console.
 ## Prima della partita
 
 - Scheda **Squadre**: scegli le squadre dall'archivio (o creale con nome, sigla, colore e logo).
+- Scheda **Stile**: scegli l'aspetto del tabellone (**Arena** o **Classico**), guardando le demo animate.
 - Scheda **Regolamento** o **Nuova partita…**: scegli il regolamento giusto (Senior, Giovanili…).
 - Scheda **Audio**: premi **▶ Prova** per controllare che le sirene escano dalle casse giuste.
 - Premi `F1` per la guida rapida con tutte le scorciatoie.

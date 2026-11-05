@@ -1,6 +1,10 @@
 import type { Rules } from './rules'
 
 export type TeamId = 'home' | 'away'
+
+/** Stile grafico del tabellone spettatori. */
+export type BoardStyle = 'arena' | 'classico'
+export const BOARD_STYLES: readonly BoardStyle[] = ['arena', 'classico']
 export const TEAM_IDS: readonly TeamId[] = ['home', 'away']
 
 export function opponent(team: TeamId): TeamId {
@@ -122,6 +126,8 @@ export interface GameState {
    * resta senza. Torna true a ogni nuova partita.
    */
   showLogos: boolean
+  /** Stile del tabellone: è un'impostazione, resta uguale nelle nuove partite. */
+  boardStyle: BoardStyle
   nextId: number
 }
 

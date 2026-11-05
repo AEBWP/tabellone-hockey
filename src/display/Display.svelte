@@ -40,6 +40,11 @@
       }
       const team = DEMO_GOAL_KEYS[e.key.toLowerCase()]
       if (team && game) game = apply(game, { type: 'goal', team }, now())
+      // S: cambia stile del tabellone.
+      if (e.key.toLowerCase() === 's' && game) {
+        const style = game.boardStyle === 'arena' ? 'classico' : 'arena'
+        game = apply(game, { type: 'setBoardStyle', style }, now())
+      }
       // L: mostra/nasconde i loghi, per vedere entrambe le versioni.
       if (e.key.toLowerCase() === 'l' && game) {
         const hide = game.teams.home.logo !== null
@@ -91,7 +96,7 @@
   <Stage>
     {#if view}
       {#key sceneVersion}
-        <Scoreboard {view} />
+        <Scoreboard {view} style={game?.boardStyle} />
       {/key}
     {:else}
       <div class="waiting">
@@ -111,7 +116,9 @@
       {#each DEMO_SCENES as scene (scene.key)}
         <span><kbd>{scene.key}</kbd> {scene.label}</span>
       {/each}
-      <span><kbd>G</kbd> gol casa · <kbd>H</kbd> gol ospiti · <kbd>L</kbd> loghi sì/no</span>
+      <span
+        ><kbd>G</kbd> gol casa · <kbd>H</kbd> gol ospiti · <kbd>L</kbd> loghi sì/no · <kbd>S</kbd> stile</span
+      >
     </aside>
   {/if}
 </div>

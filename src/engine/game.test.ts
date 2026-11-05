@@ -316,6 +316,25 @@ describe('mostra/nascondi loghi', () => {
   })
 })
 
+describe('stile del tabellone', () => {
+  it('di default è Arena e si può cambiare', () => {
+    const g = game()
+    expect(g.state.boardStyle).toBe('arena')
+    g.do({ type: 'setBoardStyle', style: 'classico' })
+    expect(g.state.boardStyle).toBe('classico')
+  })
+
+  it('resta uguale con una nuova partita', () => {
+    const g = game().do({ type: 'setBoardStyle', style: 'classico' }, { type: 'newGame' })
+    expect(g.state.boardStyle).toBe('classico')
+  })
+
+  it('ignora stili sconosciuti', () => {
+    const g = game().do({ type: 'setBoardStyle', style: 'neon' as never })
+    expect(g.state.boardStyle).toBe('arena')
+  })
+})
+
 describe('immutabilità', () => {
   it('apply e advance non modificano lo stato ricevuto', () => {
     const start = createGame()

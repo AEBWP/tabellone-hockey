@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { GameView, TeamId } from '../engine'
-  import { textColorOn } from '../shared/color'
+  import type { GameView, TeamId } from '../../engine'
+  import { textColorOn } from '../../shared/color'
 
   let { view }: { view: GameView } = $props()
 

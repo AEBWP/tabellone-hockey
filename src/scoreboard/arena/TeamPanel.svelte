@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { TeamView } from '../engine'
-  import { textColorOn } from '../shared/color'
+  import type { TeamView } from '../../engine'
+  import { textColorOn } from '../../shared/color'
 
   let {
     team,

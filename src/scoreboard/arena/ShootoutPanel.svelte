@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TeamView } from '../engine'
+  import type { TeamView } from '../../engine'
 
   let {
     team,

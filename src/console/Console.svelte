@@ -33,6 +33,7 @@
   import BackupTab from './BackupTab.svelte'
   import { snapshot, soundEvents } from './sound-events'
   import RulesTab from './RulesTab.svelte'
+  import StyleTab from './StyleTab.svelte'
   import TeamsTab from './TeamsTab.svelte'
 
   // ── Stato ─────────────────────────────────────────────────────────────
@@ -49,10 +50,11 @@
     canUndo(history, advance(game, t)) ? (history.at(-1)?.label ?? null) : null,
   )
 
-  type Tab = 'game' | 'teams' | 'rules' | 'audio' | 'backup'
+  type Tab = 'game' | 'teams' | 'style' | 'rules' | 'audio' | 'backup'
   const TABS: { id: Tab; label: string }[] = [
     { id: 'game', label: 'Partita' },
     { id: 'teams', label: 'Squadre' },
+    { id: 'style', label: 'Stile' },
     { id: 'rules', label: 'Regolamento' },
     { id: 'audio', label: 'Audio' },
     { id: 'backup', label: 'Backup' },
@@ -304,6 +306,16 @@
         showLogos={game.showLogos}
         onchange={(team, setup) => run({ type: 'setTeam', team, setup })}
         onShowLogos={(show) => run({ type: 'setShowLogos', show })}
+      />
+    </main>
+  {:else if tab === 'style'}
+    <main class="page">
+      <StyleTab
+        current={game.boardStyle}
+        onchoose={(style) => {
+          run({ type: 'setBoardStyle', style })
+          showToast('Stile del tabellone cambiato')
+        }}
       />
     </main>
   {:else if tab === 'rules'}

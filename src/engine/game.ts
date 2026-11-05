@@ -12,7 +12,9 @@ import {
 import { DEFAULT_RULES, periodLengthMs, type Rules } from './rules'
 import { shootoutWinner } from './shootout'
 import {
+  BOARD_STYLES,
   opponent,
+  type BoardStyle,
   type GameState,
   type PenaltyKind,
   type TeamId,
@@ -48,6 +50,8 @@ export type Command =
   | { type: 'setTeam'; team: TeamId; setup: Partial<TeamSetup> }
   /** Mostra o nasconde i loghi di tutte e due le squadre sul tabellone. */
   | { type: 'setShowLogos'; show: boolean }
+  /** Cambia lo stile grafico del tabellone. */
+  | { type: 'setBoardStyle'; style: BoardStyle }
   /**
    * Cambia le regole della partita in corso. Valgono dal prossimo periodo;
    * se il periodo attuale non è ancora iniziato, anche la sua durata si adegua.
@@ -67,6 +71,7 @@ function team(setup: TeamSetup): TeamState {
 export function createGame(
   rules: Rules = DEFAULT_RULES,
   teams: Partial<Record<TeamId, TeamSetup>> = {},
+  boardStyle: BoardStyle = 'arena',
 ): GameState {
   const periodMs = periodLengthMs(rules, 1)
   return {
@@ -84,6 +89,7 @@ export function createGame(
     events: [],
     shootout: null,
     showLogos: true,
+    boardStyle,
     nextId: 1,
   }
 }
@@ -375,6 +381,10 @@ export function apply(state: GameState, command: Command, now: number): GameStat
       s.phase = 'final'
       break
 
+    case 'setBoardStyle':
+      if (BOARD_STYLES.includes(command.style)) s.boardStyle = command.style
+      break
+
     case 'setShowLogos':
       s.showLogos = command.show
       break
@@ -401,7 +411,7 @@ export function apply(state: GameState, command: Command, now: number): GameStat
         home: pickSetup(s.teams.home),
         away: pickSetup(s.teams.away),
       }
-      return createGame(command.rules ?? s.rules, teams)
+      return createGame(command.rules ?? s.rules, teams, s.boardStyle)
     }
   }
 

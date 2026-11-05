@@ -43,7 +43,7 @@ secondo schermo e fai **doppio clic** per lo schermo intero.
 Per vedere la grafica del tabellone senza la console apri
 `http://localhost:5173/display.html?demo`: i tasti da `1` a `8` mostrano le
 varie situazioni (penalità, ultimo minuto, timeout, intervallo, supplementare,
-rigori, finale), `G` e `H` simulano un gol, `L` mostra o nasconde i loghi.
+rigori, finale), `G` e `H` simulano un gol, `L` mostra o nasconde i loghi, `S` cambia stile.
 
 ## Programma desktop
 
@@ -72,7 +72,7 @@ src/
   shared/           comunicazione tra console e tabellone
   console/          interfaccia della console operatore
   display/          finestra del tabellone spettatori (e demo)
-  scoreboard/       grafica del tabellone spettatori
+  scoreboard/       grafica del tabellone spettatori: arena/ e classico/ (stili)
   styles/           stili comuni
   setup/            scelta degli schermi all'avvio (programma desktop)
 electron/           processo principale del programma desktop
