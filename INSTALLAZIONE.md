@@ -129,3 +129,32 @@ Per pubblicarlo: nuova release su GitHub con il file `Tabellone-Hockey-<versione
 **senza** la spunta “pre-release”. Così il link “ultima versione” in cima a questa guida e al README
 porta automaticamente alla versione nuova. Per cambiare l'icona modifica
 `build/icon.svg` e lancia `npm run icon`.
+
+### Copia delle release su Dropbox
+
+Ogni release **pubblicata** viene copiata anche nella cartella Dropbox
+`/Applicazioni/Tabellone Hockey`, che tiene solo le **5 versioni più recenti** (le più vecchie
+finiscono nei “File eliminati” di Dropbox, da cui si possono recuperare). Le build di prova non
+vengono mai caricate: lo script accetta solo installer di release già pubblicate su GitHub (non
+bozze né pre-release) e identici al file allegato alla release.
+
+**Una volta sola, su ogni PC da cui si pubblica:**
+
+1. Vai su <https://www.dropbox.com/developers/apps> → **Create app** → _Scoped access_ →
+   _Full Dropbox_ → scegli un nome (es. “Tabellone Hockey Release AP”).
+2. Nella scheda **Permissions** dell'app spunta `files.metadata.read` e `files.content.write`, poi **Submit**.
+3. Nella scheda **Settings** copia la **App key** (non serve l'“App secret”).
+4. Lancia `npm run dropbox:collega`, incolla la App key, apri l'indirizzo mostrato, premi
+   **Consenti** e incolla il codice che Dropbox ti dà.
+
+Le credenziali restano in `%APPDATA%\tabellone-hockey-release\dropbox.json`, fuori dal progetto:
+non condividere quel file. Per revocare l'accesso: Dropbox → Impostazioni → **App collegate**.
+
+**A ogni release**, dopo averla pubblicata su GitHub:
+
+```bash
+npm run dropbox:carica
+```
+
+Usa la versione di `package.json`. Si può indicarne una (`npm run dropbox:carica -- 0.9.6`) o fare
+una prova senza modificare nulla (`npm run dropbox:carica -- --prova`).
