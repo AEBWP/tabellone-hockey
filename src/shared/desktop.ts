@@ -28,6 +28,10 @@ export interface DesktopApi {
   openDisplay(): Promise<void>
   /** Chiude il tabellone (sul maxischermo si può chiudere solo da qui). */
   closeDisplay(): Promise<void>
+  /** Chiamata quando l'operatore prova a chiudere il programma. */
+  onCloseRequested(callback: () => void): void
+  /** Risposta alla richiesta di chiusura: true = chiudi. */
+  answerClose(confirmed: boolean): void
   saveGame(json: string): void
   loadGame(): string | null
 }

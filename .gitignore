@@ -26,3 +26,4 @@ dist-ssr
 # Build Electron (fasi successive)
 release
 release-*
+build/installerSidebar.bmp

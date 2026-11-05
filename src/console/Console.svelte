@@ -25,6 +25,7 @@
   import HelpOverlay from './HelpOverlay.svelte'
   import HelpTip from './HelpTip.svelte'
   import Modal from './Modal.svelte'
+  import QuitDialog from './QuitDialog.svelte'
   import NewGameDialog from './NewGameDialog.svelte'
   import { actionForKey, isTypingTarget } from './shortcuts'
   import TeamControls from './TeamControls.svelte'
@@ -162,7 +163,17 @@
   // Nel programma installato l'audio è permesso subito, senza aspettare un clic.
   if (desktop) audio.unlock()
 
-  const anyDialogOpen = $derived(helpOpen || clockEditOpen || newGameOpen || !!confirmRequest)
+  // Chiusura del programma: conferma con la finestra della console.
+  let quitOpen = $state(false)
+  desktop?.onCloseRequested(() => (quitOpen = true))
+  function answerQuit(confirmed: boolean) {
+    quitOpen = false
+    desktop?.answerClose(confirmed)
+  }
+
+  const anyDialogOpen = $derived(
+    helpOpen || clockEditOpen || newGameOpen || !!confirmRequest || quitOpen,
+  )
 
   function onKeydown(e: KeyboardEvent) {
     const action = actionForKey(e)
@@ -340,6 +351,8 @@
 {#if toast}
   <div class="toast" role="status">{toast}</div>
 {/if}
+
+<QuitDialog open={quitOpen} {view} onanswer={answerQuit} />
 
 <HelpOverlay open={helpOpen} onclose={() => (helpOpen = false)} />
 

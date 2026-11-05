@@ -6,11 +6,11 @@ sul maxischermo. Funziona completamente **offline**.
 
 ## ⬇️ Scarica
 
-### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest/download/Tabellone-Hockey-installazione.exe)
+### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest)
 
-Il link scarica sempre l'**ultima versione** dell'installer (`Tabellone-Hockey-installazione.exe`).
+Il link apre la pagina dell'**ultima versione**: in cima c'è il pulsante per scaricare l'installer
+(`Tabellone-Hockey-<versione>-installazione.exe`, con il numero di versione nel nome).
 Per aggiornare basta eseguirlo di nuovo: i dati restano.
-Novità di ogni versione: [pagina dell'ultima release](https://github.com/AEBWP/tabellone-hockey/releases/latest).
 
 **Come installarlo e usarlo al palaghiaccio:** [INSTALLAZIONE.md](INSTALLAZIONE.md).
 

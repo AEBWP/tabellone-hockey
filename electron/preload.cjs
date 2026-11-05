@@ -17,6 +17,15 @@ contextBridge.exposeInMainWorld('tabelloneApp', {
   openDisplay: () => ipcRenderer.invoke('display:open'),
   closeDisplay: () => ipcRenderer.invoke('display:close'),
 
+  // Chiusura del programma: la console mostra la sua finestra di conferma
+  onCloseRequested: (callback) => {
+    ipcRenderer.on('app:close-requested', () => {
+      ipcRenderer.send('app:close-ack')
+      callback()
+    })
+  },
+  answerClose: (confirmed) => ipcRenderer.send('app:close-answer', !!confirmed),
+
   // Salvataggio della partita su file (oltre che nel browser interno)
   saveGame: (json) => ipcRenderer.send('game:save', json),
   loadGame: () => ipcRenderer.sendSync('game:load'),

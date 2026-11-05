@@ -209,18 +209,10 @@ function placeConsole() {
     })
     consoleWin.on('close', (event) => {
       if (quitting || SMOKE_TEST) return
-      // Chiudere la console chiude tutto: chiediamo conferma.
-      const answer = dialog.showMessageBoxSync(consoleWin, {
-        type: 'question',
-        buttons: ['Chiudi il programma', 'Annulla'],
-        defaultId: 1,
-        cancelId: 1,
-        title: 'Chiudere il Tabellone Hockey?',
-        message: 'Chiudere il Tabellone Hockey?',
-        detail: 'Anche il tabellone sul maxischermo verrà chiuso. La partita resta salvata.',
-      })
-      if (answer !== 0) event.preventDefault()
-      else quitting = true
+      // Chiudere la console chiude tutto: la conferma la chiede la console
+      // con una finestra sua (vedi requestClose).
+      event.preventDefault()
+      requestClose()
     })
     consoleWin.on('closed', () => {
       consoleWin = null
@@ -266,6 +258,46 @@ function goFullScreen(win, d) {
   win.setFullScreen(true)
   // Sopra a tutto su quello schermo, anche alla barra delle applicazioni di Windows.
   win.setAlwaysOnTop(true, 'screen-saver')
+}
+
+// ── Conferma di chiusura ──────────────────────────────────────────────────
+// La console mostra una sua finestra di conferma. Se non risponde entro poco
+// (es. pagina bloccata), si usa l'avviso di Windows: il programma deve
+// restare sempre chiudibile.
+
+let closePending = false
+/** @type {ReturnType<typeof setTimeout> | undefined} */ let closeAckTimer
+
+function requestClose() {
+  if (!consoleWin || closePending) return
+  closePending = true
+  if (consoleWin.isMinimized()) consoleWin.restore()
+  consoleWin.focus()
+  consoleWin.webContents.send('app:close-requested')
+  closeAckTimer = setTimeout(() => {
+    closePending = false
+    nativeCloseConfirm()
+  }, 1500)
+}
+
+// let: il collaudo automatico la sostituisce per verificare che non serva.
+let nativeCloseConfirm = function () {
+  if (!consoleWin) return
+  const answer = dialog.showMessageBoxSync(consoleWin, {
+    type: 'question',
+    buttons: ['Chiudi il programma', 'Annulla'],
+    defaultId: 1,
+    cancelId: 1,
+    title: 'Chiudere il Tabellone Hockey?',
+    message: 'Chiudere il Tabellone Hockey?',
+    detail: 'Anche il tabellone sul maxischermo verrà chiuso. La partita resta salvata.',
+  })
+  if (answer === 0) quitApp()
+}
+
+function quitApp() {
+  quitting = true
+  consoleWin?.close()
 }
 
 function placeDisplay() {
@@ -400,6 +432,15 @@ function registerIpc() {
 
   ipcMain.handle('display:open', () => openDisplay())
   ipcMain.handle('display:close', () => closeDisplay())
+
+  // La console ha ricevuto la richiesta di chiusura e mostra la sua finestra.
+  ipcMain.on('app:close-ack', () => clearTimeout(closeAckTimer))
+  // Risposta dell'operatore: true = chiudi il programma.
+  ipcMain.on('app:close-answer', (_event, confirmed) => {
+    clearTimeout(closeAckTimer)
+    closePending = false
+    if (confirmed) quitApp()
+  })
 
   ipcMain.on('game:save', (_event, json) => {
     try {
@@ -555,6 +596,27 @@ async function runSmokeTest(outDir) {
     report.consoleButtonAfterClose = await consoleWin.webContents.executeJavaScript(
       `[...document.querySelectorAll('.topbar button')].map((b) => b.textContent.trim()).filter((t) => t.includes('tabellone'))`,
     )
+    // Chiusura: la console deve mostrare la sua finestra di conferma.
+    let nativeUsed = false
+    const originalNative = nativeCloseConfirm
+    nativeCloseConfirm = () => (nativeUsed = true)
+    requestClose()
+    await wait(900)
+    await snap('chiusura', consoleWin)
+    report.quitDialog = await consoleWin.webContents.executeJavaScript(
+      `document.querySelector('dialog[open] h2')?.textContent ?? null`,
+    )
+    await consoleWin.webContents.executeJavaScript(
+      `[...document.querySelectorAll('dialog[open] button')].find((b) => b.textContent.includes('Annulla'))?.click()`,
+    )
+    await wait(2000)
+    report.quitCancelled = {
+      consoleOpen: !!consoleWin && !consoleWin.isDestroyed(),
+      pending: closePending,
+      nativeUsed,
+    }
+    nativeCloseConfirm = originalNative
+
     openDisplay()
     await wait(2500)
     report.displayWindow.reopened =

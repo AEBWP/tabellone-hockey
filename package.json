@@ -1,7 +1,7 @@
 {
   "name": "tabellone-hockey",
   "private": true,
-  "version": "0.9.4",
+  "version": "0.9.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,7 @@
     "app": "vite build && electron .",
     "app:smoke": "vite build && node scripts/smoke.mjs",
     "icon": "electron scripts/make-icon.cjs",
-    "dist": "vite build && electron-builder --win"
+    "dist": "vite build && electron scripts/make-icon.cjs && electron-builder --win"
   },
   "devDependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",
@@ -77,7 +77,9 @@
         "it_IT"
       ],
       "deleteAppDataOnUninstall": false,
-      "artifactName": "Tabellone-Hockey-installazione.${ext}"
+      "artifactName": "Tabellone-Hockey-${version}-installazione.${ext}",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp"
     }
   }
 }

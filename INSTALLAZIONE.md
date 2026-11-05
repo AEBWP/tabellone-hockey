@@ -1,6 +1,6 @@
 # Tabellone Hockey – Installazione e uso al palaghiaccio
 
-### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest/download/Tabellone-Hockey-installazione.exe)
+### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest)
 
 ## Cosa serve
 
@@ -12,16 +12,17 @@
 
 ## Il file di installazione
 
-Il programma si installa con `Tabellone-Hockey-installazione.exe`. Non servono i
+Il programma si installa con `Tabellone-Hockey-<versione>-installazione.exe`. Non servono i
 permessi di amministratore e non serve internet.
 
-Il file si scarica dal link qui sopra, che porta sempre all'**ultima versione**. In alternativa:
+Il file si scarica dal link qui sopra, che porta sempre all'**ultima versione** (pulsante di download
+in cima alla pagina). In alternativa:
 pagina **Releases** del progetto su GitHub, sezione **Assets** in fondo. Si può anche creare con
 `npm run dist` (vedi più sotto).
 
 ## Installazione
 
-1. Copia `Tabellone-Hockey-installazione.exe` sul PC del palaghiaccio (chiavetta,
+1. Copia `Tabellone-Hockey-<versione>-installazione.exe` sul PC del palaghiaccio (chiavetta,
    rete…).
 2. Doppio clic sul file.
 3. **Avviso di Windows "Windows ha protetto il PC"**: clicca **Ulteriori informazioni** →
@@ -97,7 +98,7 @@ il programma i dati **non** vengono cancellati.
 
 Basta eseguire l'installer della versione nuova, anche con il programma aperto:
 
-1. doppio clic su `Tabellone-Hockey-installazione.exe`;
+1. doppio clic su `Tabellone-Hockey-<versione>-installazione.exe`;
 2. se il Tabellone è aperto, l'installer lo chiude (meglio farlo **fuori dalla partita**);
 3. la versione vecchia viene sostituita **nella stessa cartella**: resta un solo programma
    installato, con lo stesso collegamento sul desktop;
@@ -124,7 +125,7 @@ npm run dist
 
 Il file viene creato nella cartella `release/`.
 
-Per pubblicarlo: nuova release su GitHub con il file `Tabellone-Hockey-installazione.exe` (senza
-cambiarne il nome) e **senza** la spunta “pre-release”. Così il link “ultima versione” in cima a
-questa guida e al README scarica automaticamente la versione nuova. Per cambiare l'icona modifica
+Per pubblicarlo: nuova release su GitHub con il file `Tabellone-Hockey-<versione>-installazione.exe` e
+**senza** la spunta “pre-release”. Così il link “ultima versione” in cima a questa guida e al README
+porta automaticamente alla versione nuova. Per cambiare l'icona modifica
 `build/icon.svg` e lancia `npm run icon`.
