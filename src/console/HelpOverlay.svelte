@@ -53,9 +53,16 @@
       </p>
     </section>
   </div>
+  <p class="muted version">Tabellone Hockey versione {__APP_VERSION__}</p>
 </Modal>
 
 <style>
+  .version {
+    margin: 1.25rem 0 0;
+    font-size: 0.8rem;
+    text-align: right;
+  }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

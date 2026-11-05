@@ -76,7 +76,7 @@ sul PC del palaghiaccio, poi scheda **Backup** → **Scegli file di backup…**.
 
 ## Dove sono salvati i dati
 
-Nella cartella `%APPDATA%\tabellone-hockey` (incollala nella barra degli indirizzi di Esplora
+Nella cartella `%APPDATA%\Tabellone Hockey` (incollala nella barra degli indirizzi di Esplora
 file):
 
 - `partita.json` – la partita in corso (salvata a ogni azione);
@@ -85,10 +85,18 @@ file):
 Squadre, loghi, regolamenti e impostazioni audio sono salvati nella stessa cartella. Disinstallando
 il programma i dati **non** vengono cancellati.
 
-## Aggiornare
+## Aggiornare a una nuova versione
 
-Esegui il nuovo file di installazione: sostituisce la versione precedente mantenendo partita,
-squadre e impostazioni.
+Basta eseguire l'installer della versione nuova, anche con il programma aperto:
+
+1. doppio clic su `Tabellone-Hockey-<nuova versione>-installazione.exe`;
+2. se il Tabellone è aperto, l'installer lo chiude (meglio farlo **fuori dalla partita**);
+3. la versione vecchia viene sostituita **nella stessa cartella**: resta un solo programma
+   installato, con lo stesso collegamento sul desktop;
+4. **partita, squadre, loghi, regolamenti, impostazioni audio e schermi restano** com'erano.
+
+La versione in uso si vede accanto al titolo nella console (es. **v0.9.2**) e in fondo alla guida
+`F1`.
 
 ## Problemi frequenti
 

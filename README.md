@@ -47,7 +47,7 @@ cambiata in seguito dal pulsante **Schermi…** nella console.
 - all'avvio compare subito una finestra “Avvio in corso…”
 - le sirene suonano subito, senza dover prima cliccare
 - la partita è salvata anche su file (`partita.json` nella cartella dati
-  dell'app, `%APPDATA%\tabellone-hockey`)
+  dell'app, `%APPDATA%\Tabellone Hockey`)
 - niente standby dello schermo mentre il programma è aperto
 - un solo programma aperto alla volta
 

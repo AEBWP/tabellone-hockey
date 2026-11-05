@@ -215,7 +215,7 @@
 
 <div class="console">
   <header class="topbar">
-    <h1>Tabellone Hockey</h1>
+    <h1>Tabellone Hockey <span class="version">v{__APP_VERSION__}</span></h1>
 
     <nav class="tabs" aria-label="Sezioni">
       {#each TABS as t (t.id)}
@@ -386,6 +386,12 @@
     margin: 0 0.5rem 0 0;
     font-size: 1.1rem;
     font-weight: 700;
+  }
+
+  .version {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ice-300);
   }
 
   .tabs {

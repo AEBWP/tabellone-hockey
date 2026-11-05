@@ -52,7 +52,7 @@
 
 <main>
   <header>
-    <h1>Tabellone Hockey</h1>
+    <h1>Tabellone Hockey <small class="version">v{__APP_VERSION__}</small></h1>
     <p>Scegli dove mostrare la console dell’operatore e dove il tabellone per il pubblico.</p>
   </header>
 
@@ -151,6 +151,12 @@
     max-width: 900px;
     margin: 0 auto;
     padding: 1.25rem 2rem 1.5rem;
+  }
+
+  .version {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ice-300);
   }
 
   header h1 {
