@@ -5,8 +5,14 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-/** Cartella Dropbox delle release definitive. */
-export const DROPBOX_FOLDER = '/Applicazioni/Tabellone Hockey'
+/**
+ * L'app Dropbox ha accesso solo alla sua cartella ("cartella dell'applicazione"),
+ * che si chiama come l'app: per l'API è la radice ''. Dentro Dropbox la si
+ * vede come /Applicazioni/Tabellone Hockey.
+ */
+export const DROPBOX_FOLDER = ''
+/** Dove si trova la cartella vista dal sito o dall'app di Dropbox (solo per i messaggi). */
+export const SHOWN_FOLDER = '/Applicazioni/Tabellone Hockey'
 /** Quante release tenere su Dropbox. */
 export const KEEP = 5
 /** Nome dei file di installazione: Tabellone-Hockey-<versione>-installazione.exe */

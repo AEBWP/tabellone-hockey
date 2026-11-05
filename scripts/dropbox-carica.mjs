@@ -13,6 +13,7 @@ import path from 'node:path'
 import {
   CONFIG_FILE,
   DROPBOX_FOLDER,
+  SHOWN_FOLDER,
   KEEP,
   connect,
   dropboxContentHash,
@@ -80,7 +81,9 @@ if (asset.size !== size) {
 const data = readFileSync(filePath)
 const localHash = dropboxContentHash(data)
 const target = `${DROPBOX_FOLDER}/${fileName}`
-console.log(`Release v${version} · ${(size / 1024 / 1024).toFixed(1)} MB → Dropbox ${target}`)
+console.log(
+  `Release v${version} · ${(size / 1024 / 1024).toFixed(1)} MB → Dropbox ${SHOWN_FOLDER}/${fileName}`,
+)
 
 const dbx = await connect(cfg)
 
@@ -120,7 +123,7 @@ if (existing?.content_hash === localHash) {
   if (uploaded.content_hash !== localHash) {
     fail('Il file su Dropbox non corrisponde a quello locale: riprova.')
   }
-  console.log(`✔ Caricato e verificato: ${uploaded.path_display}`)
+  console.log(`✔ Caricato e verificato in ${SHOWN_FOLDER}/${uploaded.name}`)
 }
 
 // 3) Tieni solo le ultime KEEP release

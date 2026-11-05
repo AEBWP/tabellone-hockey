@@ -140,10 +140,13 @@ bozze né pre-release) e identici al file allegato alla release.
 
 **Una volta sola, su ogni PC da cui si pubblica:**
 
-1. Vai su <https://www.dropbox.com/developers/apps> → **Create app** → _Scoped access_ →
-   _Full Dropbox_ → scegli un nome (es. “Tabellone Hockey Release AP”).
-2. Nella scheda **Permissions** dell'app spunta `files.metadata.read` e `files.content.write`, poi **Submit**.
-3. Nella scheda **Settings** copia la **App key** (non serve l'“App secret”).
+1. Vai su <https://www.dropbox.com/developers/apps> → **Create app** (Crea app) → accesso con
+   ambito (_Scoped access_) → **cartella dell'applicazione** (_App folder_): così l'app vede solo
+   la sua cartella e nient'altro del Dropbox.
+2. In **Impostazioni** → **Nome cartella dell'applicazione** premi **Cambia** e scrivi
+   `Tabellone Hockey`: la cartella sarà `/Applicazioni/Tabellone Hockey`.
+3. In **Autorizzazioni** spunta `files.metadata.read` e `files.content.write`, poi **Invia**.
+   Copia la **Chiave applicazione** (App key) da Impostazioni: la chiave segreta non serve.
 4. Lancia `npm run dropbox:collega`, incolla la App key, apri l'indirizzo mostrato, premi
    **Consenti** e incolla il codice che Dropbox ti dà.
 
