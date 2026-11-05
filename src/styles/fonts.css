@@ -2,3 +2,6 @@
 @import '@fontsource/barlow-condensed/latin-500.css';
 @import '@fontsource/barlow-condensed/latin-700.css';
 @import '@fontsource/barlow-condensed/latin-800.css';
+/* Font a matrice di punti per lo stile Retrò. */
+@import '@fontsource/doto/latin-800.css';
+@import '@fontsource/doto/latin-900.css';

@@ -12,6 +12,16 @@ export const STYLE_INFO: Record<BoardStyle, { name: string; description: string 
     description:
       'Grafica piatta da diretta TV: colori pieni, punteggi su riquadri bianchi, tempo grande al centro. Gol con due ante che si chiudono sul tabellone.',
   },
+  ghiaccio: {
+    name: 'Ghiaccio',
+    description:
+      'Stile chiaro da torneo internazionale: schede bianche, testi blu notte e colori delle squadre come accento. Gol con un cerchio di colore che si allarga come un’onda sul ghiaccio.',
+  },
+  retro: {
+    name: 'Retrò',
+    description:
+      'Il vecchio tabellone a lampadine: cifre a 7 segmenti, scritte a puntini, loghi pixelati. Gol con insegna lampeggiante e scritta che scorre.',
+  },
   classico: {
     name: 'Classico',
     description:

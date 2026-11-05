@@ -3,8 +3,14 @@ import type { Rules } from './rules'
 export type TeamId = 'home' | 'away'
 
 /** Stile grafico del tabellone spettatori. */
-export type BoardStyle = 'arena' | 'broadcast' | 'classico'
-export const BOARD_STYLES: readonly BoardStyle[] = ['arena', 'broadcast', 'classico']
+export type BoardStyle = 'arena' | 'broadcast' | 'ghiaccio' | 'retro' | 'classico'
+export const BOARD_STYLES: readonly BoardStyle[] = [
+  'arena',
+  'broadcast',
+  'ghiaccio',
+  'retro',
+  'classico',
+]
 export const TEAM_IDS: readonly TeamId[] = ['home', 'away']
 
 export function opponent(team: TeamId): TeamId {

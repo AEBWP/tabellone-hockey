@@ -4,6 +4,8 @@
   import Arena from './arena/Scoreboard.svelte'
   import Broadcast from './broadcast/Scoreboard.svelte'
   import Classico from './classico/Scoreboard.svelte'
+  import Ghiaccio from './ghiaccio/Scoreboard.svelte'
+  import Retro from './retro/Scoreboard.svelte'
   import Matchup from './Matchup.svelte'
 
   /**
@@ -47,6 +49,10 @@
     <div class="layer" in:boardIn>
       {#if style === 'classico'}
         <Classico {view} {animations} />
+      {:else if style === 'ghiaccio'}
+        <Ghiaccio {view} {animations} />
+      {:else if style === 'retro'}
+        <Retro {view} {animations} />
       {:else if style === 'broadcast'}
         <Broadcast {view} {animations} />
       {:else}

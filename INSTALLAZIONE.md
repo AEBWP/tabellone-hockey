@@ -68,7 +68,8 @@ nella console.
 ## Prima della partita
 
 - Scheda **Squadre**: scegli le squadre dall'archivio (o creale con nome, sigla, colore e logo).
-- Scheda **Stile**: scegli l'aspetto del tabellone (**Arena**, **Broadcast** o **Classico**); premi ▶ su
+- Scheda **Stile**: scegli l'aspetto del tabellone (**Arena**, **Broadcast**, **Ghiaccio**, **Retrò** o
+  **Classico**); premi ▶ su
   ogni stile per vederne la demo.
 - Finché il tempo non parte, il maxischermo mostra la presentazione **“Squadra A VS Squadra B”**: alla
   prima pressione di **Avvia tempo** si passa al tabellone completo.

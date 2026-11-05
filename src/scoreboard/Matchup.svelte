@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { BoardStyle, GameView, TeamView } from '../engine'
+  import { fitFontSize } from '../shared/labels'
+  import PixelLogo from './retro/PixelLogo.svelte'
   import { periodLabel } from '../shared/labels'
 
   /**
@@ -22,11 +24,19 @@
       <div class="half-bg"></div>
       <div class="team">
         {#if team.logo}
-          <div class="logo"><img src={team.logo} alt="" /></div>
+          <div class="logo">
+            {#if variant === 'retro'}
+              <PixelLogo src={team.logo} size={300} pixels={24} />
+            {:else}
+              <img src={team.logo} alt="" />
+            {/if}
+          </div>
         {:else}
           <div class="monogram">{monogram(team)}</div>
         {/if}
-        <div class="short">{team.shortName}</div>
+        <div class="short" style:font-size="{fitFontSize(team.shortName, 140, 700)}px">
+          {team.shortName}
+        </div>
         <div class="name">{team.name}</div>
       </div>
     </div>
@@ -404,6 +414,139 @@
     border: 3px solid rgba(156, 195, 234, 0.45);
     border-radius: 999px;
     background: rgba(5, 13, 24, 0.7);
+  }
+
+  /* ══ Variante Ghiaccio: chiara, testi blu notte ══ */
+  .v-ghiaccio {
+    background: #e3edf7;
+    color: #0d2240;
+  }
+
+  .v-ghiaccio .half-bg {
+    background:
+      linear-gradient(0deg, var(--team) 0 18px, transparent 18px),
+      radial-gradient(ellipse 70% 70% at var(--cx) 45%, #ffffff 0%, transparent 70%),
+      color-mix(in srgb, var(--team) 22%, #f4f8fc);
+  }
+
+  .v-ghiaccio .logo,
+  .v-ghiaccio .monogram {
+    width: 330px;
+    height: 330px;
+    padding: 40px;
+    border: 12px solid var(--team);
+    border-radius: 50%;
+    background: #fff;
+    color: var(--team);
+    box-shadow: 0 20px 50px rgba(13, 34, 64, 0.2);
+  }
+
+  .v-ghiaccio .logo img {
+    filter: none;
+  }
+
+  .v-ghiaccio .short,
+  .v-ghiaccio .name {
+    text-shadow: none;
+  }
+
+  .v-ghiaccio .name {
+    color: #5d7290;
+    opacity: 1;
+  }
+
+  .v-ghiaccio .divider {
+    width: 14px;
+    background: #fff;
+    box-shadow: 0 0 30px rgba(13, 34, 64, 0.2);
+  }
+
+  .v-ghiaccio .vs {
+    border: 0;
+    background: #0d2240;
+    box-shadow: 0 20px 50px rgba(13, 34, 64, 0.35);
+  }
+
+  .v-ghiaccio .vs span {
+    font-style: normal;
+    color: #fff;
+  }
+
+  .v-ghiaccio .plate {
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    background: #0d2240;
+    box-shadow: 0 10px 24px rgba(13, 34, 64, 0.25);
+  }
+
+  .v-ghiaccio .plate.bottom {
+    color: #0d2240;
+    background: #fff;
+  }
+
+  /* ══ Variante Retrò: lampadine, scritte a puntini ══ */
+  .v-retro {
+    font-family: 'Doto', monospace;
+    font-weight: 900;
+    background:
+      radial-gradient(circle, rgba(255, 255, 255, 0.05) 2px, transparent 2.6px) 0 0 / 14px 14px,
+      #030303;
+  }
+
+  .v-retro .half-bg {
+    background:
+      radial-gradient(circle, rgba(255, 255, 255, 0.05) 2px, transparent 2.6px) 0 0 / 14px 14px,
+      color-mix(in srgb, var(--team) 16%, #030303);
+  }
+
+  .v-retro .short,
+  .v-retro .name {
+    color: color-mix(in srgb, var(--team) 70%, white);
+    text-shadow: 0 0 18px currentColor;
+  }
+
+  .v-retro .monogram {
+    border: 8px dotted currentColor;
+    background: none;
+    box-shadow: none;
+    color: color-mix(in srgb, var(--team) 70%, white);
+  }
+
+  .v-retro .logo img {
+    filter: none;
+  }
+
+  .v-retro .divider {
+    width: 8px;
+    background: repeating-linear-gradient(180deg, #ffb000 0 14px, transparent 14px 28px);
+    box-shadow: 0 0 18px rgba(255, 176, 0, 0.6);
+  }
+
+  .v-retro .vs {
+    border: 6px dotted #ffb000;
+    background: #030303;
+    box-shadow: 0 0 40px rgba(255, 176, 0, 0.35);
+  }
+
+  .v-retro .vs span {
+    font-style: normal;
+    color: #ffb000;
+    text-shadow: 0 0 20px rgba(255, 176, 0, 0.8);
+    animation: retro-blink 1s steps(2, start) infinite;
+  }
+
+  @keyframes retro-blink {
+    to {
+      visibility: hidden;
+    }
+  }
+
+  .v-retro .plate {
+    border: 4px dotted #ffb000;
+    background: #030303;
+    color: #ffb000;
+    text-shadow: 0 0 14px rgba(255, 176, 0, 0.7);
   }
 
   @media (prefers-reduced-motion: reduce) {
