@@ -102,6 +102,49 @@ export function isClockRunning(state: GameState): boolean {
   return state.clock.runningSince !== null
 }
 
+/**
+ * Partita non ancora iniziata: il tempo non è mai partito e non è successo
+ * niente. Il tabellone mostra la presentazione “A VS B”.
+ */
+export function isPregame(s: GameState): boolean {
+  return (
+    s.phase === 'ready' &&
+    s.period === 1 &&
+    s.clock.baseMs === 0 &&
+    s.clock.runningSince === null &&
+    s.events.length === 0 &&
+    s.teams.home.goals === 0 &&
+    s.teams.away.goals === 0
+  )
+}
+
+/**
+ * Comandi di gioco che non hanno senso prima dell'inizio (gol, tiri,
+ * penalità, timeout, correzioni del tempo, fine periodo/partita): finché il
+ * tempo non parte vengono ignorati. Restano liberi l'avvio del tempo,
+ * squadre, regolamento, stile e nuova partita.
+ */
+const BLOCKED_BEFORE_START = new Set<Command['type']>([
+  'setClock',
+  'goal',
+  'setScore',
+  'shot',
+  'penalty',
+  'endPenalty',
+  'removePenalty',
+  'timeout',
+  'endTimeout',
+  'endPeriod',
+  'shootoutAttempt',
+  'undoShootoutAttempt',
+  'endGame',
+])
+
+/** Il comando è permesso adesso? (La console lo usa anche per disattivare i pulsanti.) */
+export function isAllowed(s: GameState, type: Command['type']): boolean {
+  return !(BLOCKED_BEFORE_START.has(type) && isPregame(s))
+}
+
 function baseSkaters(state: GameState): number {
   return isOvertime(state) ? state.rules.overtime.skaters : state.rules.skaters
 }
@@ -214,6 +257,7 @@ export function advance(state: GameState, now: number): GameState {
 /** Applica un comando all'istante `now`. Non modifica lo stato ricevuto. */
 export function apply(state: GameState, command: Command, now: number): GameState {
   const s = advance(state, now)
+  if (!isAllowed(s, command.type)) return s
   const max = s.rules.maxPenalizedOnIce
   const gameMs = gameTimeMs(s.clock, now)
   const elapsed = periodElapsedMs(s.clock, now)

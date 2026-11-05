@@ -85,7 +85,9 @@
       {view.clockRunning
         ? '● Tempo in moto'
         : view.phase === 'ready'
-          ? 'Pronto a iniziare'
+          ? view.pregame
+            ? 'Partita non iniziata: avvia il tempo per cominciare'
+            : 'Pronto a iniziare'
           : '❚❚ Tempo fermo'}
     </div>
     <button
@@ -94,7 +96,7 @@
       disabled={!canRunClock || view.clockMs <= 0}
       onclick={() => run({ type: 'toggleClock' })}
     >
-      {view.clockRunning ? '■ Ferma tempo' : '▶ Avvia tempo'}
+      {view.clockRunning ? '■ Ferma tempo' : view.pregame ? '▶ Avvia partita' : '▶ Avvia tempo'}
       <kbd>Spazio</kbd>
     </button>
   {/if}
@@ -110,16 +112,26 @@
   {/if}
 
   <div class="secondary">
-    <button type="button" class="btn btn-sm" disabled={!canRunClock} onclick={onEditClock}>
+    <button
+      type="button"
+      class="btn btn-sm"
+      disabled={!canRunClock || view.pregame}
+      onclick={onEditClock}
+    >
       Correggi tempo…
     </button>
-    <button type="button" class="btn btn-sm" disabled={!canRunClock} onclick={endPeriod}>
+    <button
+      type="button"
+      class="btn btn-sm"
+      disabled={!canRunClock || view.pregame}
+      onclick={endPeriod}
+    >
       Fine periodo
     </button>
     <button
       type="button"
       class="btn btn-sm btn-danger"
-      disabled={view.phase === 'final'}
+      disabled={view.pregame || view.phase === 'final'}
       onclick={endGame}
     >
       Fine partita

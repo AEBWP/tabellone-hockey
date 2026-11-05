@@ -2,12 +2,47 @@
   import { onMount } from 'svelte'
   import { audio } from './audio.svelte'
   import HelpTip from './HelpTip.svelte'
-  import { SOUND_IDS, SOUND_LABELS } from './sound-events'
+  import { SOUND_IDS, SOUND_LABELS, type SoundId } from './sound-events'
 
   onMount(() => {
     if (audio.canChooseOutput) void audio.refreshOutputs()
   })
+
+  let errors = $state<Partial<Record<SoundId, string>>>({})
+  let busy = $state<SoundId | null>(null)
+  let fileInput: HTMLInputElement
+  let target: SoundId | null = null
+
+  function pickFile(id: SoundId) {
+    target = id
+    fileInput.value = ''
+    fileInput.click()
+  }
+
+  async function onFile() {
+    const file = fileInput.files?.[0]
+    const id = target
+    if (!file || !id) return
+    busy = id
+    errors = { ...errors, [id]: undefined }
+    try {
+      await audio.setCustom(id, file)
+      audio.test(id)
+    } catch (e) {
+      errors = { ...errors, [id]: e instanceof Error ? e.message : 'Impossibile usare il file.' }
+    } finally {
+      busy = null
+    }
+  }
 </script>
+
+<input
+  bind:this={fileInput}
+  type="file"
+  accept="audio/*,.mp3,.wav,.ogg,.m4a"
+  hidden
+  onchange={() => void onFile()}
+/>
 
 <div class="audio-tab">
   <section class="panel">
@@ -45,7 +80,10 @@
       Suoni
       <HelpTip title="Suoni">
         I suoni partono da soli al momento giusto. Togli la spunta per quelli che non vuoi (es. se
-        il palazzetto ha già una sua sirena). “Prova” li fa sentire anche se sono disattivati.
+        il palazzetto ha già una sua sirena). “Prova” li fa sentire anche se sono disattivati. Con
+        “Carica file…” puoi usare una tua registrazione (es. la sirena vera del palazzetto, in MP3 o
+        WAV): resta salvata nel programma e funziona anche senza internet. “Ripristina” torna al
+        suono incluso.
       </HelpTip>
     </h2>
     <ul class="sounds">
@@ -60,9 +98,31 @@
             <span>
               <strong>{SOUND_LABELS[id].name}</strong>
               <small class="muted">{SOUND_LABELS[id].description}</small>
+              {#if audio.settings.custom[id]}
+                <small class="custom">🎵 {audio.settings.custom[id]}</small>
+              {/if}
+              {#if errors[id]}<small class="error">{errors[id]}</small>{/if}
             </span>
           </label>
-          <button type="button" class="btn btn-sm" onclick={() => audio.test(id)}>▶ Prova</button>
+          <div class="actions">
+            <button type="button" class="btn btn-sm" onclick={() => audio.test(id)}>▶ Prova</button>
+            {#if audio.settings.custom[id]}
+              <button
+                type="button"
+                class="btn btn-sm"
+                title="Torna al suono incluso nel programma"
+                onclick={() => void audio.removeCustom(id)}>Ripristina</button
+              >
+            {:else}
+              <button
+                type="button"
+                class="btn btn-sm"
+                title="Usa un tuo file audio (MP3, WAV, OGG)"
+                disabled={busy === id}
+                onclick={() => pickFile(id)}>{busy === id ? 'Carico…' : 'Carica file…'}</button
+              >
+            {/if}
+          </div>
         </li>
       {/each}
     </ul>
@@ -167,6 +227,20 @@
   .check span {
     display: flex;
     flex-direction: column;
+  }
+
+  .custom {
+    color: var(--ice-50);
+  }
+
+  .error {
+    color: var(--warn);
+  }
+
+  .actions {
+    display: flex;
+    flex: none;
+    gap: 0.4rem;
   }
 
   .output-row {

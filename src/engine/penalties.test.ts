@@ -9,6 +9,8 @@ import { deriveView } from './view'
 const SEC = 1_000
 const MIN = 60 * SEC
 const T0 = 1_000_000
+/** Primo ingaggio: prima di avviare il tempo i comandi di gioco sono bloccati. */
+const KICKOFF: Command[] = [{ type: 'startClock' }, { type: 'stopClock' }]
 
 function game(preset = 'senior') {
   let state: GameState = createGame(rulesFromPreset(preset))
@@ -92,7 +94,12 @@ describe('penalità', () => {
 
   it('le penalità continuano nel periodo successivo', () => {
     const g = game()
-      .do({ type: 'setClock', remainingMs: 30 * SEC }, { type: 'startClock' }, pen('away', '4'))
+      .do(
+        ...KICKOFF,
+        { type: 'setClock', remainingMs: 30 * SEC },
+        { type: 'startClock' },
+        pen('away', '4'),
+      )
       .wait(30 * SEC)
       .do({ type: 'endIntermission' })
     let v = g.view()
@@ -201,8 +208,11 @@ describe('gol in superiorità numerica', () => {
   })
 
   it('a tempo fermo dopo la fine non si applica la regola', () => {
-    const g = game().do(pen('away', '7'), { type: 'goal', team: 'home' })
-    // Partita non ancora iniziata: il gol è una correzione
+    const g = game().do(...KICKOFF, { type: 'endPeriod' }, pen('away', '7'), {
+      type: 'goal',
+      team: 'home',
+    })
+    // Periodo finito (intervallo): il gol è una correzione
     expect(g.view().teams.away.penalties).toHaveLength(1)
   })
 })
@@ -210,6 +220,7 @@ describe('gol in superiorità numerica', () => {
 describe('supplementare 3 contro 3', () => {
   it("con una penalità l'avversario passa a 4", () => {
     const g = game().do(
+      ...KICKOFF,
       { type: 'endPeriod' },
       { type: 'endIntermission' },
       { type: 'endPeriod' },
@@ -263,6 +274,7 @@ describe('annulla ultima azione', () => {
 
   it('annullare il gol decisivo del supplementare riapre la partita', () => {
     const g = game().do(
+      ...KICKOFF,
       { type: 'endPeriod' },
       { type: 'endIntermission' },
       { type: 'endPeriod' },
@@ -280,7 +292,7 @@ describe('annulla ultima azione', () => {
   })
 
   it('non annulla azioni di un periodo precedente', () => {
-    const g = game()
+    const g = game().do(...KICKOFF)
     const history = pushHistory([], 'Gol Casa', g.state)
     g.do({ type: 'goal', team: 'home' }, { type: 'endPeriod' }, { type: 'endIntermission' })
     expect(undo(history, g.state)).toBeNull()

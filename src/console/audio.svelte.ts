@@ -1,4 +1,5 @@
 import { SOUND_IDS, type SoundId } from './sound-events'
+import { deleteSound, loadSound, saveSound } from './sound-store'
 import { scheduleSound } from './synth'
 
 /**
@@ -16,7 +17,12 @@ export interface AudioSettings {
   enabled: Record<SoundId, boolean>
   /** Id dell'uscita audio; '' = predefinita del sistema. */
   outputId: string
+  /** Suoni sostituiti da un file dell'operatore: nome del file. */
+  custom: Partial<Record<SoundId, string>>
 }
+
+/** Dimensione massima di un file audio personalizzato. */
+export const MAX_CUSTOM_BYTES = 20 * 1024 * 1024
 
 const SETTINGS_KEY = 'tabellone-hockey:audio:v1'
 
@@ -25,6 +31,7 @@ export const DEFAULT_AUDIO: AudioSettings = {
   muted: false,
   enabled: Object.fromEntries(SOUND_IDS.map((id) => [id, true])) as Record<SoundId, boolean>,
   outputId: '',
+  custom: {},
 }
 
 function loadSettings(): AudioSettings {
@@ -35,6 +42,7 @@ function loadSettings(): AudioSettings {
       ...DEFAULT_AUDIO,
       ...saved,
       enabled: { ...DEFAULT_AUDIO.enabled, ...saved.enabled },
+      custom: { ...saved.custom },
     }
   } catch {
     return structuredClone(DEFAULT_AUDIO)
@@ -57,6 +65,10 @@ class AudioEngine {
 
   private ctx: SinkContext | null = null
   private master: GainNode | null = null
+  /** Suoni personalizzati già decodificati, pronti da suonare. */
+  private buffers = new Map<SoundId, AudioBuffer>()
+  /** Ultima riproduzione di ogni file: riprovando, la precedente si ferma. */
+  private playing = new Map<SoundId, AudioBufferSourceNode>()
 
   /** Il browser permette di scegliere l'uscita audio? (Chrome/Edge recenti ed Electron sì) */
   get canChooseOutput(): boolean {
@@ -77,6 +89,7 @@ class AudioEngine {
     this.applyVolume()
     ctx.onstatechange = () => (this.unlocked = ctx.state === 'running')
     if (this.settings.outputId) void this.setOutput(this.settings.outputId)
+    void this.loadCustomSounds()
     return ctx
   }
 
@@ -91,7 +104,61 @@ class AudioEngine {
     if (!force && (this.settings.muted || !this.settings.enabled[id])) return
     const ctx = this.ensureContext()
     if (ctx.state !== 'running') void ctx.resume()
-    scheduleSound(ctx, this.master!, id, ctx.currentTime + 0.02)
+    const at = ctx.currentTime + 0.02
+    const buffer = this.buffers.get(id)
+    if (!buffer) {
+      scheduleSound(ctx, this.master!, id, at)
+      return
+    }
+    this.playing.get(id)?.stop()
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.connect(this.master!)
+    source.onended = () => {
+      if (this.playing.get(id) === source) this.playing.delete(id)
+    }
+    source.start(at)
+    this.playing.set(id, source)
+  }
+
+  /** Usa un file audio (es. la sirena vera del palazzetto) al posto del suono sintetizzato. */
+  async setCustom(id: SoundId, file: File): Promise<void> {
+    if (file.size > MAX_CUSTOM_BYTES) {
+      throw new Error('Il file è troppo grande (massimo 20 MB): usa un audio più corto.')
+    }
+    const data = await file.arrayBuffer()
+    const ctx = this.ensureContext()
+    let buffer: AudioBuffer
+    try {
+      buffer = await ctx.decodeAudioData(data.slice(0))
+    } catch {
+      throw new Error('Formato audio non riconosciuto: usa un file MP3, WAV o OGG.')
+    }
+    await saveSound(id, { name: file.name, data })
+    this.buffers.set(id, buffer)
+    this.update({ custom: { ...this.settings.custom, [id]: file.name } })
+  }
+
+  /** Torna al suono sintetizzato. */
+  async removeCustom(id: SoundId): Promise<void> {
+    this.playing.get(id)?.stop()
+    this.buffers.delete(id)
+    const custom = { ...this.settings.custom }
+    delete custom[id]
+    this.update({ custom })
+    await deleteSound(id).catch(() => {})
+  }
+
+  private async loadCustomSounds() {
+    const ctx = this.ctx!
+    for (const id of Object.keys(this.settings.custom) as SoundId[]) {
+      try {
+        const stored = await loadSound(id)
+        if (stored) this.buffers.set(id, await ctx.decodeAudioData(stored.data.slice(0)))
+      } catch {
+        // File non più leggibile: si usa il suono sintetizzato.
+      }
+    }
   }
 
   /** Prova un suono dalle impostazioni (suona anche se è disattivato). */
@@ -100,7 +167,8 @@ class AudioEngine {
     const wasMuted = this.settings.muted
     if (wasMuted) this.applyVolume(true)
     this.play(id, true)
-    if (wasMuted) setTimeout(() => this.applyVolume(), 3500)
+    const seconds = this.buffers.get(id)?.duration ?? 4
+    if (wasMuted) setTimeout(() => this.applyVolume(), (seconds + 0.5) * 1000)
   }
 
   update(patch: Partial<AudioSettings>) {

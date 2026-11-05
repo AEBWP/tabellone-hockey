@@ -23,7 +23,9 @@
   const inShootout = $derived(
     view.phase === 'shootout' || (view.phase === 'final' && !!view.shootout),
   )
-  const canPenalize = $derived(view.phase !== 'shootout' && view.phase !== 'final')
+  // Prima del via (presentazione A VS B) i comandi di gioco sono bloccati.
+  const locked = $derived(view.pregame)
+  const canPenalize = $derived(!locked && view.phase !== 'shootout' && view.phase !== 'final')
   const canTimeout = $derived(view.phase === 'play' && !view.timeout && team.timeoutsLeft > 0)
 
   const KINDS: PenaltyKind[] = ['minor', 'double-minor', 'major', 'misconduct']
@@ -75,7 +77,7 @@
       type="button"
       class="btn btn-sm"
       title="Correggi: togli un gol"
-      disabled={team.goals === 0}
+      disabled={locked || team.goals === 0}
       onclick={() =>
         run(
           { type: 'setScore', team: id, goals: team.goals - 1 },
@@ -89,6 +91,7 @@
       type="button"
       class="btn btn-sm"
       title="Correggi: aggiungi un gol (senza animazione e senza effetti sulle penalità)"
+      disabled={locked}
       onclick={() =>
         run(
           { type: 'setScore', team: id, goals: team.goals + 1 },
@@ -103,16 +106,22 @@
     <button
       type="button"
       class="btn btn-lg goal"
-      disabled={view.phase === 'final'}
+      disabled={locked || view.phase === 'final'}
       onclick={() => run({ type: 'goal', team: id }, `Gol ${team.name}`)}
     >
       GOL {team.shortName}
       <kbd>{goalKey}</kbd>
     </button>
-    <p class="hint">
-      Il pulsante GOL fa partire l’animazione e chiude la penalità minore se era in superiorità. I
-      tasti ±1 servono solo per correggere.
-    </p>
+    {#if locked}
+      <p class="hint locked">
+        🔒 Partita non ancora iniziata: gol, tiri e penalità si attivano con <b>▶ Avvia partita</b>.
+      </p>
+    {:else}
+      <p class="hint">
+        Il pulsante GOL fa partire l’animazione e chiude la penalità minore se era in superiorità. I
+        tasti ±1 servono solo per correggere.
+      </p>
+    {/if}
   {/if}
 
   <!-- Tiri e timeout -->
@@ -129,7 +138,7 @@
         <button
           type="button"
           class="btn btn-sm"
-          disabled={team.shots === 0}
+          disabled={locked || team.shots === 0}
           onclick={() => run({ type: 'shot', team: id, delta: -1 }, `Tiro ${team.name}`)}
         >
           −
@@ -138,6 +147,7 @@
         <button
           type="button"
           class="btn btn-sm"
+          disabled={locked}
           onclick={() => run({ type: 'shot', team: id, delta: 1 }, `Tiro ${team.name}`)}
         >
           +
@@ -374,6 +384,10 @@
     font-size: 0.8rem;
     line-height: 1.35;
     color: var(--ice-300);
+  }
+
+  .hint.locked {
+    color: var(--warn);
   }
 
   .stats {

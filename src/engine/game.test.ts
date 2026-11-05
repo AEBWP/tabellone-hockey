@@ -7,6 +7,8 @@ import type { GameState } from './types'
 const SEC = 1_000
 const MIN = 60 * SEC
 const T0 = 1_000_000
+/** Primo ingaggio: prima di avviare il tempo i comandi di gioco sono bloccati. */
+const KICKOFF: Command[] = [{ type: 'startClock' }, { type: 'stopClock' }]
 
 /** Piccolo aiutante: una partita con un orologio finto che si sposta a mano. */
 function game(rules: Rules = rulesFromPreset('senior')) {
@@ -58,23 +60,33 @@ describe('cronometro', () => {
   })
 
   it("mostra i decimi nell'ultimo minuto", () => {
-    const g = game().do({ type: 'setClock', remainingMs: 61 * SEC }, { type: 'startClock' })
+    const g = game().do(
+      ...KICKOFF,
+      { type: 'setClock', remainingMs: 61 * SEC },
+      { type: 'startClock' },
+    )
     g.wait(1_500)
     expect(g.view().clockText).toBe('59.5')
   })
 
   it("non scende sotto zero se non viene aggiornato per un po'", () => {
-    const g = game().do({ type: 'setClock', remainingMs: 2 * SEC }, { type: 'startClock' })
+    const g = game().do(
+      ...KICKOFF,
+      { type: 'setClock', remainingMs: 2 * SEC },
+      { type: 'startClock' },
+    )
     const late = deriveView(g.state, g.now + 10 * SEC)
     // Fine periodo: si passa già all'intervallo
     expect(late.phase).toBe('intermission')
   })
 
   it('la correzione del tempo è limitata alla durata del periodo', () => {
-    const g = game().do({ type: 'setClock', remainingMs: 99 * MIN })
+    const g = game().do(...KICKOFF, { type: 'setClock', remainingMs: 99 * MIN })
     expect(g.view().clockText).toBe('20:00')
     g.do({ type: 'setClock', remainingMs: -5 })
-    expect(g.view().clockMs).toBe(0)
+    // Tempo a zero a partita iniziata: il periodo finisce (non va in negativo)
+    expect(g.view().phase).toBe('intermission')
+    expect(g.view().period).toBe(2)
   })
 })
 
@@ -102,7 +114,7 @@ describe('periodi e intervalli', () => {
   })
 
   it("l'operatore può chiudere prima l'intervallo", () => {
-    const g = game().do({ type: 'endPeriod' }, { type: 'endIntermission' })
+    const g = game().do(...KICKOFF, { type: 'endPeriod' }, { type: 'endIntermission' })
     expect(g.view().phase).toBe('ready')
     expect(g.view().period).toBe(2)
   })
@@ -110,13 +122,14 @@ describe('periodi e intervalli', () => {
   it('senza intervallo il periodo successivo è subito pronto', () => {
     const rules = rulesFromPreset('senior')
     rules.intermissionMs = 0
-    const g = game(rules).do({ type: 'endPeriod' })
+    const g = game(rules).do(...KICKOFF, { type: 'endPeriod' })
     expect(g.view().phase).toBe('ready')
     expect(g.view().period).toBe(2)
   })
 
   it('a fine terzo periodo senza parità la partita è finita', () => {
     const g = game().do(
+      ...KICKOFF,
       { type: 'goal', team: 'home' },
       { type: 'endPeriod' },
       { type: 'endIntermission' },
@@ -131,6 +144,7 @@ describe('periodi e intervalli', () => {
 /** Porta la partita alla fine del terzo periodo. */
 function toEndOfRegulation(g: ReturnType<typeof game>) {
   return g.do(
+    ...KICKOFF,
     { type: 'endPeriod' },
     { type: 'endIntermission' },
     { type: 'endPeriod' },
@@ -217,7 +231,7 @@ describe('gol e tiri', () => {
   })
 
   it('correzione manuale del punteggio', () => {
-    const g = game().do({ type: 'setScore', team: 'away', goals: 4 })
+    const g = game().do(...KICKOFF, { type: 'setScore', team: 'away', goals: 4 })
     expect(g.view().teams.away.score).toBe(4)
   })
 })
@@ -335,6 +349,42 @@ describe('presentazione prima della partita', () => {
     g.do({ type: 'endPeriod' }, { type: 'endIntermission' })
     expect(g.view().phase).toBe('ready')
     expect(g.view().pregame).toBe(false)
+  })
+
+  it('prima del via i comandi di gioco sono ignorati', () => {
+    const g = game()
+    const before = g.state
+    g.do(
+      { type: 'goal', team: 'home' },
+      { type: 'setScore', team: 'away', goals: 2 },
+      { type: 'shot', team: 'home', delta: 1 },
+      { type: 'penalty', team: 'home', player: '9', kind: 'minor' },
+      { type: 'timeout', team: 'away' },
+      { type: 'setClock', remainingMs: 5 * MIN },
+      { type: 'endPeriod' },
+      { type: 'endGame' },
+    )
+    expect(g.state).toEqual(before)
+    expect(g.view().pregame).toBe(true)
+  })
+
+  it('squadre, stile e regolamento restano modificabili prima del via', () => {
+    const g = game().do(
+      { type: 'setTeam', team: 'home', setup: { name: 'Castori' } },
+      { type: 'setBoardStyle', style: 'retro' },
+    )
+    expect(g.state.teams.home.name).toBe('Castori')
+    expect(g.state.boardStyle).toBe('retro')
+  })
+
+  it('dopo il via gol e correzioni sono liberi anche a tempo fermo', () => {
+    const g = game().do(
+      ...KICKOFF,
+      { type: 'goal', team: 'home' },
+      { type: 'setScore', team: 'away', goals: 2 },
+    )
+    expect(g.view().teams.home.score).toBe(1)
+    expect(g.view().teams.away.score).toBe(2)
   })
 
   it('torna con una nuova partita', () => {

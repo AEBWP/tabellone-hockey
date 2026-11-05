@@ -53,7 +53,12 @@ describe('quando suonare', () => {
   })
 
   it('sirena a fine periodo, poi segnale a fine intervallo', () => {
-    const s = session().do({ type: 'setClock', remainingMs: 2 * SEC }, { type: 'startClock' })
+    const s = session().do(
+      { type: 'startClock' },
+      { type: 'stopClock' },
+      { type: 'setClock', remainingMs: 2 * SEC },
+      { type: 'startClock' },
+    )
     s.wait(3 * SEC)
     expect(s.heard).toEqual(['periodEnd'])
     s.wait(15 * MIN)

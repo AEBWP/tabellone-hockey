@@ -6,6 +6,7 @@
     canUndo,
     createGame,
     deriveView,
+    isAllowed,
     pushHistory,
     undo,
     type Command,
@@ -123,14 +124,20 @@
    * Applica un comando. Se ha un'etichetta è un'azione di gioco annullabile
    * (gol, penalità, tiri…); i comandi del cronometro non lo sono.
    */
-  function run(command: Command, label?: string) {
+  function run(command: Command, label?: string): boolean {
     const before = game
+    if (!isAllowed(advance(before, now()), command.type)) {
+      // Es. una scorciatoia (C, O…) premuta prima del via.
+      showToast('Partita non ancora iniziata: premi ▶ Avvia partita')
+      return false
+    }
     const after = apply(before, command, now())
     // Comando senza effetto (es. timeout già usato): niente da registrare.
-    if (JSON.stringify(after) === JSON.stringify(advance(before, now()))) return
+    if (JSON.stringify(after) === JSON.stringify(advance(before, now()))) return false
     game = after
     if (label) history = pushHistory(history, label, before)
     publish()
+    return true
   }
 
   function doUndo() {
@@ -196,8 +203,7 @@
       case 'goalAway': {
         const team = action === 'goalHome' ? 'home' : 'away'
         if (view.phase === 'shootout') break
-        run({ type: 'goal', team }, `Gol ${teamName(team)}`)
-        showToast(`Gol ${teamName(team)}`)
+        if (run({ type: 'goal', team }, `Gol ${teamName(team)}`)) showToast(`Gol ${teamName(team)}`)
         break
       }
       case 'shotHome':

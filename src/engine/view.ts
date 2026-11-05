@@ -1,5 +1,5 @@
 import { countdownRemainingMs, formatClock, gameTimeMs, periodRemainingMs } from './clock'
-import { advance, isClockRunning, isOvertime } from './game'
+import { advance, isClockRunning, isOvertime, isPregame } from './game'
 import { countsForStrength, skatersOnIce } from './penalties'
 import { shootoutWinner } from './shootout'
 import { TEAM_IDS, type GameState, type Phase, type PenaltyKind, type TeamId } from './types'
@@ -119,7 +119,7 @@ export function deriveView(state: GameState, now: number): GameView {
 
   return {
     phase: s.phase,
-    pregame: s.phase === 'ready' && s.period === 1 && s.clock.baseMs === 0 && s.events.length === 0,
+    pregame: isPregame(s),
     period: s.period,
     periodKind: overtime ? 'overtime' : 'regular',
     overtimeNumber: overtime ? s.period - s.rules.periods : 0,
