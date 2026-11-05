@@ -76,7 +76,7 @@
         "it_IT"
       ],
       "deleteAppDataOnUninstall": false,
-      "artifactName": "Tabellone-Hockey-${version}-installazione.${ext}"
+      "artifactName": "Tabellone-Hockey-installazione.${ext}"
     }
   }
 }

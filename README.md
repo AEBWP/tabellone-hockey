@@ -4,8 +4,19 @@ Tabellone segnapunti per hockey su ghiaccio, pensato per il palaghiaccio:
 una **console operatore** sul PC e un **tabellone spettatori** a schermo intero
 sul maxischermo. Funziona completamente **offline**.
 
-Il piano completo è in [PIANO.md](PIANO.md).
-**Per installarlo e usarlo al palaghiaccio** leggi [INSTALLAZIONE.md](INSTALLAZIONE.md).
+## ⬇️ Scarica
+
+### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest/download/Tabellone-Hockey-installazione.exe)
+
+Il link scarica sempre l'**ultima versione** dell'installer (`Tabellone-Hockey-installazione.exe`).
+Per aggiornare basta eseguirlo di nuovo: i dati restano.
+Novità di ogni versione: [pagina dell'ultima release](https://github.com/AEBWP/tabellone-hockey/releases/latest).
+
+**Come installarlo e usarlo al palaghiaccio:** [INSTALLAZIONE.md](INSTALLAZIONE.md).
+
+---
+
+Il piano completo del progetto è in [PIANO.md](PIANO.md).
 
 ## Requisiti per lo sviluppo
 
