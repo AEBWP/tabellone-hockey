@@ -27,6 +27,21 @@ const DIST = path.join(__dirname, '..', 'dist')
 // In sviluppo si può puntare al server di Vite: TABELLONE_DEV_URL=http://localhost:5173/
 const BASE_URL = process.env.TABELLONE_DEV_URL || 'app://tabellone/'
 const SMOKE_TEST = process.env.TABELLONE_SMOKE_TEST // percorso cartella per il collaudo automatico
+// TABELLONE_TIMING=1 stampa i tempi di avvio (secondi dall'avvio del processo);
+// con un percorso di file li scrive lì (utile per misurare il programma installato).
+const timing = (label) => {
+  const target = process.env.TABELLONE_TIMING
+  if (!target) return
+  const line = `[avvio] ${label}: ${process.uptime().toFixed(2)} s`
+  if (target === '1') console.log(line)
+  else
+    fs.appendFileSync(
+      target,
+      `${Date.now()} ${line}
+`,
+    )
+}
+timing('codice principale caricato')
 
 const PRELOAD = path.join(__dirname, 'preload.cjs')
 const userFile = (name) => path.join(app.getPath('userData'), name)
@@ -34,9 +49,12 @@ const userFile = (name) => path.join(app.getPath('userData'), name)
 /** @type {BrowserWindow | null} */ let consoleWin = null
 /** @type {BrowserWindow | null} */ let displayWin = null
 /** @type {BrowserWindow | null} */ let setupWin = null
+/** @type {BrowserWindow | null} */ let splashWin = null
 /** @type {BrowserWindow[]} */ let identifyWins = []
 /** @type {{ consoleId: number, displayId: number } | null} */ let choice = null
 let quitting = false
+/** Modo del tabellone: 'fullscreen' sul maxischermo, 'window' se condivide lo schermo con la console. */
+/** @type {'fullscreen' | 'window' | null} */ let displayMode = null
 
 // ── Impostazioni (schermi scelti) ─────────────────────────────────────────
 
@@ -102,6 +120,41 @@ function lockDown(win) {
   })
 }
 
+// ── Finestra di caricamento ───────────────────────────────────────────────
+// Compare subito all'avvio, così si capisce che il programma è partito;
+// si chiude appena la prima finestra vera (scelta schermi o console) è pronta.
+
+function showSplash() {
+  const primary = screen.getPrimaryDisplay().workArea
+  const width = 380
+  const height = 250
+  splashWin = new BrowserWindow({
+    width,
+    height,
+    x: primary.x + Math.round((primary.width - width) / 2),
+    y: primary.y + Math.round((primary.height - height) / 2),
+    frame: false,
+    resizable: false,
+    movable: true,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    title: 'Tabellone Hockey',
+    backgroundColor: '#050d18',
+    // Visibile subito, anche prima che il contenuto sia disegnato.
+    show: true,
+    webPreferences: { sandbox: true, contextIsolation: true },
+  })
+  splashWin.once('show', () => timing('finestra di caricamento aperta'))
+  splashWin.once('ready-to-show', () => timing('finestra di caricamento disegnata'))
+  splashWin.on('closed', () => (splashWin = null))
+  void splashWin.loadFile(path.join(__dirname, 'splash.html'))
+}
+
+function closeSplash() {
+  if (splashWin && !splashWin.isDestroyed()) splashWin.close()
+}
+
 function openSetup() {
   if (setupWin && !setupWin.isDestroyed()) {
     setupWin.show()
@@ -120,7 +173,11 @@ function openSetup() {
     webPreferences: baseWebPreferences(),
   })
   lockDown(setupWin)
-  setupWin.once('ready-to-show', () => setupWin?.show())
+  setupWin.once('ready-to-show', () => {
+    timing('scelta schermi visibile')
+    setupWin?.show()
+    closeSplash()
+  })
   setupWin.on('closed', () => {
     setupWin = null
     closeIdentify()
@@ -145,8 +202,10 @@ function placeConsole() {
     })
     lockDown(consoleWin)
     consoleWin.once('ready-to-show', () => {
+      timing('console visibile')
       consoleWin?.maximize()
       consoleWin?.show()
+      closeSplash()
     })
     consoleWin.on('close', (event) => {
       if (quitting || SMOKE_TEST) return
@@ -165,6 +224,8 @@ function placeConsole() {
     })
     consoleWin.on('closed', () => {
       consoleWin = null
+      quitting = true
+      closeDisplay()
       app.quit()
     })
     void consoleWin.loadURL(`${BASE_URL}index.html`)
@@ -175,51 +236,104 @@ function placeConsole() {
   }
 }
 
-function placeDisplay() {
-  if (!displayWin || displayWin.isDestroyed() || !choice) return
+/**
+ * Dove e come mostrare il tabellone. Sul maxischermo (schermo diverso da quello
+ * della console) va a schermo intero, senza barra del titolo; se è sullo stesso
+ * schermo della console (es. prove a casa) resta una finestra normale.
+ */
+function displayTarget() {
   const d = displayById(choice.displayId)
-  const sameScreen = choice.displayId === choice.consoleId || d.id !== choice.displayId
+  const ownScreen = d.id === choice.displayId && choice.displayId !== choice.consoleId
+  // Solo per i collaudi: forza lo schermo intero anche con un solo monitor.
+  const forced = process.env.TABELLONE_DISPLAY_FULLSCREEN === '1'
+  return { display: d, mode: ownScreen || forced ? 'fullscreen' : 'window' }
+}
 
-  if (displayWin.isFullScreen()) displayWin.setFullScreen(false)
-  if (sameScreen) {
-    // Un solo schermo (es. prove a casa): finestra normale, ridimensionabile.
-    const w = Math.round(d.workArea.width * 0.6)
-    const h = Math.round((w * 9) / 16)
-    displayWin.setBounds({
-      x: d.workArea.x + Math.round((d.workArea.width - w) / 2),
-      y: d.workArea.y + Math.round((d.workArea.height - h) / 2),
-      width: w,
-      height: h,
-    })
-  } else {
-    displayWin.setBounds(d.bounds)
-    displayWin.setFullScreen(true)
+function windowedBounds(d) {
+  const w = Math.round(d.workArea.width * 0.6)
+  const h = Math.round((w * 9) / 16)
+  return {
+    x: d.workArea.x + Math.round((d.workArea.width - w) / 2),
+    y: d.workArea.y + Math.round((d.workArea.height - h) / 2),
+    width: w,
+    height: h,
   }
 }
 
+function goFullScreen(win, d) {
+  if (win.isFullScreen()) win.setFullScreen(false)
+  win.setBounds(d.bounds)
+  win.setFullScreen(true)
+  // Sopra a tutto su quello schermo, anche alla barra delle applicazioni di Windows.
+  win.setAlwaysOnTop(true, 'screen-saver')
+}
+
+function placeDisplay() {
+  if (!displayWin || displayWin.isDestroyed() || !choice) return
+  const { display: d, mode } = displayTarget()
+  if (mode !== displayMode) {
+    // Il tipo di finestra (con o senza barra) si decide alla creazione: la ricreiamo.
+    closeDisplay()
+    openDisplay()
+    return
+  }
+  if (mode === 'fullscreen') goFullScreen(displayWin, d)
+  else displayWin.setBounds(windowedBounds(d))
+}
+
 function openDisplay() {
+  if (!choice) return
   if (displayWin && !displayWin.isDestroyed()) {
     placeDisplay()
     displayWin.showInactive()
     return
   }
-  displayWin = new BrowserWindow({
-    width: 960,
-    height: 540,
+  const { display: d, mode } = displayTarget()
+  const fullscreen = mode === 'fullscreen'
+  displayMode = mode
+  const win = new BrowserWindow({
+    ...(fullscreen ? d.bounds : windowedBounds(d)),
     title: 'Tabellone Hockey – Maxischermo',
     backgroundColor: '#000000',
+    // Sul maxischermo: niente barra del titolo, niente pulsanti, niente icona
+    // nella barra delle applicazioni. Si chiude solo dalla console.
+    frame: !fullscreen,
+    fullscreen,
+    resizable: !fullscreen,
+    movable: !fullscreen,
+    minimizable: !fullscreen,
+    maximizable: !fullscreen,
+    closable: !fullscreen,
+    skipTaskbar: fullscreen,
     autoHideMenuBar: true,
     show: false,
     webPreferences: baseWebPreferences(),
   })
-  lockDown(displayWin)
-  displayWin.once('ready-to-show', () => {
-    placeDisplay()
+  displayWin = win
+  lockDown(win)
+  win.once('ready-to-show', () => {
     // Senza rubare il focus alla console: l'operatore continua a usare la tastiera.
-    displayWin?.showInactive()
+    win.showInactive()
+    if (fullscreen) goFullScreen(win, displayTarget().display)
   })
-  displayWin.on('closed', () => (displayWin = null))
-  void displayWin.loadURL(`${BASE_URL}display.html`)
+  // Alt+F4 o altri tentativi di chiusura dal maxischermo vengono ignorati.
+  win.on('close', (event) => {
+    if (fullscreen && !quitting) event.preventDefault()
+  })
+  win.on('closed', () => {
+    if (displayWin === win) {
+      displayWin = null
+      displayMode = null
+    }
+  })
+  void win.loadURL(`${BASE_URL}display.html`)
+}
+
+/** Chiude il tabellone (solo su richiesta della console o all'uscita). */
+function closeDisplay() {
+  if (displayWin && !displayWin.isDestroyed()) displayWin.destroy()
+  displayWin = null
+  displayMode = null
 }
 
 function startMain(newChoice) {
@@ -285,6 +399,7 @@ function registerIpc() {
   ipcMain.handle('screens:choose', () => openSetup())
 
   ipcMain.handle('display:open', () => openDisplay())
+  ipcMain.handle('display:close', () => closeDisplay())
 
   ipcMain.on('game:save', (_event, json) => {
     try {
@@ -339,6 +454,9 @@ if (!app.requestSingleInstanceLock()) {
   })
 
   app.whenReady().then(() => {
+    timing('Electron pronto')
+    // Per prima cosa la finestra di caricamento; il resto dopo.
+    if (!SMOKE_TEST) showSplash()
     Menu.setApplicationMenu(null)
     registerProtocol()
     registerIpc()
@@ -367,7 +485,10 @@ if (!app.requestSingleInstanceLock()) {
     }
   })
 
-  app.on('before-quit', () => (quitting = true))
+  app.on('before-quit', () => {
+    quitting = true
+    closeDisplay()
+  })
   app.on('window-all-closed', () => app.quit())
 }
 
@@ -410,6 +531,34 @@ async function runSmokeTest(outDir) {
     await snap('console', consoleWin)
     await snap('display', displayWin)
     report.savedGame = fs.existsSync(userFile('partita.json'))
+
+    // Tabellone: schermo intero senza barra e chiudibile solo dalla console.
+    const dw = displayWin
+    report.displayWindow = {
+      mode: displayMode,
+      fullScreen: dw.isFullScreen(),
+      alwaysOnTop: dw.isAlwaysOnTop(),
+      // Senza barra del titolo la parte disegnabile coincide con la finestra intera.
+      noTitleBar:
+        dw.getContentBounds().height === dw.getBounds().height &&
+        dw.getContentBounds().y === dw.getBounds().y,
+      bounds: dw.getBounds(),
+      screen: displayTarget().display.bounds,
+    }
+    dw.close() // come Alt+F4 sul maxischermo
+    await wait(500)
+    report.displayWindow.survivesCloseAttempt = !dw.isDestroyed() && displayWin === dw
+    await consoleWin.webContents.executeJavaScript(`window.tabelloneApp.closeDisplay()`)
+    await wait(500)
+    report.displayWindow.closedFromConsole = displayWin === null && dw.isDestroyed()
+    await wait(4000) // la console se ne accorge (nessun segnale dal tabellone)
+    report.consoleButtonAfterClose = await consoleWin.webContents.executeJavaScript(
+      `[...document.querySelectorAll('.topbar button')].map((b) => b.textContent.trim()).filter((t) => t.includes('tabellone'))`,
+    )
+    openDisplay()
+    await wait(2500)
+    report.displayWindow.reopened =
+      !!displayWin && displayWin.isFullScreen() === (displayMode === 'fullscreen')
 
     openSetup()
     await wait(2000)

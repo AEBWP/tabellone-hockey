@@ -7,7 +7,7 @@ un PC con il maxischermo collegato come schermo esteso.
 
 - **Funziona offline al 100%**: nessuna dipendenza da internet (font, loghi, suoni inclusi).
 - **Due pannelli**: la _console operatore_ sul monitor del PC e il _tabellone spettatori_ a schermo intero sul maxischermo.
-- **Distribuzione semplice**: un installer `.exe` per Windows (più una versione portable).
+- **Distribuzione semplice**: un installer `.exe` per Windows (la versione portable è stata scartata: avvio 8–15 volte più lento).
 - **Grafica curata** per il pubblico, **console chiara e veloce** per l'operatore.
 - **Robusto**: se il programma o il PC si riavvia, la partita riprende da dove era.
 
@@ -103,7 +103,7 @@ Parametri configurabili:
    - apertura automatica delle due finestre, tabellone a schermo intero;
    - salvataggio della partita su disco e ripresa dopo crash o riavvio;
    - blocco dello standby del PC durante la partita.
-8. **Installer**: `.exe` di installazione (NSIS), icona, collegamento sul desktop, versione portable.
+8. **Installer**: `.exe` di installazione (NSIS), icona, collegamento sul desktop, finestra di avvio immediata.
 9. **Prova al palaghiaccio**: verifica risoluzione reale, audio, leggibilità da lontano; ritocchi.
 
 ### Idee per dopo
@@ -117,6 +117,6 @@ Parametri configurabili:
 ## Da verificare al palaghiaccio
 
 - Risoluzione e formato reali del maxischermo
-- Versione di Windows e permessi di installazione
+- Versione di Windows
 - Collegamento audio (uscita del PC verso l'impianto)
 - Regole effettivamente usate per le varie categorie

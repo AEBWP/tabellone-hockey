@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('tabelloneApp', {
 
   // Finestra del tabellone
   openDisplay: () => ipcRenderer.invoke('display:open'),
+  closeDisplay: () => ipcRenderer.invoke('display:close'),
 
   // Salvataggio della partita su file (oltre che nel browser interno)
   saveGame: (json) => ipcRenderer.send('game:save', json),

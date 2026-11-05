@@ -22,7 +22,7 @@ npm run format     # formatta il codice
 npm run build      # crea la versione finale in dist/
 npm run app        # avvia il programma desktop (Electron)
 npm run app:smoke  # collaudo automatico del programma desktop, con screenshot
-npm run dist       # crea installer e versione portable in release/
+npm run dist       # crea il file di installazione in release/
 ```
 
 In sviluppo la console è su `http://localhost:5173/` (premi `F1` per la guida rapida). Il pulsante
@@ -41,8 +41,10 @@ schermo mostrare la console e su quale il tabellone (pulsante **Mostra il
 numero su ogni schermo** per riconoscerli); la scelta può essere ricordata e
 cambiata in seguito dal pulsante **Schermi…** nella console.
 
-- il tabellone si apre a schermo intero sul maxischermo, senza rubare il
-  focus alla console; se il maxischermo viene scollegato torna in finestra
+- il tabellone si apre a schermo intero sul maxischermo, senza barra del titolo e
+  senza rubare il focus alla console; si chiude solo dalla console. Se il
+  maxischermo viene scollegato torna in finestra
+- all'avvio compare subito una finestra “Avvio in corso…”
 - le sirene suonano subito, senza dover prima cliccare
 - la partita è salvata anche su file (`partita.json` nella cartella dati
   dell'app, `%APPDATA%\tabellone-hockey`)

@@ -1,5 +1,5 @@
 // Crea build/icon.png (512×512, sfondo trasparente) da build/icon.svg.
-// Uso: npx electron scripts/make-icon.cjs
+// Uso: npm run icon
 const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')

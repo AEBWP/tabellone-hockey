@@ -1,7 +1,7 @@
 {
   "name": "tabellone-hockey",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.9.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -48,6 +48,7 @@
     "files": [
       "dist/**",
       "electron/*.cjs",
+      "electron/splash.html",
       "package.json"
     ],
     "asar": true,
@@ -58,16 +59,10 @@
           "arch": [
             "x64"
           ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
         }
       ],
       "icon": "build/icon.png",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "Tabellone-Hockey-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -81,10 +76,7 @@
         "it_IT"
       ],
       "deleteAppDataOnUninstall": false,
-      "artifactName": "${productName}-${version}-installazione.${ext}"
-    },
-    "portable": {
-      "artifactName": "${productName}-${version}-portable.${ext}"
+      "artifactName": "Tabellone-Hockey-${version}-installazione.${ext}"
     }
   }
 }

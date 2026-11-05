@@ -13,7 +13,7 @@ const profile = mkdtempSync(join(tmpdir(), 'tabellone-profilo-'))
 
 const result = spawnSync(electron, ['.', `--user-data-dir=${profile}`], {
   stdio: 'inherit',
-  env: { ...process.env, TABELLONE_SMOKE_TEST: out },
+  env: { ...process.env, TABELLONE_SMOKE_TEST: out, TABELLONE_DISPLAY_FULLSCREEN: '1' },
   timeout: 90_000,
 })
 if (result.error) throw result.error

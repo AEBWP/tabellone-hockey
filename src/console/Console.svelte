@@ -251,7 +251,18 @@
         giusti.
       </HelpTip>
     </span>
-    <button type="button" class="btn btn-primary" onclick={openDisplay}>Apri tabellone</button>
+    {#if desktop && displayConnected}
+      <button
+        type="button"
+        class="btn"
+        title="Spegne il tabellone sul maxischermo (si riapre con Apri tabellone)"
+        onclick={() => desktop?.closeDisplay()}
+      >
+        Chiudi tabellone
+      </button>
+    {:else}
+      <button type="button" class="btn btn-primary" onclick={openDisplay}>Apri tabellone</button>
+    {/if}
     {#if desktop}
       <button
         type="button"
