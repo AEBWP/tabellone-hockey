@@ -8,8 +8,9 @@
   import TeamPanel from './TeamPanel.svelte'
 
   /**
-   * Tabellone spettatori, disegnato su 1920×1080 pixel logici.
-   * Usato sia sul maxischermo sia (rimpicciolito) come anteprima nella console.
+   * Tabellone spettatori, disegnato su 1920×1080 pixel logici e scalato sul
+   * maxischermo. Stile "arena": pannelli incorniciati, cifre da display LED,
+   * colori delle squadre usati come accento.
    */
   let { view, animations = true }: { view: GameView; animations?: boolean } = $props()
 
@@ -19,64 +20,109 @@
     const { home, away } = view.teams
     return home.score === away.score ? null : home.score > away.score ? 'home' : 'away'
   })
+
+  /** Didascalia sopra il tempo. */
+  const caption = $derived.by(() => {
+    switch (view.phase) {
+      case 'intermission':
+        return `IL ${periodLabel(view)} INIZIA TRA`
+      case 'shootout':
+        return 'GOL AI RIGORI'
+      case 'final':
+        return 'RISULTATO'
+      case 'ready':
+        return 'PRONTI'
+      default:
+        return 'TEMPO'
+    }
+  })
 </script>
 
 <div class="board">
-  <div class="ice"></div>
+  <div class="bg"></div>
 
-  <header>
-    <div class="phase" class:final={view.phase === 'final'}>{phaseLabel(view)}</div>
+  <header class="topbar">
+    <span class="rule"></span>
+    <div class="plate" class:final={view.phase === 'final'}>
+      {view.phase === 'intermission' ? `FINE ${previousPeriodLabel(view)}` : phaseLabel(view)}
+    </div>
+    <span class="rule"></span>
   </header>
 
   <section class="main">
-    <TeamPanel team={view.teams.home} dimmed={winner === 'away'} />
+    <TeamPanel team={view.teams.home} side="home" dimmed={winner === 'away'} />
 
     <div class="center">
-      {#if view.phase === 'intermission' && view.intermission}
-        <div class="sub">FINE {previousPeriodLabel(view)}</div>
-        <div class="clock intermission">{view.intermission.text}</div>
-        <div class="sub">PROSSIMO: {periodLabel(view)}</div>
-      {:else if view.phase === 'shootout'}
-        <div class="clock word">RIGORI</div>
-      {:else if view.phase === 'final'}
-        <div class="clock word">FINALE</div>
-      {:else}
-        <div class="clock" class:stopped={!view.clockRunning} class:urgent={lastMinute}>
-          {view.clockText}
-        </div>
+      <div
+        class="clock-frame"
+        class:running={view.clockRunning && view.phase === 'play'}
+        class:urgent={lastMinute}
+        class:intermission={view.phase === 'intermission'}
+      >
+        <div class="caption">{caption}</div>
+        {#if view.phase === 'intermission' && view.intermission}
+          <div class="clock">{view.intermission.text}</div>
+        {:else if view.phase === 'shootout' && view.shootout}
+          <div class="clock">
+            {view.shootout.home.filter(Boolean).length}<span class="dash">–</span
+            >{view.shootout.away.filter(Boolean).length}
+          </div>
+        {:else if view.phase === 'final'}
+          <div class="clock word">FINALE</div>
+        {:else}
+          <div class="clock" class:stopped={!view.clockRunning}>{view.clockText}</div>
+        {/if}
+
         {#if view.powerPlay}
           {@const pp = view.teams[view.powerPlay]}
-          <div class="powerplay" style:--team={pp.color}>
-            SUPERIORITÀ {pp.shortName}
-            <span class="strength">{view.teams.home.skaters} vs {view.teams.away.skaters}</span>
+          <div class="powerplay" style:--team={pp.color} style:--on-team={textColorOn(pp.color)}>
+            <span class="pp-label">SUPERIORITÀ</span>
+            <span class="pp-team">{pp.shortName}</span>
+            <span class="pp-strength"
+              >{view.teams.home.skaters}<i>vs</i>{view.teams.away.skaters}</span
+            >
           </div>
         {/if}
-      {/if}
+      </div>
     </div>
 
-    <TeamPanel team={view.teams.away} dimmed={winner === 'home'} />
+    <TeamPanel team={view.teams.away} side="away" dimmed={winner === 'home'} />
   </section>
 
   <section class="bottom">
     {#if view.shootout}
       {@const so = view.shootout}
-      <ShootoutPanel shots={so.home} rounds={so.rounds} winner={so.winner === 'home'} />
+      <ShootoutPanel
+        team={view.teams.home}
+        shots={so.home}
+        rounds={so.rounds}
+        winner={so.winner === 'home'}
+      />
       <div></div>
-      <ShootoutPanel shots={so.away} rounds={so.rounds} winner={so.winner === 'away'} />
+      <ShootoutPanel
+        team={view.teams.away}
+        shots={so.away}
+        rounds={so.rounds}
+        winner={so.winner === 'away'}
+      />
     {:else}
       <PenaltyPanel team={view.teams.home} />
       {#if view.timeout}
         {@const t = view.teams[view.timeout.team]}
         <div class="timeout" style:--team={t.color} style:--on-team={textColorOn(t.color)}>
-          <div class="timeout-label">TIMEOUT {t.shortName}</div>
+          <div class="timeout-head">TIMEOUT <b>{t.shortName}</b></div>
           <div class="timeout-clock">{view.timeout.text}</div>
         </div>
       {:else}
         <div class="stats">
-          <div class="stat-label">TIRI IN PORTA</div>
-          <div class="stat-row">
-            <span>{view.teams.home.shots}</span>
-            <span>{view.teams.away.shots}</span>
+          <div class="stats-head">TIRI IN PORTA</div>
+          <div class="stats-row">
+            {#each [view.teams.home, view.teams.away] as t, i (i)}
+              <div class="stat" style:--team={t.color}>
+                <span class="stat-value">{t.shots}</span>
+                <span class="stat-team">{t.shortName}</span>
+              </div>
+            {/each}
           </div>
         </div>
       {/if}
@@ -91,195 +137,344 @@
 
 <style>
   .board {
+    --panel: linear-gradient(180deg, #111a28 0%, #0a101a 100%);
+    --panel-border: rgba(150, 180, 220, 0.22);
+    --panel-highlight: rgba(255, 255, 255, 0.07);
+    --led-white: #f4f7fb;
+    --led-amber: #ffb627;
+    --led-red: #ff3d3d;
+    --label: #8fa9c8;
+
     position: relative;
     width: 1920px;
     height: 1080px;
     overflow: hidden;
-    color: #f4f8fd;
+    color: var(--led-white);
     font-family: 'Barlow Condensed', var(--font-ui);
     font-variant-numeric: tabular-nums;
-    background: #050b16;
+    background: #03060b;
   }
 
-  /* Riflesso del ghiaccio, solo CSS. */
-  .ice {
+  /* Fondo: nero profondo, leggera vignettatura e trama diagonale appena percettibile. */
+  .bg {
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse 70% 55% at 50% 42%, rgba(70, 130, 200, 0.28), transparent 70%),
-      radial-gradient(ellipse 120% 60% at 50% 120%, rgba(30, 80, 140, 0.35), transparent 60%),
-      linear-gradient(180deg, #0a1a30 0%, #050b16 100%);
+      repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 10px),
+      radial-gradient(ellipse 80% 70% at 50% 45%, #0b1626 0%, #04080f 70%, #020409 100%);
   }
 
-  header,
+  .bg::after {
+    /* Sottili linee d'accento in alto e in basso. */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, transparent, rgba(120, 170, 230, 0.55), transparent) top / 100% 3px
+        no-repeat,
+      linear-gradient(90deg, transparent, rgba(120, 170, 230, 0.35), transparent) bottom / 100% 3px
+        no-repeat;
+  }
+
+  .topbar,
   .main,
   .bottom {
     position: relative;
   }
 
-  header {
+  /* ── Barra del periodo ─────────────────────────────────────────── */
+  .topbar {
     display: flex;
+    align-items: center;
     justify-content: center;
-    height: 140px;
-    padding-top: 36px;
-  }
-
-  .phase {
-    padding: 6px 48px;
-    border: 3px solid rgba(156, 195, 234, 0.45);
-    border-radius: 999px;
-    font-size: 64px;
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: 0.08em;
-    background: rgba(5, 13, 24, 0.6);
-  }
-
-  .phase.final {
-    border-color: #ffd166;
-    color: #ffd166;
-  }
-
-  .main {
-    display: grid;
-    /* Colonne fisse: il centro non può mai spingere fuori le squadre. */
-    grid-template-columns: 560px minmax(0, 1fr) 560px;
-    gap: 24px;
-    height: 600px;
+    gap: 28px;
+    height: 128px;
     padding: 0 24px;
   }
 
+  .rule {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(143, 169, 200, 0.45));
+  }
+
+  .rule:last-child {
+    transform: scaleX(-1);
+  }
+
+  .plate {
+    min-width: 520px;
+    padding: 10px 56px 8px;
+    border: 2px solid var(--panel-border);
+    border-top-color: rgba(255, 255, 255, 0.22);
+    clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 100%, 0 100%);
+    background: var(--panel);
+    font-size: 58px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    text-align: center;
+    box-shadow: inset 0 -4px 0 #4f8ed8;
+  }
+
+  .plate.final {
+    color: #ffd166;
+    box-shadow: inset 0 -4px 0 #ffd166;
+  }
+
+  /* ── Riga principale: squadre e tempo ─────────────────────────── */
+  .main {
+    display: grid;
+    /* Colonne fisse: il centro non può mai spingere fuori le squadre. */
+    grid-template-columns: 572px minmax(0, 1fr) 572px;
+    gap: 28px;
+    height: 640px;
+    padding: 8px 24px 0;
+  }
+
+  /* Il riquadro del tempo è alto quanto targa + punteggio delle squadre. */
   .center {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
+    padding-bottom: 52px;
+  }
+
+  .clock-frame {
+    position: relative;
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 6px;
+    padding: 18px 24px 40px;
+    border: 2px solid var(--panel-border);
+    border-radius: 6px;
+    background:
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0 1px, transparent 1px 4px),
+      linear-gradient(180deg, #060a11, #0a111c);
+    box-shadow:
+      inset 0 2px 0 var(--panel-highlight),
+      inset 0 0 60px rgba(0, 0, 0, 0.8),
+      0 20px 50px rgba(0, 0, 0, 0.5);
+  }
+
+  .clock-frame::after {
+    /* Barra di stato sotto il tempo: verde in gioco, ambra fermo, rossa ultimo minuto. */
+    content: '';
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 10px;
+    height: 5px;
+    border-radius: 3px;
+    background: #ffb627;
+    opacity: 0.85;
+  }
+
+  .clock-frame.running::after {
+    background: #2fd27a;
+  }
+
+  .clock-frame.urgent::after {
+    background: var(--led-red);
+  }
+
+  .clock-frame.intermission::after {
+    background: #4f8ed8;
+  }
+
+  .caption {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    color: var(--label);
   }
 
   .clock {
-    font-size: 270px;
-    white-space: nowrap;
+    font-size: 252px;
     font-weight: 800;
-    line-height: 1;
-    letter-spacing: 0.01em;
-    text-shadow: 0 0 40px rgba(120, 180, 255, 0.35);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    color: var(--led-white);
+    text-shadow: 0 0 28px rgba(200, 225, 255, 0.35);
   }
 
   .clock.stopped {
-    color: #ffd166;
-    text-shadow: 0 0 40px rgba(255, 209, 102, 0.25);
+    color: var(--led-amber);
+    text-shadow: 0 0 28px rgba(255, 182, 39, 0.35);
   }
 
-  .clock.urgent {
-    color: #ff5d5d;
-    text-shadow: 0 0 50px rgba(255, 80, 80, 0.45);
+  .urgent .clock {
+    color: var(--led-red);
+    text-shadow: 0 0 34px rgba(255, 61, 61, 0.5);
   }
 
-  .clock.intermission {
-    font-size: 240px;
+  .intermission .clock {
+    font-size: 220px;
     color: #9cc3ea;
+    text-shadow: 0 0 28px rgba(156, 195, 234, 0.35);
+  }
+
+  .dash {
+    margin: 0 0.12em;
+    color: #8fa9c8;
   }
 
   .clock.word {
-    font-size: 180px;
-    letter-spacing: 0.06em;
-  }
-
-  .sub {
-    font-size: 48px;
-    font-weight: 700;
+    padding: 22px 0 18px;
+    font-size: 170px;
     letter-spacing: 0.08em;
-    color: #9cc3ea;
   }
 
+  /* Superiorità numerica */
   .powerplay {
+    display: flex;
+    align-items: stretch;
+    margin-top: 18px;
     max-width: 100%;
-    white-space: nowrap;
     overflow: hidden;
+    border: 2px solid var(--team);
+    border-radius: 4px;
+    font-size: 46px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 0 30px color-mix(in srgb, var(--team) 40%, transparent);
+  }
+
+  .powerplay > span {
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding: 8px 28px;
-    border-radius: 14px;
-    font-size: 52px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    background: color-mix(in srgb, var(--team) 35%, transparent);
-    border: 3px solid var(--team);
+    padding: 12px 22px 10px;
   }
 
-  .strength {
-    padding: 0 16px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.35);
+  .pp-label {
+    letter-spacing: 0.1em;
+    color: var(--label);
+    background: #0a101a;
   }
 
+  .pp-team {
+    letter-spacing: 0.06em;
+    color: var(--on-team);
+    background: var(--team);
+  }
+
+  .pp-strength {
+    gap: 10px;
+    background: #0a101a;
+  }
+
+  .pp-strength i {
+    font-size: 30px;
+    font-style: normal;
+    color: var(--label);
+  }
+
+  /* ── Riga in basso: penalità, tiri, timeout ───────────────────── */
   .bottom {
     display: grid;
-    /* Colonne fisse: il centro non può mai spingere fuori le squadre. */
-    grid-template-columns: 560px minmax(0, 1fr) 560px;
-    gap: 24px;
-    height: 340px;
-    padding: 0 24px 40px;
+    grid-template-columns: 572px minmax(0, 1fr) 572px;
+    gap: 28px;
+    height: 312px;
+    padding: 0 24px 34px;
   }
 
-  .stats {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .stat-label {
-    font-size: 40px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: #9cc3ea;
-  }
-
-  .stat-row {
-    display: flex;
-    gap: 140px;
-    font-size: 110px;
-    font-weight: 800;
-    line-height: 1.1;
-  }
-
+  .stats,
   .timeout {
     display: flex;
     flex-direction: column;
+    border: 2px solid var(--panel-border);
+    border-radius: 6px;
+    background: var(--panel);
+    box-shadow: inset 0 2px 0 var(--panel-highlight);
+    overflow: hidden;
+  }
+
+  .stats-head,
+  .timeout-head {
+    padding: 10px 0 8px;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-align: center;
+    color: var(--label);
+    border-bottom: 2px solid var(--panel-border);
+  }
+
+  .stats-row {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin: 10px 0 20px;
-    border-radius: 24px;
-    color: var(--on-team);
-    background: linear-gradient(180deg, var(--team), color-mix(in srgb, var(--team) 65%, black));
-    box-shadow: 0 0 60px color-mix(in srgb, var(--team) 50%, transparent);
+    position: relative;
+  }
+
+  .stat + .stat {
+    border-left: 2px solid var(--panel-border);
+  }
+
+  .stat::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 30%;
+    right: 30%;
+    height: 5px;
+    background: var(--team);
+  }
+
+  .stat-value {
+    font-size: 132px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .stat-team {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--label);
+  }
+
+  .timeout {
+    border-color: var(--team);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--team) 35%, transparent);
     animation: pop 300ms ease-out;
   }
 
-  .timeout-label {
-    font-size: 64px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+  .timeout-head {
+    color: var(--on-team);
+    background: var(--team);
+    border-bottom: 0;
+  }
+
+  .timeout-head b {
+    letter-spacing: 0.1em;
   }
 
   .timeout-clock {
-    padding: 0 32px;
-    border-radius: 16px;
-    font-size: 130px;
+    flex: 1;
+    display: grid;
+    place-items: center;
+    font-size: 150px;
     font-weight: 800;
-    line-height: 1.05;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.3);
+    color: var(--led-amber);
+    text-shadow: 0 0 28px rgba(255, 182, 39, 0.35);
   }
 
   @keyframes pop {
     from {
-      transform: scale(0.85);
+      transform: scale(0.92);
       opacity: 0;
     }
   }
