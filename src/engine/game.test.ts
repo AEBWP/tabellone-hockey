@@ -287,6 +287,35 @@ describe('logo squadra', () => {
   })
 })
 
+describe('mostra/nascondi loghi', () => {
+  const logo = 'data:image/png;base64,AAAA'
+
+  it('di default mostra solo i loghi che ci sono', () => {
+    const g = game().do({ type: 'setTeam', team: 'home', setup: { logo } })
+    expect(g.view().teams.home.logo).toBe(logo)
+    expect(g.view().teams.away.logo).toBeNull()
+  })
+
+  it('si possono nascondere per tutti e due, senza perderli', () => {
+    const g = game()
+      .do({ type: 'setTeam', team: 'home', setup: { logo } })
+      .do({ type: 'setShowLogos', show: false })
+    expect(g.view().teams.home.logo).toBeNull()
+    expect(g.state.teams.home.logo).toBe(logo)
+
+    g.do({ type: 'setShowLogos', show: true })
+    expect(g.view().teams.home.logo).toBe(logo)
+  })
+
+  it('una nuova partita torna a mostrarli', () => {
+    const g = game()
+      .do({ type: 'setTeam', team: 'home', setup: { logo } })
+      .do({ type: 'setShowLogos', show: false }, { type: 'newGame' })
+    expect(g.state.showLogos).toBe(true)
+    expect(g.view().teams.home.logo).toBe(logo)
+  })
+})
+
 describe('immutabilità', () => {
   it('apply e advance non modificano lo stato ricevuto', () => {
     const start = createGame()

@@ -117,6 +117,11 @@ export interface GameState {
   penalties: Penalty[]
   events: GameEvent[]
   shootout: ShootoutState | null
+  /**
+   * Mostrare i loghi sul tabellone? Anche se true, una squadra senza logo
+   * resta senza. Torna true a ogni nuova partita.
+   */
+  showLogos: boolean
   nextId: number
 }
 

@@ -15,6 +15,12 @@ describe('ripristino partita salvata', () => {
     expect(migrate(old)?.teams.home.logo).toBeNull()
   })
 
+  it('le partite salvate prima dell’opzione loghi li mostrano', () => {
+    const old = JSON.parse(JSON.stringify(createGame()))
+    delete old.showLogos
+    expect(migrate(old)?.showLogos).toBe(true)
+  })
+
   it('scarta dati non validi', () => {
     expect(migrate(null)).toBeNull()
     expect(migrate({ foo: 1 })).toBeNull()

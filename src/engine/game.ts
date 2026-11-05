@@ -46,6 +46,8 @@ export type Command =
   | { type: 'undoShootoutAttempt'; team: TeamId }
   | { type: 'endGame' }
   | { type: 'setTeam'; team: TeamId; setup: Partial<TeamSetup> }
+  /** Mostra o nasconde i loghi di tutte e due le squadre sul tabellone. */
+  | { type: 'setShowLogos'; show: boolean }
   /**
    * Cambia le regole della partita in corso. Valgono dal prossimo periodo;
    * se il periodo attuale non è ancora iniziato, anche la sua durata si adegua.
@@ -81,6 +83,7 @@ export function createGame(
     penalties: [],
     events: [],
     shootout: null,
+    showLogos: true,
     nextId: 1,
   }
 }
@@ -370,6 +373,10 @@ export function apply(state: GameState, command: Command, now: number): GameStat
       s.timeout = null
       s.intermission = null
       s.phase = 'final'
+      break
+
+    case 'setShowLogos':
+      s.showLogos = command.show
       break
 
     case 'setTeam':

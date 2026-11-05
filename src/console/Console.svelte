@@ -301,7 +301,9 @@
     <main class="page">
       <TeamsTab
         teams={game.teams}
+        showLogos={game.showLogos}
         onchange={(team, setup) => run({ type: 'setTeam', team, setup })}
+        onShowLogos={(show) => run({ type: 'setShowLogos', show })}
       />
     </main>
   {:else if tab === 'rules'}

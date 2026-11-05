@@ -7,11 +7,19 @@
 
   let {
     teams,
+    showLogos,
     onchange,
+    onShowLogos,
   }: {
     teams: Record<TeamId, TeamState>
+    /** Loghi visibili sul tabellone (per le squadre che ne hanno uno). */
+    showLogos: boolean
     onchange: (team: TeamId, setup: Partial<TeamSetup>) => void
+    onShowLogos: (show: boolean) => void
   } = $props()
+
+  const logosAvailable = $derived(!!teams.home.logo || !!teams.away.logo)
+  const onlyOneLogo = $derived(!!teams.home.logo !== !!teams.away.logo)
 
   let message = $state<string | null>(null)
 
@@ -95,6 +103,31 @@
       Scambia nomi, colori e loghi delle due squadre. Il punteggio resta dov’è: usalo prima
       dell’inizio della partita.
     </HelpTip>
+
+    <span class="separator" aria-hidden="true"></span>
+
+    <button
+      type="button"
+      class="btn"
+      class:active={!showLogos}
+      aria-pressed={!showLogos}
+      disabled={!logosAvailable}
+      onclick={() => {
+        const show = !showLogos
+        onShowLogos(show)
+        message = show ? 'Loghi di nuovo visibili.' : 'Loghi nascosti sul tabellone.'
+      }}
+    >
+      {showLogos ? '🚫 Nascondi loghi' : '🖼 Mostra loghi'}
+    </button>
+    <HelpTip title="Nascondi loghi">
+      Toglie i loghi di tutte e due le squadre dal tabellone (fascia della squadra e animazione del
+      gol), senza cancellarli. Utile quando una sola squadra ha il logo. Con
+      <b>Nuova partita</b> i loghi tornano visibili.
+    </HelpTip>
+    {#if showLogos && onlyOneLogo}
+      <span class="hint">Solo una squadra ha il logo: puoi nasconderli per uniformità.</span>
+    {/if}
     {#if message}<span class="message">{message}</span>{/if}
   </div>
 
@@ -164,6 +197,23 @@
 
   .library-row select {
     flex: 1;
+  }
+
+  .separator {
+    width: 1px;
+    height: 1.6rem;
+    margin: 0 0.4rem;
+    background: var(--ice-800);
+  }
+
+  .btn.active {
+    border-color: var(--warn);
+    color: #ffd166;
+  }
+
+  .hint {
+    font-size: 0.88rem;
+    color: #ffd166;
   }
 
   .swap-row {
