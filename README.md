@@ -1,18 +1,44 @@
 # Tabellone Hockey
 
+![Versione](https://img.shields.io/github/v/release/AEBWP/tabellone-hockey?label=versione&color=1f6feb)
+![Stato: beta](https://img.shields.io/badge/stato-beta-orange)
+![Windows 10 e 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)
+![Offline](https://img.shields.io/badge/funziona-offline-2ea043)
+
 Tabellone segnapunti per hockey su ghiaccio, pensato per il palaghiaccio:
 una **console operatore** sul PC e un **tabellone spettatori** a schermo intero
 sul maxischermo. Funziona completamente **offline**.
+
+![Il tabellone sul maxischermo (stile Arena)](https://raw.githubusercontent.com/wiki/AEBWP/tabellone-hockey/images/tabellone-arena.png)
+
+> 🧪 **Il progetto è in beta** (versioni 0.9.x): funziona ed è usabile, ma non è ancora arrivato
+> alla **versione 1.0**, prevista dopo le prove sul campo al palaghiaccio.
 
 ## ⬇️ Scarica
 
 ### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest)
 
-Il link apre la pagina dell'**ultima versione**: in cima c'è il pulsante per scaricare l'installer
-(`Tabellone-Hockey-<versione>-installazione.exe`, con il numero di versione nel nome).
-Per aggiornare basta eseguirlo di nuovo: i dati restano.
+| Versione                 | Data       | Download                                                                                                                                                   |
+| ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0.9.6** (ultima, beta) | 5 nov 2026 | [⬇️ Tabellone-Hockey-0.9.6-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.6/Tabellone-Hockey-0.9.6-installazione.exe) |
+| 0.9.5 (beta)             | 5 nov 2026 | [⬇️ Tabellone-Hockey-0.9.5-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.5/Tabellone-Hockey-0.9.5-installazione.exe) |
+| Versioni precedenti      |            | [Tutte le versioni](https://github.com/AEBWP/tabellone-hockey/wiki/Download)                                                                               |
 
-**Come installarlo e usarlo al palaghiaccio:** [INSTALLAZIONE.md](INSTALLAZIONE.md).
+Per aggiornare basta eseguire l'installer della versione nuova: i dati restano.
+
+> 🛡️ Al primo avvio Windows può mostrare **"PC protetto da Windows"**: è normale, il programma
+> non ha un certificato di firma a pagamento. Clicca **Ulteriori informazioni → Esegui comunque**.
+> [Perché succede](https://github.com/AEBWP/tabellone-hockey/wiki/Avviso-di-Windows).
+
+## 📖 Guida
+
+Tutto su installazione e uso è nella **[wiki](https://github.com/AEBWP/tabellone-hockey/wiki)**:
+[installazione](https://github.com/AEBWP/tabellone-hockey/wiki/Installazione),
+[console](https://github.com/AEBWP/tabellone-hockey/wiki/Usare-la-console),
+[stili del tabellone](https://github.com/AEBWP/tabellone-hockey/wiki/Il-tabellone-e-gli-stili),
+[squadre, regolamento e audio](https://github.com/AEBWP/tabellone-hockey/wiki/Squadre-regolamento-audio-e-backup),
+[domande frequenti](https://github.com/AEBWP/tabellone-hockey/wiki/Domande-frequenti).
+Una guida sintetica per il palaghiaccio è anche in [INSTALLAZIONE.md](INSTALLAZIONE.md).
 
 ---
 
@@ -34,6 +60,7 @@ npm run build      # crea la versione finale in dist/
 npm run app        # avvia il programma desktop (Electron)
 npm run app:smoke  # collaudo automatico del programma desktop, con screenshot
 npm run dist       # crea il file di installazione in release/
+npm run screenshots # immagini di tabellone e console (per wiki e release) in screenshots/
 ```
 
 In sviluppo la console è su `http://localhost:5173/` (premi `F1` per la guida rapida). Il pulsante
@@ -78,5 +105,5 @@ src/
   setup/            scelta degli schermi all'avvio (programma desktop)
 electron/           processo principale del programma desktop
 public/             file statici (icona, identificazione schermi)
-scripts/            strumenti di sviluppo (collaudo automatico)
+scripts/            strumenti di sviluppo (collaudo automatico, icone, screenshot)
 ```

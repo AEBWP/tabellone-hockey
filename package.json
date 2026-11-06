@@ -16,8 +16,7 @@
     "app:smoke": "vite build && node scripts/smoke.mjs",
     "icon": "electron scripts/make-icon.cjs",
     "dist": "vite build && electron scripts/make-icon.cjs && electron-builder --win",
-    "dropbox:collega": "node scripts/dropbox-collega.mjs",
-    "dropbox:carica": "node scripts/dropbox-carica.mjs"
+    "screenshots": "electron scripts/screenshots.mjs"
   },
   "devDependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",
