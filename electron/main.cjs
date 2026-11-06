@@ -666,6 +666,11 @@ async function runSmokeTest(outDir) {
     report.audioUnlocked = await consoleWin.webContents.executeJavaScript(
       `!document.querySelector('.audio-locked')`,
     )
+    // Streaming: dal programma installato il servizio online deve essere
+    // raggiungibile (CORS dall'origine app://). Senza internet risulta false.
+    report.streamingService = await consoleWin.webContents.executeJavaScript(
+      `fetch('https://live.tabellone-hockey.workers.dev/api/info').then((r) => r.json()).catch((e) => String(e))`,
+    )
     await wait(7000) // fine animazione del gol
     await snap('console', consoleWin)
     await snap('display', displayWin)
