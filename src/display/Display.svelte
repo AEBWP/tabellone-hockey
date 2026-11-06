@@ -27,6 +27,8 @@
   let game = $state.raw<GameState | null>(null)
   let t = $state(now())
   let lastHeartbeat = $state(0)
+  /** Spento dalla console (versione browser, scheda che non si può chiudere). */
+  let switchedOff = $state(false)
   let sceneVersion = $state(0)
 
   const connected = $derived(t - lastHeartbeat < HEARTBEAT_TIMEOUT_MS)
@@ -114,6 +116,15 @@
   } else {
     const channel = createChannel()
     const unsubscribe = channel.subscribe((message) => {
+      if (message.type === 'closeDisplay' && !desktop) {
+        // Il browser chiude solo le schede aperte dalla console: se è stata aperta
+        // a mano resta aperta, ma spenta (schermo nero) e scollegata dalla console.
+        clearInterval(beat)
+        switchedOff = true
+        window.close()
+        return
+      }
+      if (switchedOff) return
       if (message.type === 'heartbeat') lastHeartbeat = now()
       if (message.type === 'state') {
         lastHeartbeat = now()
@@ -121,10 +132,12 @@
       }
     })
     channel.send({ type: 'hello' })
-    const beat = setInterval(
-      () => channel.send({ type: 'displayHeartbeat' }),
-      HEARTBEAT_INTERVAL_MS,
-    )
+    // Finché non arriva la partita si richiede di nuovo: all'avvio console e
+    // tabellone si aprono insieme e la prima richiesta può andare persa.
+    const beat = setInterval(() => {
+      channel.send({ type: 'displayHeartbeat' })
+      if (!game) channel.send({ type: 'hello' })
+    }, HEARTBEAT_INTERVAL_MS)
     cleanup = () => {
       clearInterval(beat)
       unsubscribe()
@@ -148,25 +161,31 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="root" ondblclick={toggleFullscreen}>
-  <Stage>
-    {#if view}
-      {#key sceneVersion}
-        <Scoreboard {view} style={game?.boardStyle} />
-      {/key}
-      {#if warmup === 'running'}
-        <Warmup {view} style={game?.boardStyle ?? 'arena'} ondone={() => (warmup = 'done')} />
+  {#if switchedOff}
+    <div class="off">
+      <p>{tr('Tabellone chiuso dalla console: puoi chiudere questa scheda.')}</p>
+    </div>
+  {:else}
+    <Stage>
+      {#if view}
+        {#key sceneVersion}
+          <Scoreboard {view} style={game?.boardStyle} />
+        {/key}
+        {#if warmup === 'running'}
+          <Warmup {view} style={game?.boardStyle ?? 'arena'} ondone={() => (warmup = 'done')} />
+        {/if}
+      {:else}
+        <div class="waiting">
+          <h1>TABELLONE HOCKEY</h1>
+          <p>{tr('In attesa della console…')}</p>
+        </div>
       {/if}
-    {:else}
-      <div class="waiting">
-        <h1>TABELLONE HOCKEY</h1>
-        <p>{tr('In attesa della console…')}</p>
-      </div>
-    {/if}
 
-    {#if !demo && game && !connected}
-      <div class="offline" title={tr('Console non collegata')}></div>
-    {/if}
-  </Stage>
+      {#if !demo && game && !connected}
+        <div class="offline" title={tr('Console non collegata')}></div>
+      {/if}
+    </Stage>
+  {/if}
 
   {#if demo}
     <aside class="demo-help">
@@ -187,6 +206,17 @@
     position: relative;
     height: 100%;
     cursor: none;
+  }
+
+  .off {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 100%;
+    padding-bottom: 2rem;
+    background: #000;
+    color: #555;
+    cursor: default;
   }
 
   .waiting {

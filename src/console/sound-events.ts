@@ -1,7 +1,8 @@
-import type { GameState, GameView } from '../engine'
+import { periodLengthMs, type GameState, type GameView } from '../engine'
 
 /** Suoni del tabellone. */
-export type SoundId = 'goal' | 'periodEnd' | 'timeout' | 'timeoutEnd' | 'intermissionEnd'
+export type SoundId =
+  'goal' | 'periodEnd' | 'timeout' | 'timeoutEnd' | 'intermissionEnd' | 'shiftChange'
 
 export const SOUND_LABELS: Record<SoundId, { name: string; description: string }> = {
   goal: { name: 'Sirena del gol', description: 'Quando premi GOL (non con le correzioni ±1).' },
@@ -18,6 +19,11 @@ export const SOUND_LABELS: Record<SoundId, { name: string; description: string }
     name: 'Fine intervallo',
     description: 'Tre segnali brevi quando l’intervallo finisce: le squadre tornano in pista.',
   },
+  shiftChange: {
+    name: 'Sirena del cambio',
+    description:
+      'Segnale breve a intervalli regolari mentre il tempo scorre, per il cambio dei giocatori. Si attiva nel regolamento (es. Bambini: ogni minuto).',
+  },
 }
 
 export const SOUND_IDS = Object.keys(SOUND_LABELS) as SoundId[]
@@ -32,6 +38,8 @@ export interface SoundSnapshot {
   goalCount: number
   timeoutActive: boolean
   timeoutRemainingMs: number
+  /** Sirene del cambio già "passate" nel periodo in corso; -1 se non si contano (tempo fermo o sirena spenta). */
+  shifts: number
 }
 
 export function snapshot(state: GameState, view: GameView): SoundSnapshot {
@@ -43,7 +51,16 @@ export function snapshot(state: GameState, view: GameView): SoundSnapshot {
     goalCount: goals.length,
     timeoutActive: !!view.timeout,
     timeoutRemainingMs: view.timeout?.remainingMs ?? 0,
+    shifts: shiftCount(state, view),
   }
+}
+
+function shiftCount(state: GameState, view: GameView): number {
+  const every = state.rules.shiftHornMs ?? 0
+  // Allo zero suona già la sirena di fine periodo.
+  if (!(every > 0) || view.phase !== 'play' || !view.clockRunning || view.clockMs <= 0) return -1
+  const elapsed = periodLengthMs(state.rules, view.period) - view.clockMs
+  return Math.floor(elapsed / every)
 }
 
 // Fasi in cui si arriva quando un periodo finisce (oltre al cambio di periodo).
@@ -75,6 +92,18 @@ export function soundEvents(prev: SoundSnapshot, cur: SoundSnapshot): SoundId[] 
   }
 
   if (prev.phase === 'intermission' && cur.phase === 'ready') sounds.push('intermissionEnd')
+
+  // Sirena del cambio: solo quando il tempo scorre da solo oltre la soglia
+  // (non se l'operatore corregge il tempo o lo avvia/ferma).
+  if (
+    prev.shifts >= 0 &&
+    cur.period === prev.period &&
+    cur.shifts === prev.shifts + 1 &&
+    !newGoal &&
+    !periodEnded
+  ) {
+    sounds.push('shiftChange')
+  }
 
   return sounds
 }

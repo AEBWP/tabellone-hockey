@@ -117,7 +117,7 @@
           <div class="timeout-clock">{view.timeout.text}</div>
         </div>
       {:else}
-        <div class="stats">
+        <div class="stats" style:visibility={view.showShots ? null : 'hidden'}>
           <div class="stats-head">{text.shotsOnGoal}</div>
           <div class="stats-row">
             {#each [view.teams.home, view.teams.away] as t, i (i)}

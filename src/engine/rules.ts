@@ -50,6 +50,13 @@ export interface Rules {
   timeoutsPerTeam: number
   /** Sotto questa soglia il tempo mostra i decimi; 0 = mai. */
   tenthsBelowMs: number
+  /**
+   * Sirena del cambio: suona ogni volta che, a tempo in moto, nel periodo passa
+   * questo tempo (es. ogni minuto per i bambini); 0 = mai.
+   */
+  shiftHornMs: number
+  /** Conteggio dei tiri in porta, in console e sui tabelloni. */
+  showShots: boolean
 }
 
 export interface RulesPreset {
@@ -69,6 +76,8 @@ const COMMON = {
   timeoutMs: 30 * SEC,
   timeoutsPerTeam: 1,
   tenthsBelowMs: MIN,
+  shiftHornMs: 0,
+  showShots: false,
 } satisfies Partial<Rules>
 
 export const PRESETS: readonly RulesPreset[] = [
@@ -124,6 +133,20 @@ export const PRESETS: readonly RulesPreset[] = [
       shootout: { enabled: false, rounds: 3 },
     },
   },
+  {
+    id: 'bambini',
+    name: 'Bambini',
+    description: '3 × 12′, sirena del cambio ogni minuto, nessun supplementare',
+    rules: {
+      ...COMMON,
+      periods: 3,
+      periodMs: 12 * MIN,
+      intermissionMs: 3 * MIN,
+      overtime: { enabled: false, periodMs: 5 * MIN, maxPeriods: 1, skaters: 3, breakMs: 0 },
+      shootout: { enabled: false, rounds: 3 },
+      shiftHornMs: MIN,
+    },
+  },
 ]
 
 export const DEFAULT_RULES: Rules = PRESETS[0].rules
@@ -154,6 +177,8 @@ export const RULE_LIMITS = {
   penaltyMs: { min: 10 * SEC, max: 30 * MIN },
   timeoutMs: { min: 5 * SEC, max: 5 * MIN },
   timeoutsPerTeam: { min: 0, max: 5 },
+  /** Sirena del cambio (quando attiva; 0 = spenta). */
+  shiftHornMs: { min: 10 * SEC, max: 10 * MIN },
 } as const
 
 /** Controlla le regole: restituisce l'elenco dei problemi (vuoto se tutto va bene). */
@@ -203,6 +228,9 @@ export function validateRules(r: Rules): string[] {
   check(r.penaltyMs.misconduct, L.penaltyMs, 'La cattiva condotta va da 10 s a 30 min.')
   check(r.timeoutMs, L.timeoutMs, 'Il timeout va da 5 s a 5 min.')
   check(r.timeoutsPerTeam, L.timeoutsPerTeam, 'I timeout per squadra vanno da 0 a 5.')
+  if (r.shiftHornMs !== 0) {
+    check(r.shiftHornMs, L.shiftHornMs, 'La sirena del cambio va da 10 s a 10 min (0 = mai).')
+  }
   return errors
 }
 
@@ -219,5 +247,6 @@ export function describeRules(r: Rules): string {
   }
   if (r.shootout.enabled) parts.push('rigori')
   if (!r.overtime.enabled && !r.shootout.enabled) parts.push('pareggio possibile')
+  if (r.shiftHornMs > 0) parts.push(`cambio ogni ${len(r.shiftHornMs)}`)
   return parts.join(', ')
 }

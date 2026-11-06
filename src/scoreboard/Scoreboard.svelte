@@ -7,6 +7,8 @@
   import Classico from './classico/Scoreboard.svelte'
   import Ghiaccio from './ghiaccio/Scoreboard.svelte'
   import Retro from './retro/Scoreboard.svelte'
+  import Palette from './palette/Scoreboard.svelte'
+  import Essenziale from './essenziale/Scoreboard.svelte'
   import Matchup from './Matchup.svelte'
 
   /**
@@ -61,6 +63,10 @@
       <Classico {view} {animations} />
     {:else if style === 'ghiaccio'}
       <Ghiaccio {view} {animations} />
+    {:else if style === 'palette'}
+      <Palette {view} {animations} />
+    {:else if style === 'essenziale'}
+      <Essenziale {view} {animations} />
     {:else if style === 'retro'}
       <Retro {view} {animations} />
     {:else if style === 'broadcast'}

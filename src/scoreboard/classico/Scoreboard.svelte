@@ -74,7 +74,7 @@
           <div class="timeout-clock">{view.timeout.text}</div>
         </div>
       {:else}
-        <div class="stats">
+        <div class="stats" style:visibility={view.showShots ? null : 'hidden'}>
           <div class="stat-label">{text.shotsOnGoal}</div>
           <div class="stat-row">
             <span>{view.teams.home.shots}</span>

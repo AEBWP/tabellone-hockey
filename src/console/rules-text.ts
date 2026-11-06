@@ -21,5 +21,6 @@ export function describeRules(r: Rules): string {
   }
   if (r.shootout.enabled) parts.push(t('rigori'))
   if (!r.overtime.enabled && !r.shootout.enabled) parts.push(t('pareggio possibile'))
+  if (r.shiftHornMs > 0) parts.push(t('cambio ogni {length}', { length: len(r.shiftHornMs) }))
   return parts.join(', ')
 }

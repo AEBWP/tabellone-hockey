@@ -61,3 +61,9 @@ describe('cambio regole durante la partita', () => {
     expect(deriveView(s, 0).teams.home.timeoutsLeft).toBe(2)
   })
 })
+
+describe('tiri in porta', () => {
+  it('nascosti di default in tutti i regolamenti', () => {
+    for (const p of PRESETS) expect(p.rules.showShots, p.id).toBe(false)
+  })
+})

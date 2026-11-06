@@ -21,7 +21,8 @@ anche seguire **in streaming** dal telefono, con un link e un QR code fissi per 
 
 | Versione                 | Data       | Download                                                                                                                                                   |
 | ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **0.9.8** (ultima, beta) | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.8-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.8/Tabellone-Hockey-0.9.8-installazione.exe) |
+| **0.9.9** (ultima, beta) | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.9-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.9/Tabellone-Hockey-0.9.9-installazione.exe) |
+| 0.9.8 (beta)             | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.8-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.8/Tabellone-Hockey-0.9.8-installazione.exe) |
 | 0.9.7 (beta)             | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.7-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.7/Tabellone-Hockey-0.9.7-installazione.exe) |
 | Versioni precedenti      |            | [Tutte le versioni](https://github.com/AEBWP/tabellone-hockey/wiki/Download)                                                                               |
 
@@ -75,7 +76,7 @@ secondo schermo e fai **doppio clic** per lo schermo intero.
 Per vedere la grafica del tabellone senza la console apri
 `http://localhost:5173/display.html?demo`: i tasti da `1` a `8` mostrano le
 varie situazioni (penalità, ultimo minuto, timeout, intervallo, supplementare,
-rigori, finale), `G` e `H` simulano un gol, `L` mostra o nasconde i loghi, `S` cambia stile (Arena, Broadcast, Ghiaccio, Retrò, Classico), `K` cambia lingua, `0`
+rigori, finale), `G` e `H` simulano un gol, `L` mostra o nasconde i loghi, `S` cambia stile (Arena, Broadcast, Ghiaccio, Retrò, Classico, Palette, Essenziale), `K` cambia lingua, `0`
 mostra la presentazione prima della partita e `P` avvia il tempo per vederne la transizione.
 
 ## Programma desktop
@@ -118,7 +119,7 @@ src/
   i18n/             lingue: scritte del tabellone (board.ts) e della console (console.ts)
   console/          interfaccia della console operatore
   display/          finestra del tabellone spettatori (e demo)
-  scoreboard/       grafica del tabellone spettatori: arena/, broadcast/, ghiaccio/, retro/ e classico/ (stili), Matchup (presentazione “A VS B”)
+  scoreboard/       grafica del tabellone spettatori: arena/, broadcast/, ghiaccio/, retro/, classico/, palette/ ed essenziale/ (stili), Matchup (presentazione “A VS B”)
   styles/           stili comuni
   setup/            scelta degli schermi all'avvio (programma desktop)
   live/             pagina per gli spettatori dello streaming su internet

@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { apply, createGame, deriveView, type Command, type GameState } from '../engine'
+import {
+  apply,
+  createGame,
+  deriveView,
+  rulesFromPreset,
+  type Command,
+  type GameState,
+  type Rules,
+} from '../engine'
 import { snapshot, soundEvents, type SoundId } from './sound-events'
 
 const SEC = 1_000
 const MIN = 60 * SEC
 
 /** Simula la console: applica comandi, lascia scorrere il tempo e raccoglie i suoni. */
-function session() {
-  let state: GameState = createGame()
+function session(rules?: Rules) {
+  let state: GameState = createGame(rules)
   let now = 1_000_000
   let prev = snapshot(state, deriveView(state, now))
   const heard: SoundId[] = []
@@ -122,5 +130,42 @@ describe('quando suonare', () => {
     s.set(before) // come "Annulla"
     s.do({ type: 'endPeriod' }, { type: 'newGame' })
     expect(s.heard).toEqual(['goal', 'goal', 'periodEnd'])
+  })
+})
+
+describe('sirena del cambio', () => {
+  const count = (heard: SoundId[]) => heard.filter((h) => h === 'shiftChange').length
+
+  it('bambini: suona ogni minuto mentre il tempo scorre, non a fine periodo', () => {
+    const s = session(rulesFromPreset('bambini')).do({ type: 'startClock' })
+    s.wait(3 * MIN + 500)
+    expect(count(s.heard)).toBe(3)
+    // Resto del periodo (12′): 11 cambi in tutto, poi solo la sirena di fine periodo.
+    s.wait(9 * MIN)
+    expect(count(s.heard)).toBe(11)
+    expect(s.heard.at(-1)).toBe('periodEnd')
+  })
+
+  it('a tempo fermo o correggendo il tempo non suona', () => {
+    const s = session(rulesFromPreset('bambini')).do({ type: 'startClock' })
+    s.wait(50 * SEC).do({ type: 'stopClock' })
+    s.wait(2 * MIN)
+    // Correzione del tempo oltre la soglia del minuto, poi ripartenza.
+    s.do({ type: 'setClock', remainingMs: 9 * MIN + 30 * SEC }, { type: 'startClock' })
+    s.wait(5 * SEC)
+    expect(count(s.heard)).toBe(0)
+    s.wait(30 * SEC)
+    expect(count(s.heard)).toBe(1)
+  })
+
+  it('negli altri regolamenti è spenta, ma si può attivare', () => {
+    const senior = session().do({ type: 'startClock' })
+    senior.wait(5 * MIN)
+    expect(count(senior.heard)).toBe(0)
+
+    const custom = { ...rulesFromPreset('senior'), shiftHornMs: 2 * MIN }
+    const s = session(custom).do({ type: 'startClock' })
+    s.wait(5 * MIN)
+    expect(count(s.heard)).toBe(2)
   })
 })

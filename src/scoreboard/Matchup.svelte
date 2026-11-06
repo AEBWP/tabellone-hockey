@@ -574,6 +574,117 @@
     text-shadow: 0 0 14px rgba(255, 176, 0, 0.7);
   }
 
+  /* ══ Variante Palette: targhe scure, fascia nel colore della squadra ══ */
+  .v-palette {
+    color: #f4ecd6;
+    background: #141518;
+  }
+
+  .v-palette .half.home {
+    clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+  }
+
+  .v-palette .half.away {
+    clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+  }
+
+  .v-palette .half-bg {
+    background:
+      linear-gradient(180deg, var(--team) 0 28px, transparent 28px),
+      linear-gradient(180deg, #1d1f23, #141518);
+  }
+
+  .v-palette .monogram {
+    border: 0;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #3a3d43 0 50%, #2c2f34 50% 100%);
+  }
+
+  .v-palette .logo img,
+  .v-palette .short,
+  .v-palette .name {
+    filter: none;
+    text-shadow: none;
+  }
+
+  .v-palette .divider {
+    width: 18px;
+    background: #0b0c0d;
+    box-shadow: none;
+    transform: translateX(-50%) scaleY(var(--p, 1));
+  }
+
+  .v-palette .vs {
+    border: 0;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #3a3d43 0 50%, #2c2f34 50% 100%);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .v-palette .vs span {
+    font-style: normal;
+  }
+
+  .v-palette .plate {
+    border: 0;
+    border-radius: 12px;
+    background: #2c2f34;
+  }
+
+  /* ══ Variante Essenziale: nero, bianco e una fascia di colore ══ */
+  .v-essenziale {
+    background: #000;
+  }
+
+  .v-essenziale .half.home {
+    clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+  }
+
+  .v-essenziale .half.away {
+    clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+  }
+
+  .v-essenziale .half-bg {
+    background: linear-gradient(180deg, var(--team) 0 26px, #000 26px);
+  }
+
+  .v-essenziale .monogram {
+    border-color: var(--team);
+    background: none;
+    box-shadow: none;
+  }
+
+  .v-essenziale .logo img,
+  .v-essenziale .short,
+  .v-essenziale .name {
+    filter: none;
+    text-shadow: none;
+  }
+
+  .v-essenziale .divider {
+    width: 4px;
+    background: #3a3f46;
+    box-shadow: none;
+    transform: translateX(-50%) scaleY(var(--p, 1));
+  }
+
+  .v-essenziale .vs {
+    border: 0;
+    background: #000;
+    box-shadow: none;
+  }
+
+  .v-essenziale .vs span {
+    font-style: normal;
+    color: #b8bec6;
+  }
+
+  .v-essenziale .plate {
+    border: 0;
+    background: #000;
+    color: #b8bec6;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .half,
     .logo,

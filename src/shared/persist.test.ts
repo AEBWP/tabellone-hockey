@@ -38,3 +38,11 @@ describe('ripristino partita salvata', () => {
     expect(migrate('testo')).toBeNull()
   })
 })
+
+describe('sirena del cambio nelle partite salvate prima', () => {
+  it('una partita senza il campo resta senza sirena', () => {
+    const old = createGame() as unknown as Record<string, unknown>
+    const { shiftHornMs: _, ...rules } = old.rules as Record<string, unknown>
+    expect(migrate({ ...old, rules })?.rules.shiftHornMs).toBe(0)
+  })
+})

@@ -128,6 +128,16 @@
         />
         {t('Decimi di secondo nell’ultimo minuto')}
       </label>
+      <label class="check">
+        <input type="checkbox" bind:checked={draft.showShots} />
+        {t('Tiri in porta (in console e sul tabellone)')}
+      </label>
+      <DurationInput label={t('Sirena del cambio ogni (0 = mai)')} bind:value={draft.shiftHornMs} />
+      <p class="muted hint">
+        {t(
+          'Suona a intervalli regolari mentre il tempo scorre, per il cambio dei giocatori (es. ogni minuto nelle partite dei bambini).',
+        )}
+      </p>
     </fieldset>
 
     <fieldset class="panel">
@@ -332,6 +342,12 @@
 </div>
 
 <style>
+  .hint {
+    margin: -0.25rem 0 0;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
   .rules-tab {
     display: flex;
     flex-direction: column;

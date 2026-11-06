@@ -68,3 +68,15 @@ describe('compatibilità con console di altre versioni', () => {
     expect(browserLanguage(['pt-BR'])).toBeNull()
   })
 })
+
+describe('tiri in porta nello streaming', () => {
+  it('console precedenti (senza l’opzione): i tiri restano visibili', () => {
+    const { showShots: _, ...rules } = createGame().rules
+    const clean = sanitizeState({ ...createGame(), rules }, new Map(), 'it')
+    expect(clean?.rules.showShots).toBe(true)
+  })
+
+  it('console nuove: vale la scelta del regolamento', () => {
+    expect(sanitizeState(createGame(), new Map(), 'it')?.rules.showShots).toBe(false)
+  })
+})

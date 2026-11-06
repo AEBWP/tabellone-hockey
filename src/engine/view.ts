@@ -26,6 +26,8 @@ export interface GameView {
   overtimeNumber: number
   /** Periodi regolamentari (es. 3): servono per chiamarli "terzi" o "tempi". */
   regularPeriods: number
+  /** Mostrare i tiri in porta (si attiva nel regolamento). */
+  showShots: boolean
   /** Lingua delle scritte del tabellone. */
   language: Language
   clockMs: number
@@ -135,6 +137,7 @@ export function deriveView(state: GameState, now: number): GameView {
     periodKind: overtime ? 'overtime' : 'regular',
     overtimeNumber: overtime ? s.period - s.rules.periods : 0,
     regularPeriods: s.rules.periods,
+    showShots: s.rules.showShots === true,
     language: s.boardLanguage,
     clockMs,
     clockText: formatClock(clockMs, tenths),

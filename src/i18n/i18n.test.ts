@@ -64,6 +64,7 @@ describe('traduzioni della console', () => {
       maxPenalizedOnIce: 9,
       timeoutMs: 0,
       timeoutsPerTeam: 9,
+      shiftHornMs: 1_000,
     })
     bad.overtime = {
       ...bad.overtime,

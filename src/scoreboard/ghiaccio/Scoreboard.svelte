@@ -124,7 +124,7 @@
             <div class="timeout-clock">{view.timeout.text}</div>
           </div>
         {:else}
-          <div class="card shots">
+          <div class="card shots" style:visibility={view.showShots ? null : 'hidden'}>
             <div class="card-head">{text.shotsOnGoal}</div>
             <div class="shots-row">
               {#each sides as s (s)}

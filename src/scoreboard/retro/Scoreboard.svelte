@@ -110,13 +110,15 @@
     {#each sides as id, i (id)}
       {@const t = view.teams[id]}
       {#if i === 1}
-        <div class="mid">
+        <div class="mid" style:visibility={view.timeout || view.showShots ? null : 'hidden'}>
           {#if view.timeout}
             {@const tt = view.teams[view.timeout.team]}
             <div class="label blink" style:color={lamp(tt)}>{text.timeout} {tt.shortName}</div>
             <SevenSegment value={pad(view.timeout.text, 4)} height={130} color={AMBER} />
           {:else}
-            <div class="label">{text.shotsOnGoal}</div>
+            <div class="label">
+              {text.shotsOnGoal}
+            </div>
             <div class="shots">
               <SevenSegment value={pad(view.teams.home.shots, 2)} height={120} color={AMBER} />
               <SevenSegment value={pad(view.teams.away.shots, 2)} height={120} color={AMBER} />

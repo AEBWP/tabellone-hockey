@@ -14,6 +14,10 @@ export function sanitizeState(
   logos: ReadonlyMap<string, string>,
   language: Language,
 ): GameState | null {
+  const rules = (raw as { rules?: Record<string, unknown> } | null)?.rules
+  if (rules && typeof rules === 'object' && !('showShots' in rules)) {
+    raw = { ...(raw as object), rules: { ...rules, showShots: true } }
+  }
   const state = migrate(raw)
   if (!state) return null
   const boardStyle = BOARD_STYLES.includes(state.boardStyle) ? state.boardStyle : BOARD_STYLES[0]

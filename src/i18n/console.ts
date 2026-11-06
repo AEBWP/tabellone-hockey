@@ -886,6 +886,22 @@ export const ROWS: readonly Row[] = [
   ['Ghiaccio', 'Ice', 'Eis', 'Hielo', 'Glace'],
   ['Retrò', 'Retro', 'Retro', 'Retro', 'Rétro'],
   ['Classico', 'Classic', 'Klassisch', 'Clásico', 'Classique'],
+  ['Palette', 'Split-flap', 'Fallblatt', 'Paletas', 'Palettes'],
+  ['Essenziale', 'Essential', 'Schlicht', 'Esencial', 'Essentiel'],
+  [
+    'Il vecchio tabellone a palette: cifre chiare su tessere scure che girano quando cambiano, testi molto grandi. Gol con le tessere che compongono la scritta una dopo l’altra.',
+    'The old split-flap scoreboard: light digits on dark flaps that turn when they change, very large text. Goal with the flaps spelling the word one after the other.',
+    'Die alte Fallblattanzeige: helle Ziffern auf dunklen Blättern, die beim Wechsel umklappen, sehr große Schrift. Tor mit Blättern, die das Wort nacheinander bilden.',
+    'El viejo marcador de paletas: cifras claras sobre paletas oscuras que giran al cambiar, textos muy grandes. Gol con las paletas que forman la palabra una tras otra.',
+    'Le vieux tableau à palettes : chiffres clairs sur des palettes sombres qui tournent quand ils changent, textes très grands. But avec les palettes qui forment le mot l’une après l’autre.',
+  ],
+  [
+    'Fondo nero e cifre bianche enormi, il colore delle squadre solo come fascia: si legge bene da lontano ed è leggero anche sui PC meno potenti. Gol con il colore della squadra che copre lo schermo.',
+    'Black background and huge white digits, team colours only as a band: easy to read from afar and light even on less powerful PCs. Goal with the team colour covering the screen.',
+    'Schwarzer Hintergrund und riesige weiße Ziffern, die Mannschaftsfarben nur als Streifen: aus der Ferne gut lesbar und auch auf schwächeren PCs leicht. Tor mit der Mannschaftsfarbe, die den Bildschirm füllt.',
+    'Fondo negro y cifras blancas enormes, los colores de los equipos solo como franja: se lee bien de lejos y es ligero incluso en PC menos potentes. Gol con el color del equipo que cubre la pantalla.',
+    'Fond noir et énormes chiffres blancs, couleurs des équipes seulement en bande : se lit bien de loin et reste léger même sur les PC peu puissants. But avec la couleur de l’équipe qui couvre l’écran.',
+  ],
   [
     'Pannelli incorniciati e cifre da display, come nei palazzetti professionistici. Gol in stile TV con fascia diagonale e barra del punteggio.',
     'Framed panels and display-style digits, like in professional arenas. TV-style goal with a diagonal band and score bar.',
@@ -1626,6 +1642,13 @@ export const ROWS: readonly Row[] = [
     'Consola no conectada',
     'Console non connectée',
   ],
+  [
+    'Tabellone chiuso dalla console: puoi chiudere questa scheda.',
+    'Scoreboard closed from the console: you can close this tab.',
+    'Anzeigetafel von der Konsole geschlossen: Du kannst diesen Tab schließen.',
+    'Marcador cerrado desde la consola: puedes cerrar esta pestaña.',
+    'Tableau fermé depuis la console : vous pouvez fermer cet onglet.',
+  ],
   // ── Streaming su internet (console) ────────────────────────────────────
   ['Streaming', 'Streaming', 'Streaming', 'Streaming', 'Streaming'],
   [
@@ -2050,6 +2073,72 @@ export const ROWS: readonly Row[] = [
     'Das ist die Seite, die das Publikum sieht: Das Streaming ist gerade gestoppt.',
     'Esta es la página que ve el público: el streaming está detenido ahora.',
     'Voici la page que voit le public : le streaming est actuellement arrêté.',
+  ],
+  // ── Sirena del cambio (regolamento Bambini) ────────────────────────────
+  ['Bambini', 'Kids', 'Kinder', 'Niños', 'Enfants'],
+  [
+    '3 × 12′, sirena del cambio ogni minuto, nessun supplementare',
+    '3 × 12′, line-change horn every minute, no overtime',
+    '3 × 12′, Wechselsirene jede Minute, keine Verlängerung',
+    '3 × 12′, bocina de cambio cada minuto, sin prórroga',
+    '3 × 12′, sirène de changement chaque minute, pas de prolongation',
+  ],
+  [
+    'Sirena del cambio',
+    'Line-change horn',
+    'Wechselsirene',
+    'Bocina de cambio',
+    'Sirène de changement',
+  ],
+  [
+    'Segnale breve a intervalli regolari mentre il tempo scorre, per il cambio dei giocatori. Si attiva nel regolamento (es. Bambini: ogni minuto).',
+    'Short signal at regular intervals while the clock runs, for line changes. Turned on in the rules (e.g. Kids: every minute).',
+    'Kurzes Signal in regelmäßigen Abständen, während die Zeit läuft, für den Spielerwechsel. Wird im Regelwerk aktiviert (z. B. Kinder: jede Minute).',
+    'Señal breve a intervalos regulares mientras corre el tiempo, para el cambio de jugadores. Se activa en el reglamento (p. ej. Niños: cada minuto).',
+    'Signal bref à intervalles réguliers pendant que le temps s’écoule, pour le changement de joueurs. S’active dans le règlement (ex. Enfants : chaque minute).',
+  ],
+  [
+    'Sirena del cambio ogni (0 = mai)',
+    'Line-change horn every (0 = never)',
+    'Wechselsirene alle (0 = nie)',
+    'Bocina de cambio cada (0 = nunca)',
+    'Sirène de changement toutes les (0 = jamais)',
+  ],
+  [
+    'Suona a intervalli regolari mentre il tempo scorre, per il cambio dei giocatori (es. ogni minuto nelle partite dei bambini).',
+    'Sounds at regular intervals while the clock runs, for line changes (e.g. every minute in kids’ games).',
+    'Ertönt in regelmäßigen Abständen, während die Zeit läuft, für den Spielerwechsel (z. B. jede Minute bei Kinderspielen).',
+    'Suena a intervalos regulares mientras corre el tiempo, para el cambio de jugadores (p. ej. cada minuto en los partidos de niños).',
+    'Retentit à intervalles réguliers pendant que le temps s’écoule, pour le changement de joueurs (ex. chaque minute dans les matchs des enfants).',
+  ],
+  [
+    'cambio ogni {length}',
+    'change every {length}',
+    'Wechsel alle {length}',
+    'cambio cada {length}',
+    'changement toutes les {length}',
+  ],
+  [
+    'La sirena del cambio va da 10 s a 10 min (0 = mai).',
+    'The line-change horn goes from 10 s to 10 min (0 = never).',
+    'Die Wechselsirene geht von 10 s bis 10 min (0 = nie).',
+    'La bocina de cambio va de 10 s a 10 min (0 = nunca).',
+    'La sirène de changement va de 10 s à 10 min (0 = jamais).',
+  ],
+  // ── Tiri in porta facoltativi e anteprima del tabellone ────────────────
+  [
+    'Tiri in porta (in console e sul tabellone)',
+    'Shots on goal (in the console and on the scoreboard)',
+    'Torschüsse (in der Konsole und auf der Anzeigetafel)',
+    'Tiros a puerta (en la consola y en el marcador)',
+    'Tirs cadrés (dans la console et sur le tableau)',
+  ],
+  [
+    'Anteprima del tabellone',
+    'Scoreboard preview',
+    'Vorschau der Anzeigetafel',
+    'Vista previa del marcador',
+    'Aperçu du tableau',
   ],
 ]
 

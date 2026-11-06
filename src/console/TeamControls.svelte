@@ -131,38 +131,40 @@
 
   <!-- Tiri e timeout -->
   <div class="stats">
-    <div class="stat">
-      <span class="label">
-        {t('Tiri in porta')}
-        <HelpTip title={t('Tiri in porta')} align={id === 'away' ? 'right' : 'left'}>
-          {@html t(
-            'Conta i tiri che il portiere ha dovuto parare (più i gol). Scorciatoia: <kbd>Maiusc</kbd> + <kbd>{key}</kbd>.',
-            { key: goalKey },
-          )}
-        </HelpTip>
-      </span>
-      <div class="counter">
-        <button
-          type="button"
-          class="btn btn-sm"
-          disabled={locked || team.shots === 0}
-          onclick={() =>
-            run({ type: 'shot', team: id, delta: -1 }, t('Tiro {team}', { team: team.name }))}
-        >
-          −
-        </button>
-        <strong>{team.shots}</strong>
-        <button
-          type="button"
-          class="btn btn-sm"
-          disabled={locked}
-          onclick={() =>
-            run({ type: 'shot', team: id, delta: 1 }, t('Tiro {team}', { team: team.name }))}
-        >
-          +
-        </button>
+    {#if rules.showShots}
+      <div class="stat">
+        <span class="label">
+          {t('Tiri in porta')}
+          <HelpTip title={t('Tiri in porta')} align={id === 'away' ? 'right' : 'left'}>
+            {@html t(
+              'Conta i tiri che il portiere ha dovuto parare (più i gol). Scorciatoia: <kbd>Maiusc</kbd> + <kbd>{key}</kbd>.',
+              { key: goalKey },
+            )}
+          </HelpTip>
+        </span>
+        <div class="counter">
+          <button
+            type="button"
+            class="btn btn-sm"
+            disabled={locked || team.shots === 0}
+            onclick={() =>
+              run({ type: 'shot', team: id, delta: -1 }, t('Tiro {team}', { team: team.name }))}
+          >
+            −
+          </button>
+          <strong>{team.shots}</strong>
+          <button
+            type="button"
+            class="btn btn-sm"
+            disabled={locked}
+            onclick={() =>
+              run({ type: 'shot', team: id, delta: 1 }, t('Tiro {team}', { team: team.name }))}
+          >
+            +
+          </button>
+        </div>
       </div>
-    </div>
+    {/if}
 
     <div class="stat">
       <span class="label">

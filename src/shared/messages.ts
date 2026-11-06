@@ -13,6 +13,8 @@ export type Message =
   | { type: 'state'; state: GameState }
   /** Il tabellone segnala di essere aperto (la console mostra se è collegato). */
   | { type: 'displayHeartbeat' }
+  /** Versione browser: la console chiede al tabellone di chiudersi (o di spegnersi). */
+  | { type: 'closeDisplay' }
 
 export const HEARTBEAT_INTERVAL_MS = 1_000
 /** Oltre questo intervallo senza heartbeat, l'altra finestra è considerata scollegata. */

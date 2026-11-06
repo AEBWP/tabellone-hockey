@@ -1,4 +1,4 @@
-import { createGame, type GameState } from '../engine'
+import { createGame, DEFAULT_RULES, type GameState } from '../engine'
 import { desktop } from './desktop'
 
 /**
@@ -46,7 +46,8 @@ export function migrate(saved: unknown): GameState | null {
   return {
     ...base,
     ...s,
-    rules: { ...base.rules, ...s.rules },
+    // Regole nuove (es. la sirena del cambio) con il valore predefinito.
+    rules: { ...DEFAULT_RULES, ...base.rules, ...s.rules },
     teams: {
       home: { ...base.teams.home, ...s.teams.home },
       away: { ...base.teams.away, ...s.teams.away },

@@ -6,6 +6,8 @@
   import Classico from './classico/Scoreboard.svelte'
   import Ghiaccio from './ghiaccio/Scoreboard.svelte'
   import Retro from './retro/Scoreboard.svelte'
+  import Palette from './palette/Scoreboard.svelte'
+  import Essenziale from './essenziale/Scoreboard.svelte'
 
   /**
    * "Prova generale" invisibile, fatta una volta all'apertura del tabellone:
@@ -80,6 +82,10 @@
         <Classico view={warmView} />
       {:else if current === 'ghiaccio'}
         <Ghiaccio view={warmView} />
+      {:else if current === 'palette'}
+        <Palette view={warmView} />
+      {:else if current === 'essenziale'}
+        <Essenziale view={warmView} />
       {:else if current === 'retro'}
         <Retro view={warmView} />
       {:else if current === 'broadcast'}

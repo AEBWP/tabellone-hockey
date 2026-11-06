@@ -27,4 +27,14 @@ export const STYLE_INFO: Record<BoardStyle, { name: string; description: string 
     description:
       'Grafica morbida con sfumature e bagliori, punteggi molto grandi. Gol a tutto schermo nel colore della squadra con raggi luminosi.',
   },
+  palette: {
+    name: 'Palette',
+    description:
+      'Il vecchio tabellone a palette: cifre chiare su tessere scure che girano quando cambiano, testi molto grandi. Gol con le tessere che compongono la scritta una dopo l’altra.',
+  },
+  essenziale: {
+    name: 'Essenziale',
+    description:
+      'Fondo nero e cifre bianche enormi, il colore delle squadre solo come fascia: si legge bene da lontano ed è leggero anche sui PC meno potenti. Gol con il colore della squadra che copre lo schermo.',
+  },
 }

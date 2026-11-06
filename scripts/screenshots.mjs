@@ -12,7 +12,7 @@ const outArg = process.argv.slice(2).find((a) => !a.startsWith('-') && !a.endsWi
 const outDir = path.resolve(outArg ?? path.join(root, 'screenshots'))
 mkdirSync(outDir, { recursive: true })
 
-const STYLES = ['arena', 'broadcast', 'ghiaccio', 'retro', 'classico']
+const STYLES = ['arena', 'broadcast', 'ghiaccio', 'retro', 'classico', 'palette', 'essenziale']
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 app.commandLine.appendSwitch('force-device-scale-factor', '1')
@@ -59,7 +59,10 @@ app.whenReady().then(async () => {
   // SOLO=console oppure SOLO=tabellone per rifare solo una parte
   const only = process.env.SOLO
   win.setContentSize(1920, 1080)
+  // STILI=palette,essenziale per rifare solo alcuni stili (con tutte le scene)
+  const pick = process.env.STILI?.split(',')
   for (const [i, style] of (only === 'console' ? [] : STYLES).entries()) {
+    if (pick && !pick.includes(style)) continue
     await open('/display.html?demo')
     for (let s = 0; s < i; s++) await key('s')
     await key('0')
@@ -71,7 +74,7 @@ app.whenReady().then(async () => {
     await key('g')
     await sleep(1600)
     await snap(`tabellone-${style}-gol`)
-    if (style === 'arena') {
+    if (style === 'arena' || pick) {
       const scenes = {
         2: 'superiorita',
         3: 'ultimo-minuto',
@@ -84,8 +87,9 @@ app.whenReady().then(async () => {
       for (const [k, name] of Object.entries(scenes)) {
         await key(k)
         await sleep(1200)
-        await snap(`tabellone-arena-${name}`)
+        await snap(`tabellone-${style}-${name}`)
       }
+      if (style !== 'arena') continue
       // Le altre lingue del tabellone (tasto K della demo: it → en → de → es → fr)
       await key('1')
       for (const lang of ['en', 'de', 'es', 'fr']) {

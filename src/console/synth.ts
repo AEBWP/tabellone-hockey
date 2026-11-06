@@ -245,5 +245,7 @@ export function scheduleSound(
       return buzzer(ctx, arena, at, 1.1)
     case 'intermissionEnd':
       return blasts(ctx, arena, at, 3, 0.35, 0.2)
+    case 'shiftChange':
+      return buzzer(ctx, arena, at, 1.2)
   }
 }

@@ -21,6 +21,7 @@
   import { now } from '../shared/time'
   import ClockEditDialog from './ClockEditDialog.svelte'
   import ClockPanel from './ClockPanel.svelte'
+  import BoardPreview from './BoardPreview.svelte'
   import type { ConfirmRequest } from './confirm'
   import EventLog from './EventLog.svelte'
   import HelpOverlay from './HelpOverlay.svelte'
@@ -96,7 +97,12 @@
 
   const unsubscribe = channel.subscribe((message) => {
     if (message.type === 'hello') channel.send({ type: 'state', state: game })
-    if (message.type === 'hello' || message.type === 'displayHeartbeat') lastDisplaySeen = now()
+    if (message.type === 'hello' || message.type === 'displayHeartbeat') {
+      // Tabellone appena (ri)collegato: riceve subito la partita.
+      if (now() - lastDisplaySeen >= HEARTBEAT_TIMEOUT_MS)
+        channel.send({ type: 'state', state: game })
+      lastDisplaySeen = now()
+    }
   })
   // ── Suoni ─────────────────────────────────────────────────────────────
   // Controllo ogni 100 ms (indipendente dal disegno dello schermo): confronta lo
@@ -171,9 +177,19 @@
     toastTimer = setTimeout(() => (toast = null), 2500)
   }
 
+  /** Versione browser: la scheda del tabellone aperta dalla console. */
+  let displayWindow: Window | null = null
   function openDisplay() {
     if (desktop) void desktop.openDisplay()
-    else window.open('./display.html', 'tabellone-hockey-display')
+    else displayWindow = window.open('./display.html', 'tabellone-hockey-display')
+  }
+  function closeDisplay() {
+    if (desktop) return void desktop.closeDisplay()
+    // Nel browser: chiude la scheda, o la spegne se il browser non la lascia chiudere.
+    channel.send({ type: 'closeDisplay' })
+    displayWindow?.close()
+    displayWindow = null
+    lastDisplaySeen = 0
   }
 
   // Nel programma installato l'audio è permesso subito, senza aspettare un clic.
@@ -219,6 +235,8 @@
       case 'shotHome':
       case 'shotAway': {
         const team = action === 'shotHome' ? 'home' : 'away'
+        // Tiri nascosti dal regolamento: la scorciatoia non fa nulla.
+        if (!game.rules.showShots) break
         run({ type: 'shot', team, delta: 1 }, t('Tiro {team}', { team: teamName(team) }))
         break
       }
@@ -244,105 +262,115 @@
 
 <div class="console">
   <header class="topbar">
-    <h1>Tabellone Hockey <span class="version">v{__APP_VERSION__}</span></h1>
+    <div class="bar-main">
+      <h1>Tabellone Hockey <span class="version">v{__APP_VERSION__}</span></h1>
 
-    <nav class="tabs" aria-label={t('Sezioni')}>
-      {#each TABS as item (item.id)}
-        {#if item.id === 'streaming'}
-          <!-- Lo stato dello streaming sta nella sua scheda: grigio se spento, verde se in corso. -->
-          <button
-            type="button"
-            class="stream"
-            class:active={tab === item.id}
-            class:live={streaming.status === 'live'}
-            class:warn={streaming.status === 'error' || streaming.status === 'connecting'}
-            title={streaming.status === 'live'
-              ? t('Streaming in corso')
-              : streaming.active
-                ? t('Streaming: collegamento…')
-                : t('Streaming disabilitato')}
-            onclick={() => (tab = item.id)}
-          >
-            <span class="dot"></span>
-            {streaming.status === 'live' ? t('Streaming in corso') : t(item.label)}
-          </button>
-        {:else}
-          <button type="button" class:active={tab === item.id} onclick={() => (tab = item.id)}>
-            {t(item.label)}
-          </button>
-        {/if}
-      {/each}
-    </nav>
-
-    <div class="spacer"></div>
-
-    {#if !audio.unlocked && !audio.settings.muted}
-      <button type="button" class="btn btn-sm audio-locked" onclick={() => audio.unlock()}>
-        🔈 {t('Clicca per attivare l’audio')}
-      </button>
-    {/if}
-    <button
-      type="button"
-      class="btn btn-ghost mute"
-      title={`${audio.settings.muted ? t('Audio disattivato') : t('Audio attivo')} (M)`}
-      aria-label={audio.settings.muted ? t('Attiva audio') : t('Disattiva audio')}
-      onclick={() => audio.toggleMute()}
-    >
-      {audio.settings.muted ? '🔇' : '🔊'}
-    </button>
-
-    <span class="status" class:ok={displayConnected}>
-      <span class="dot"></span>
-      {displayConnected ? t('Tabellone collegato') : t('Tabellone non aperto')}
-      <HelpTip title={t('Tabellone')} align="right">
-        {@html t(
-          'Indica se la finestra del tabellone (quella per il maxischermo) è aperta. Se l’hai chiusa per sbaglio, premi <b>Apri tabellone</b>: riprende subito con il punteggio e il tempo giusti.',
-        )}
-      </HelpTip>
-    </span>
-    {#if desktop && displayConnected}
-      <button
-        type="button"
-        class="btn"
-        title={t('Spegne il tabellone sul maxischermo (si riapre con Apri tabellone)')}
-        onclick={() => desktop?.closeDisplay()}
-      >
-        {t('Chiudi tabellone')}
-      </button>
-    {:else}
-      <button type="button" class="btn btn-primary" onclick={openDisplay}
-        >{t('Apri tabellone')}</button
-      >
-    {/if}
-    {#if desktop}
-      <button
-        type="button"
-        class="btn"
-        title={t('Scegli su quale schermo mostrare console e tabellone')}
-        onclick={() => desktop?.chooseScreens()}
-      >
-        {t('Schermi…')}
-      </button>
-    {/if}
-    <button type="button" class="btn" onclick={() => (newGameOpen = true)}
-      >{t('Nuova partita…')}</button
-    >
-    <!-- Compatto nella barra ("🌐 IT"); al clic si apre l'elenco con i nomi completi. -->
-    <label class="btn btn-ghost lang" title={t('Lingua della console')}>
-      <span aria-hidden="true">🌐 {ui.lang.toUpperCase()}</span>
-      <select
-        aria-label={t('Lingua della console')}
-        value={ui.lang}
-        onchange={(e) => ui.set(e.currentTarget.value as Language)}
-      >
-        {#each LANGUAGES as l (l)}
-          <option value={l}>{LANGUAGE_NAMES[l]}</option>
+      <nav class="tabs" aria-label={t('Sezioni')}>
+        {#each TABS as item (item.id)}
+          {#if item.id === 'streaming'}
+            <!-- Lo stato dello streaming sta nella sua scheda: grigio se spento, verde se in corso. -->
+            <button
+              type="button"
+              class="stream"
+              class:active={tab === item.id}
+              class:live={streaming.status === 'live'}
+              class:warn={streaming.status === 'error' || streaming.status === 'connecting'}
+              title={streaming.status === 'live'
+                ? t('Streaming in corso')
+                : streaming.active
+                  ? t('Streaming: collegamento…')
+                  : t('Streaming disabilitato')}
+              onclick={() => (tab = item.id)}
+            >
+              <span class="dot"></span>
+              {streaming.status === 'live' ? t('Streaming in corso') : t(item.label)}
+            </button>
+          {:else}
+            <button type="button" class:active={tab === item.id} onclick={() => (tab = item.id)}>
+              {t(item.label)}
+            </button>
+          {/if}
         {/each}
-      </select>
-    </label>
-    <button type="button" class="btn btn-ghost" onclick={() => (helpOpen = true)}>
-      {t('Guida')} <kbd>F1</kbd>
-    </button>
+      </nav>
+
+      <div class="spacer"></div>
+
+      {#if !audio.unlocked && !audio.settings.muted}
+        <button type="button" class="btn btn-sm audio-locked" onclick={() => audio.unlock()}>
+          🔈 {t('Clicca per attivare l’audio')}
+        </button>
+      {/if}
+      <button
+        type="button"
+        class="btn btn-ghost mute"
+        title={`${audio.settings.muted ? t('Audio disattivato') : t('Audio attivo')} (M)`}
+        aria-label={audio.settings.muted ? t('Attiva audio') : t('Disattiva audio')}
+        onclick={() => audio.toggleMute()}
+      >
+        {audio.settings.muted ? '🔇' : '🔊'}
+      </button>
+
+      {#if displayConnected}
+        <button
+          type="button"
+          class="btn"
+          title={t('Spegne il tabellone sul maxischermo (si riapre con Apri tabellone)')}
+          onclick={closeDisplay}
+        >
+          {t('Chiudi tabellone')}
+        </button>
+      {:else}
+        <button type="button" class="btn btn-primary" onclick={openDisplay}
+          >{t('Apri tabellone')}</button
+        >
+      {/if}
+      {#if desktop}
+        <button
+          type="button"
+          class="btn"
+          title={t('Scegli su quale schermo mostrare console e tabellone')}
+          onclick={() => desktop?.chooseScreens()}
+        >
+          {t('Schermi…')}
+        </button>
+      {/if}
+      <button type="button" class="btn" onclick={() => (newGameOpen = true)}
+        >{t('Nuova partita…')}</button
+      >
+      <!-- Compatto nella barra ("🌐 IT"); al clic si apre l'elenco con i nomi completi. -->
+      <label class="btn btn-ghost lang" title={t('Lingua della console')}>
+        <span aria-hidden="true">🌐 {ui.lang.toUpperCase()}</span>
+        <select
+          aria-label={t('Lingua della console')}
+          value={ui.lang}
+          onchange={(e) => ui.set(e.currentTarget.value as Language)}
+        >
+          {#each LANGUAGES as l (l)}
+            <option value={l}>{LANGUAGE_NAMES[l]}</option>
+          {/each}
+        </select>
+      </label>
+      <button type="button" class="btn btn-ghost" onclick={() => (helpOpen = true)}>
+        {t('Guida')} <kbd>F1</kbd>
+      </button>
+    </div>
+
+    <!-- Colonna a destra, a sé: sotto la scritta il tabellone in piccolo, che
+         resta lì anche quando la barra va a capo. -->
+    <div class="display-status">
+      <span class="status" class:ok={displayConnected}>
+        <span class="dot"></span>
+        {displayConnected ? t('Tabellone collegato') : t('Tabellone non aperto')}
+        <HelpTip title={t('Tabellone')} align="right">
+          {@html t(
+            'Indica se la finestra del tabellone (quella per il maxischermo) è aperta. Se l’hai chiusa per sbaglio, premi <b>Apri tabellone</b>: riprende subito con il punteggio e il tempo giusti.',
+          )}
+        </HelpTip>
+      </span>
+      <div class="preview-slot">
+        <BoardPreview {game} connected={displayConnected} />
+      </div>
+    </div>
   </header>
 
   {#if tab === 'game'}
@@ -463,10 +491,11 @@
   }
 
   .topbar {
+    position: relative;
+    z-index: 2;
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem 0.9rem;
+    align-items: flex-start;
+    gap: 0.9rem;
     padding: 0.7rem 1.25rem;
     border-bottom: 1px solid var(--ice-800);
     background: var(--ice-900);
@@ -534,6 +563,24 @@
   .mute {
     padding: 0.35rem 0.6rem;
     font-size: 1.15rem;
+  }
+
+  .bar-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.9rem;
+  }
+
+  .display-status {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    padding-top: 0.45rem;
   }
 
   .status {
