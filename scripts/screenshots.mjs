@@ -82,6 +82,13 @@ app.whenReady().then(async () => {
         await sleep(1200)
         await snap(`tabellone-arena-${name}`)
       }
+      // Le altre lingue del tabellone (tasto K della demo: it → en → de → es → fr)
+      await key('1')
+      for (const lang of ['en', 'de', 'es', 'fr']) {
+        await key('k')
+        await sleep(1200)
+        await snap(`tabellone-arena-${lang}`)
+      }
     }
   }
 
@@ -123,6 +130,13 @@ app.whenReady().then(async () => {
   await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1', code: 'F1' }))`)
   await sleep(600)
   await snap('console-guida')
+  await js(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1', code: 'F1' }))`)
+
+  // Console in un'altra lingua (la lingua della console è separata da quella del tabellone)
+  await js(`localStorage.setItem('tabellone-hockey:lingua-console', 'en')`)
+  await open('/')
+  await snap('console-inglese')
+  await js(`localStorage.removeItem('tabellone-hockey:lingua-console')`)
 
   await server.close()
   console.log(`\nImmagini in ${outDir}`)

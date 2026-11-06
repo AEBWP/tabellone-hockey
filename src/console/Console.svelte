@@ -301,17 +301,19 @@
     <button type="button" class="btn" onclick={() => (newGameOpen = true)}
       >{t('Nuova partita…')}</button
     >
-    <select
-      class="input lang"
-      title={t('Lingua della console')}
-      aria-label={t('Lingua della console')}
-      value={ui.lang}
-      onchange={(e) => ui.set(e.currentTarget.value as Language)}
-    >
-      {#each LANGUAGES as l (l)}
-        <option value={l}>{LANGUAGE_NAMES[l]}</option>
-      {/each}
-    </select>
+    <!-- Compatto nella barra ("🌐 IT"); al clic si apre l'elenco con i nomi completi. -->
+    <label class="btn btn-ghost lang" title={t('Lingua della console')}>
+      <span aria-hidden="true">🌐 {ui.lang.toUpperCase()}</span>
+      <select
+        aria-label={t('Lingua della console')}
+        value={ui.lang}
+        onchange={(e) => ui.set(e.currentTarget.value as Language)}
+      >
+        {#each LANGUAGES as l (l)}
+          <option value={l}>{LANGUAGE_NAMES[l]}</option>
+        {/each}
+      </select>
+    </label>
     <button type="button" class="btn btn-ghost" onclick={() => (helpOpen = true)}>
       {t('Guida')} <kbd>F1</kbd>
     </button>
@@ -486,8 +488,17 @@
   }
 
   .lang {
-    width: auto;
-    padding: 0.35rem 0.5rem;
+    position: relative;
+    padding: 0.35rem 0.6rem;
+  }
+
+  /* Il menu vero è invisibile sopra la scritta: il clic lo apre. */
+  .lang select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
   }
 
   .mute {
