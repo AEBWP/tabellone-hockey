@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { GameView, TeamId } from '../../engine'
   import { textColorOn } from '../../shared/color'
-  import { phaseLabel, periodLabel, previousPeriodLabel } from '../../shared/labels'
+  import { boardText, phaseLabel, previousPeriod } from '../../i18n/board'
   import GoalOverlay from './GoalOverlay.svelte'
   import PenaltyPanel from './PenaltyPanel.svelte'
   import ShootoutPanel from './ShootoutPanel.svelte'
@@ -13,6 +13,7 @@
    */
   let { view, animations = true }: { view: GameView; animations?: boolean } = $props()
 
+  const text = $derived(boardText(view))
   const lastMinute = $derived(view.phase === 'play' && view.clockText.includes('.'))
   const winner = $derived.by<TeamId | null>(() => {
     if (view.phase !== 'final') return null
@@ -29,17 +30,17 @@
   </header>
 
   <section class="main">
-    <TeamPanel team={view.teams.home} dimmed={winner === 'away'} />
+    <TeamPanel team={view.teams.home} dimmed={winner === 'away'} {text} />
 
     <div class="center">
       {#if view.phase === 'intermission' && view.intermission}
-        <div class="sub">FINE {previousPeriodLabel(view)}</div>
+        <div class="sub">{text.endOf(previousPeriod(view))}</div>
         <div class="clock intermission">{view.intermission.text}</div>
-        <div class="sub">PROSSIMO: {periodLabel(view)}</div>
+        <div class="sub">{text.next(view)}</div>
       {:else if view.phase === 'shootout'}
-        <div class="clock word">RIGORI</div>
+        <div class="clock word">{text.shootoutWord}</div>
       {:else if view.phase === 'final'}
-        <div class="clock word">FINALE</div>
+        <div class="clock word">{text.finalShort}</div>
       {:else}
         <div class="clock" class:stopped={!view.clockRunning} class:urgent={lastMinute}>
           {view.clockText}
@@ -47,40 +48,41 @@
         {#if view.powerPlay}
           {@const pp = view.teams[view.powerPlay]}
           <div class="powerplay" style:--team={pp.color}>
-            SUPERIORITÀ {pp.shortName}
+            {text.powerPlay}
+            {pp.shortName}
             <span class="strength">{view.teams.home.skaters} vs {view.teams.away.skaters}</span>
           </div>
         {/if}
       {/if}
     </div>
 
-    <TeamPanel team={view.teams.away} dimmed={winner === 'home'} />
+    <TeamPanel team={view.teams.away} dimmed={winner === 'home'} {text} />
   </section>
 
   <section class="bottom">
     {#if view.shootout}
       {@const so = view.shootout}
-      <ShootoutPanel shots={so.home} rounds={so.rounds} winner={so.winner === 'home'} />
+      <ShootoutPanel shots={so.home} rounds={so.rounds} winner={so.winner === 'home'} {text} />
       <div></div>
-      <ShootoutPanel shots={so.away} rounds={so.rounds} winner={so.winner === 'away'} />
+      <ShootoutPanel shots={so.away} rounds={so.rounds} winner={so.winner === 'away'} {text} />
     {:else}
-      <PenaltyPanel team={view.teams.home} />
+      <PenaltyPanel team={view.teams.home} {text} />
       {#if view.timeout}
         {@const t = view.teams[view.timeout.team]}
         <div class="timeout" style:--team={t.color} style:--on-team={textColorOn(t.color)}>
-          <div class="timeout-label">TIMEOUT {t.shortName}</div>
+          <div class="timeout-label">{text.timeout} {t.shortName}</div>
           <div class="timeout-clock">{view.timeout.text}</div>
         </div>
       {:else}
         <div class="stats">
-          <div class="stat-label">TIRI IN PORTA</div>
+          <div class="stat-label">{text.shotsOnGoal}</div>
           <div class="stat-row">
             <span>{view.teams.home.shots}</span>
             <span>{view.teams.away.shots}</span>
           </div>
         </div>
       {/if}
-      <PenaltyPanel team={view.teams.away} />
+      <PenaltyPanel team={view.teams.away} {text} />
     {/if}
   </section>
 

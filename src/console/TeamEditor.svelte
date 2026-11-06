@@ -2,6 +2,7 @@
   import type { TeamId, TeamSetup, TeamState } from '../engine'
   import { textColorOn } from '../shared/color'
   import { LOGO_ACCEPT, loadLogo } from '../shared/logo'
+  import { t } from '../i18n/ui.svelte'
 
   let {
     id,
@@ -16,7 +17,7 @@
   let error = $state('')
   let fileInput: HTMLInputElement
 
-  const title = $derived(id === 'home' ? 'Squadra di casa' : 'Squadra ospite')
+  const title = $derived(id === 'home' ? t('Squadra di casa') : t('Squadra ospite'))
 
   async function pickLogo(event: Event) {
     const input = event.currentTarget as HTMLInputElement
@@ -27,7 +28,7 @@
     try {
       onchange({ logo: await loadLogo(file) })
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e)
+      error = t(e instanceof Error ? e.message : String(e))
     }
   }
 </script>
@@ -42,10 +43,10 @@
       style:--team={team.color}
       style:--on-team={textColorOn(team.color)}
       onclick={() => fileInput.click()}
-      title="Carica il logo"
+      title={t('Carica il logo')}
     >
       {#if team.logo}
-        <img src={team.logo} alt="Logo {team.name}" />
+        <img src={team.logo} alt={t('Logo {name}', { name: team.name })} />
       {:else}
         <span>{team.shortName.slice(0, 3)}</span>
       {/if}
@@ -53,19 +54,21 @@
 
     <div class="logo-actions">
       <button type="button" class="secondary" onclick={() => fileInput.click()}>
-        {team.logo ? 'Cambia logo' : 'Carica logo'}
+        {team.logo ? t('Cambia logo') : t('Carica logo')}
       </button>
       {#if team.logo}
-        <button type="button" class="link" onclick={() => onchange({ logo: null })}>Rimuovi</button>
+        <button type="button" class="link" onclick={() => onchange({ logo: null })}
+          >{t('Rimuovi')}</button
+        >
       {/if}
-      <small>PNG, JPG, SVG o WebP. Meglio con sfondo trasparente.</small>
+      <small>{t('PNG, JPG, SVG o WebP. Meglio con sfondo trasparente.')}</small>
     </div>
     <input bind:this={fileInput} type="file" accept={LOGO_ACCEPT} onchange={pickLogo} hidden />
   </div>
   {#if error}<p class="error">{error}</p>{/if}
 
   <label>
-    Nome
+    {t('Nome')}
     <input
       type="text"
       value={team.name}
@@ -76,7 +79,7 @@
 
   <div class="row">
     <label class="grow">
-      Sigla sul tabellone
+      {t('Sigla sul tabellone')}
       <input
         type="text"
         value={team.shortName}
@@ -85,7 +88,7 @@
       />
     </label>
     <label>
-      Colore
+      {t('Colore')}
       <input
         type="color"
         value={team.color}

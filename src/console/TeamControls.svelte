@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Command, GameView, PenaltyKind, Rules, TeamId } from '../engine'
   import { textColorOn } from '../shared/color'
-  import { PENALTY_NAMES, penaltyButtonLabel } from './format'
+  import { penaltyButtonLabel, penaltyName } from './format'
+  import { t } from '../i18n/ui.svelte'
   import HelpTip from './HelpTip.svelte'
 
   let {
@@ -19,7 +20,7 @@
 
   const team = $derived(view.teams[id])
   const goalKey = $derived(id === 'home' ? 'C' : 'O')
-  const side = $derived(id === 'home' ? 'Casa' : 'Ospiti')
+  const side = $derived(id === 'home' ? t('Casa') : t('Ospiti'))
   const inShootout = $derived(
     view.phase === 'shootout' || (view.phase === 'final' && !!view.shootout),
   )
@@ -43,7 +44,7 @@
     }
     run(
       { type: 'penalty', team: id, player: number, kind },
-      `${PENALTY_NAMES[kind]} #${number} ${team.name}`,
+      `${penaltyName(kind)} #${number} ${team.name}`,
     )
     player = ''
     playerError = false
@@ -76,12 +77,12 @@
     <button
       type="button"
       class="btn btn-sm"
-      title="Correggi: togli un gol"
+      title={t('Correggi: togli un gol')}
       disabled={locked || team.goals === 0}
       onclick={() =>
         run(
           { type: 'setScore', team: id, goals: team.goals - 1 },
-          `Correzione punteggio ${team.name}`,
+          t('Correzione punteggio {team}', { team: team.name }),
         )}
     >
       −1
@@ -90,12 +91,12 @@
     <button
       type="button"
       class="btn btn-sm"
-      title="Correggi: aggiungi un gol (senza animazione e senza effetti sulle penalità)"
+      title={t('Correggi: aggiungi un gol (senza animazione e senza effetti sulle penalità)')}
       disabled={locked}
       onclick={() =>
         run(
           { type: 'setScore', team: id, goals: team.goals + 1 },
-          `Correzione punteggio ${team.name}`,
+          t('Correzione punteggio {team}', { team: team.name }),
         )}
     >
       +1
@@ -107,19 +108,23 @@
       type="button"
       class="btn btn-lg goal"
       disabled={locked || view.phase === 'final'}
-      onclick={() => run({ type: 'goal', team: id }, `Gol ${team.name}`)}
+      onclick={() => run({ type: 'goal', team: id }, t('Gol {team}', { team: team.name }))}
     >
-      GOL {team.shortName}
+      {t('GOL')}
+      {team.shortName}
       <kbd>{goalKey}</kbd>
     </button>
     {#if locked}
       <p class="hint locked">
-        🔒 Partita non ancora iniziata: gol, tiri e penalità si attivano con <b>▶ Avvia partita</b>.
+        🔒 {@html t(
+          'Partita non ancora iniziata: gol, tiri e penalità si attivano con <b>▶ Avvia partita</b>.',
+        )}
       </p>
     {:else}
       <p class="hint">
-        Il pulsante GOL fa partire l’animazione e chiude la penalità minore se era in superiorità. I
-        tasti ±1 servono solo per correggere.
+        {t(
+          'Il pulsante GOL fa partire l’animazione e chiude la penalità minore se era in superiorità. I tasti ±1 servono solo per correggere.',
+        )}
       </p>
     {/if}
   {/if}
@@ -128,10 +133,12 @@
   <div class="stats">
     <div class="stat">
       <span class="label">
-        Tiri in porta
-        <HelpTip title="Tiri in porta" align={id === 'away' ? 'right' : 'left'}>
-          Conta i tiri che il portiere ha dovuto parare (più i gol). Scorciatoia:
-          <kbd>Maiusc</kbd> + <kbd>{goalKey}</kbd>.
+        {t('Tiri in porta')}
+        <HelpTip title={t('Tiri in porta')} align={id === 'away' ? 'right' : 'left'}>
+          {@html t(
+            'Conta i tiri che il portiere ha dovuto parare (più i gol). Scorciatoia: <kbd>Maiusc</kbd> + <kbd>{key}</kbd>.',
+            { key: goalKey },
+          )}
         </HelpTip>
       </span>
       <div class="counter">
@@ -139,7 +146,8 @@
           type="button"
           class="btn btn-sm"
           disabled={locked || team.shots === 0}
-          onclick={() => run({ type: 'shot', team: id, delta: -1 }, `Tiro ${team.name}`)}
+          onclick={() =>
+            run({ type: 'shot', team: id, delta: -1 }, t('Tiro {team}', { team: team.name }))}
         >
           −
         </button>
@@ -148,7 +156,8 @@
           type="button"
           class="btn btn-sm"
           disabled={locked}
-          onclick={() => run({ type: 'shot', team: id, delta: 1 }, `Tiro ${team.name}`)}
+          onclick={() =>
+            run({ type: 'shot', team: id, delta: 1 }, t('Tiro {team}', { team: team.name }))}
         >
           +
         </button>
@@ -157,20 +166,21 @@
 
     <div class="stat">
       <span class="label">
-        Timeout
-        <HelpTip title="Timeout" align={id === 'away' ? 'right' : 'left'}>
-          Ferma il tempo e mostra sul tabellone il conto alla rovescia di
-          {Math.round(rules.timeoutMs / 1000)} secondi. Si può chiamare solo a partita in corso; ogni
-          squadra ne ha {rules.timeoutsPerTeam}.
+        {t('Timeout')}
+        <HelpTip title={t('Timeout')} align={id === 'away' ? 'right' : 'left'}>
+          {t(
+            'Ferma il tempo e mostra sul tabellone il conto alla rovescia di {seconds} secondi. Si può chiamare solo a partita in corso; ogni squadra ne ha {count}.',
+            { seconds: Math.round(rules.timeoutMs / 1000), count: rules.timeoutsPerTeam },
+          )}
         </HelpTip>
       </span>
       <button
         type="button"
         class="btn btn-sm"
         disabled={!canTimeout}
-        onclick={() => run({ type: 'timeout', team: id }, `Timeout ${team.name}`)}
+        onclick={() => run({ type: 'timeout', team: id }, t('Timeout {team}', { team: team.name }))}
       >
-        Chiama timeout ({team.timeoutsLeft})
+        {t('Chiama timeout ({n})', { n: team.timeoutsLeft })}
       </button>
     </div>
   </div>
@@ -178,12 +188,14 @@
   {#if inShootout && view.shootout}
     {@const shots = view.shootout[id]}
     <div class="block">
-      <h3 class="panel-title">Rigori · {shots.filter(Boolean).length} gol</h3>
+      <h3 class="panel-title">
+        {t('Rigori · {n} gol', { n: shots.filter(Boolean).length })}
+      </h3>
       <div class="so-dots">
         {#each shots as s, i (i)}
-          <span class="dot" class:goal={s} title={s ? 'Gol' : 'Sbagliato'}></span>
+          <span class="dot" class:goal={s} title={s ? t('Gol') : t('Sbagliato')}></span>
         {:else}
-          <span class="muted">Nessun tiro</span>
+          <span class="muted">{t('Nessun tiro')}</span>
         {/each}
       </div>
       <div class="so-actions">
@@ -192,9 +204,12 @@
           class="btn btn-go"
           disabled={view.phase !== 'shootout'}
           onclick={() =>
-            run({ type: 'shootoutAttempt', team: id, scored: true }, `Rigore segnato ${team.name}`)}
+            run(
+              { type: 'shootoutAttempt', team: id, scored: true },
+              t('Rigore segnato {team}', { team: team.name }),
+            )}
         >
-          Rigore: gol
+          {t('Rigore: gol')}
         </button>
         <button
           type="button"
@@ -203,10 +218,10 @@
           onclick={() =>
             run(
               { type: 'shootoutAttempt', team: id, scored: false },
-              `Rigore sbagliato ${team.name}`,
+              t('Rigore sbagliato {team}', { team: team.name }),
             )}
         >
-          Sbagliato
+          {t('Sbagliato')}
         </button>
       </div>
     </div>
@@ -214,12 +229,12 @@
     <!-- Penalità -->
     <div class="block">
       <h3 class="panel-title">
-        Penalità
-        <HelpTip title="Penalità" align={id === 'away' ? 'right' : 'left'}>
-          Scrivi il numero di maglia e scegli la durata (Invio = minore). Al massimo
-          {rules.maxPenalizedOnIce} giocatori scontano la penalità insieme: le altre restano “in attesa”
-          e partono da sole. <b>Termina</b> chiude in anticipo una penalità; <b>✕</b> la cancella se inserita
-          per errore.
+        {t('Penalità')}
+        <HelpTip title={t('Penalità')} align={id === 'away' ? 'right' : 'left'}>
+          {@html t(
+            'Scrivi il numero di maglia e scegli la durata (Invio = minore). Al massimo {n} giocatori scontano la penalità insieme: le altre restano “in attesa” e partono da sole. <b>Termina</b> chiude in anticipo una penalità; <b>✕</b> la cancella se inserita per errore.',
+            { n: rules.maxPenalizedOnIce },
+          )}
         </HelpTip>
       </h3>
 
@@ -229,19 +244,19 @@
           bind:value={player}
           class="input player"
           class:error={playerError}
-          placeholder="N°"
+          placeholder={t('N°')}
           maxlength="4"
           inputmode="numeric"
           disabled={!canPenalize}
           onkeydown={onPlayerKey}
           oninput={() => (playerError = false)}
-          aria-label="Numero del giocatore penalizzato"
+          aria-label={t('Numero del giocatore penalizzato')}
         />
         {#each KINDS as kind (kind)}
           <button
             type="button"
             class="btn btn-sm"
-            title={PENALTY_NAMES[kind]}
+            title={penaltyName(kind)}
             disabled={!canPenalize}
             onclick={() => addPenalty(kind)}
           >
@@ -250,40 +265,43 @@
         {/each}
       </div>
       {#if playerError}
-        <p class="error">Scrivi prima il numero del giocatore.</p>
+        <p class="error">{t('Scrivi prima il numero del giocatore.')}</p>
       {/if}
 
       <ul class="penalties">
         {#each team.penalties as p (p.id)}
           <li class:queued={p.queued}>
             <span class="num">#{p.player}</span>
-            <span class="kind">{PENALTY_NAMES[p.kind]}</span>
-            <span class="rem">{p.queued ? 'in attesa' : p.text}</span>
+            <span class="kind">{penaltyName(p.kind)}</span>
+            <span class="rem">{p.queued ? t('in attesa') : p.text}</span>
             <button
               type="button"
               class="btn btn-sm"
-              title="Termina adesso"
+              title={t('Termina adesso')}
               onclick={() =>
-                run({ type: 'endPenalty', id: p.id }, `Fine penalità #${p.player} ${team.name}`)}
+                run(
+                  { type: 'endPenalty', id: p.id },
+                  t('Fine penalità #{player} {team}', { player: p.player, team: team.name }),
+                )}
             >
-              Termina
+              {t('Termina')}
             </button>
             <button
               type="button"
               class="btn btn-sm btn-danger"
-              title="Cancella (inserita per errore)"
-              aria-label="Cancella penalità #{p.player}"
+              title={t('Cancella (inserita per errore)')}
+              aria-label={t('Cancella penalità #{player}', { player: p.player })}
               onclick={() =>
                 run(
                   { type: 'removePenalty', id: p.id },
-                  `Cancellata penalità #${p.player} ${team.name}`,
+                  t('Cancellata penalità #{player} {team}', { player: p.player, team: team.name }),
                 )}
             >
               ✕
             </button>
           </li>
         {:else}
-          <li class="empty muted">Nessuna penalità in corso</li>
+          <li class="empty muted">{t('Nessuna penalità in corso')}</li>
         {/each}
       </ul>
     </div>

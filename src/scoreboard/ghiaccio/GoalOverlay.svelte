@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { boardText } from '../../i18n/board'
   import type { GameView } from '../../engine'
   import { textColorOn } from '../../shared/color'
   import { watchGoals } from '../goal-watch.svelte'
@@ -8,6 +9,7 @@
    * dal centro, con anelli come onde sul ghiaccio.
    */
   let { view }: { view: GameView } = $props()
+  const text = $derived(boardText(view))
 
   const watch = watchGoals(() => view)
 </script>
@@ -26,7 +28,7 @@
         {#if t.logo}
           <div class="logo"><img src={t.logo} alt="" /></div>
         {/if}
-        <div class="word">GOAL</div>
+        <div class="word">{text.goal}</div>
         <div class="name">{t.name}</div>
       </div>
 

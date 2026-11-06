@@ -1,12 +1,15 @@
 <script lang="ts">
   import type { TeamView } from '../../engine'
+  import type { BoardText } from '../../i18n/board'
 
   let {
     team,
     shots,
     rounds,
     winner,
-  }: { team: TeamView; shots: boolean[]; rounds: number; winner: boolean } = $props()
+    text,
+  }: { team: TeamView; shots: boolean[]; rounds: number; winner: boolean; text: BoardText } =
+    $props()
 
   /** Sempre almeno la serie regolare; nella morte improvvisa compaiono i tiri in più. */
   const slots = $derived(
@@ -20,7 +23,7 @@
 
 <div class="so" class:winner style:--team={team.color}>
   <div class="head">
-    <span>RIGORI {team.shortName}</span>
+    <span>{text.shootout} {team.shortName}</span>
     <span class="goals">{goals}</span>
   </div>
   <div class="dots">

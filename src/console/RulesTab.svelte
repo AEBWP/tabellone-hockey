@@ -1,6 +1,8 @@
 <script lang="ts">
   import { untrack } from 'svelte'
-  import { describeRules, PRESETS, validateRules, type Rules } from '../engine'
+  import { PRESETS, validateRules, type Rules } from '../engine'
+  import { t } from '../i18n/ui.svelte'
+  import { describeRules } from './rules-text'
   import DurationInput from './DurationInput.svelte'
   import HelpTip from './HelpTip.svelte'
   import { library } from './library.svelte'
@@ -22,7 +24,8 @@
   let presetName = $state('')
   let message = $state<string | null>(null)
 
-  const errors = $derived(validateRules(draft))
+  // I messaggi del motore sono in italiano: si traducono qui.
+  const errors = $derived(validateRules(draft).map((e) => t(e)))
   const dirty = $derived(JSON.stringify(draft) !== JSON.stringify(rules))
 
   // Se le regole cambiano da fuori (es. nuova partita o regole appena applicate), la bozza si riallinea.
@@ -42,26 +45,30 @@
     if (!source) return
     draft = structuredClone(source)
     presetName = saved?.name ?? ''
-    message = `Caricato “${builtIn?.name ?? saved?.name}”: premi Applica per usarlo.`
+    message = t('Caricato “{name}”: premi Applica per usarlo.', {
+      name: builtIn ? t(builtIn.name) : (saved?.name ?? ''),
+    })
   }
 
   function applyDraft() {
     if (errors.length) return
     onapply($state.snapshot(draft))
     message = gameStarted
-      ? 'Regole applicate. Le nuove durate valgono dal prossimo periodo.'
-      : 'Regole applicate alla partita.'
+      ? t('Regole applicate. Le nuove durate valgono dal prossimo periodo.')
+      : t('Regole applicate alla partita.')
   }
 
   function savePreset() {
     const name = presetName.trim()
     if (!name || errors.length) return
     library.savePreset(name, $state.snapshot(draft))
-    message = library.error ?? `Regolamento “${name}” salvato: lo trovi anche in Nuova partita.`
+    message = library.error
+      ? t(library.error)
+      : t('Regolamento “{name}” salvato: lo trovi anche in Nuova partita.', { name })
   }
 
   function deletePreset(id: string, name: string) {
-    if (!confirm(`Eliminare il regolamento “${name}”?`)) return
+    if (!confirm(t('Eliminare il regolamento “{name}”?', { name }))) return
     library.deletePreset(id)
   }
 </script>
@@ -70,7 +77,7 @@
   <section class="panel intro">
     <div class="row">
       <label class="field grow">
-        Parti da un regolamento
+        {t('Parti da un regolamento')}
         <select
           class="input"
           value=""
@@ -79,14 +86,14 @@
             e.currentTarget.value = ''
           }}
         >
-          <option value="" disabled>Scegli…</option>
-          <optgroup label="Predefiniti">
+          <option value="" disabled>{t('Scegli…')}</option>
+          <optgroup label={t('Predefiniti')}>
             {#each PRESETS as p (p.id)}
-              <option value="b:{p.id}">{p.name} — {describeRules(p.rules)}</option>
+              <option value="b:{p.id}">{t(p.name)} — {describeRules(p.rules)}</option>
             {/each}
           </optgroup>
           {#if library.presets.length}
-            <optgroup label="Salvati da te">
+            <optgroup label={t('Salvati da te')}>
               {#each library.presets as p (p.id)}
                 <option value="s:{p.id}">{p.name} — {describeRules(p.rules)}</option>
               {/each}
@@ -95,7 +102,7 @@
         </select>
       </label>
       <div class="summary">
-        <span class="muted">In uso ora</span>
+        <span class="muted">{t('In uso ora')}</span>
         <strong>{describeRules(rules)}</strong>
       </div>
     </div>
@@ -103,14 +110,14 @@
 
   <div class="grid">
     <fieldset class="panel">
-      <legend class="panel-title">Tempi</legend>
+      <legend class="panel-title">{t('Tempi')}</legend>
       <label class="field">
-        Numero di periodi
+        {t('Numero di periodi')}
         <input class="input small" type="number" min="1" max="10" bind:value={draft.periods} />
       </label>
-      <DurationInput label="Durata di ogni periodo" bind:value={draft.periodMs} />
+      <DurationInput label={t('Durata di ogni periodo')} bind:value={draft.periodMs} />
       <DurationInput
-        label="Intervallo tra i periodi (0 = nessuno)"
+        label={t('Intervallo tra i periodi (0 = nessuno)')}
         bind:value={draft.intermissionMs}
       />
       <label class="check">
@@ -119,30 +126,31 @@
           checked={draft.tenthsBelowMs > 0}
           onchange={(e) => (draft.tenthsBelowMs = e.currentTarget.checked ? 60_000 : 0)}
         />
-        Decimi di secondo nell’ultimo minuto
+        {t('Decimi di secondo nell’ultimo minuto')}
       </label>
     </fieldset>
 
     <fieldset class="panel">
       <legend class="panel-title">
-        Supplementare
-        <HelpTip title="Supplementare">
-          Si gioca solo se a fine tempi regolamentari il punteggio è pari. Chi segna vince subito.
-          “Numero massimo 0” significa supplementari a oltranza (playoff).
+        {t('Supplementare')}
+        <HelpTip title={t('Supplementare')}>
+          {t(
+            'Si gioca solo se a fine tempi regolamentari il punteggio è pari. Chi segna vince subito. “Numero massimo 0” significa supplementari a oltranza (playoff).',
+          )}
         </HelpTip>
       </legend>
       <label class="check">
         <input type="checkbox" bind:checked={draft.overtime.enabled} />
-        Supplementare in caso di parità
+        {t('Supplementare in caso di parità')}
       </label>
       <DurationInput
-        label="Durata"
+        label={t('Durata')}
         bind:value={draft.overtime.periodMs}
         disabled={!draft.overtime.enabled}
       />
       <div class="row">
         <label class="field">
-          Numero massimo
+          {t('Numero massimo')}
           <input
             class="input small"
             type="number"
@@ -153,7 +161,7 @@
           />
         </label>
         <label class="field">
-          Giocatori per squadra
+          {t('Giocatori per squadra')}
           <input
             class="input small"
             type="number"
@@ -165,20 +173,20 @@
         </label>
       </div>
       <DurationInput
-        label="Pausa prima del supplementare"
+        label={t('Pausa prima del supplementare')}
         bind:value={draft.overtime.breakMs}
         disabled={!draft.overtime.enabled}
       />
     </fieldset>
 
     <fieldset class="panel">
-      <legend class="panel-title">Rigori</legend>
+      <legend class="panel-title">{t('Rigori')}</legend>
       <label class="check">
         <input type="checkbox" bind:checked={draft.shootout.enabled} />
-        Rigori se la parità resta
+        {t('Rigori se la parità resta')}
       </label>
       <label class="field">
-        Tiratori per squadra (poi a oltranza)
+        {t('Tiratori per squadra (poi a oltranza)')}
         <input
           class="input small"
           type="number"
@@ -192,18 +200,19 @@
 
     <fieldset class="panel">
       <legend class="panel-title">
-        Penalità
-        <HelpTip title="Penalità">
-          La doppia minore vale due minori. “Penalizzati contemporanei” è il massimo di giocatori
-          che scontano la penalità nello stesso momento (di solito 2): le altre restano in attesa.
+        {t('Penalità')}
+        <HelpTip title={t('Penalità')}>
+          {t(
+            'La doppia minore vale due minori. “Penalizzati contemporanei” è il massimo di giocatori che scontano la penalità nello stesso momento (di solito 2): le altre restano in attesa.',
+          )}
         </HelpTip>
       </legend>
-      <DurationInput label="Minore" bind:value={draft.penaltyMs.minor} />
-      <DurationInput label="Maggiore" bind:value={draft.penaltyMs.major} />
-      <DurationInput label="Cattiva condotta" bind:value={draft.penaltyMs.misconduct} />
+      <DurationInput label={t('Minore')} bind:value={draft.penaltyMs.minor} />
+      <DurationInput label={t('Maggiore')} bind:value={draft.penaltyMs.major} />
+      <DurationInput label={t('Cattiva condotta')} bind:value={draft.penaltyMs.misconduct} />
       <div class="row">
         <label class="field">
-          Penalizzati contemporanei
+          {t('Penalizzati contemporanei')}
           <input
             class="input small"
             type="number"
@@ -213,17 +222,17 @@
           />
         </label>
         <label class="field">
-          Giocatori in pista
+          {t('Giocatori in pista')}
           <input class="input small" type="number" min="3" max="6" bind:value={draft.skaters} />
         </label>
       </div>
     </fieldset>
 
     <fieldset class="panel">
-      <legend class="panel-title">Timeout</legend>
-      <DurationInput label="Durata" bind:value={draft.timeoutMs} />
+      <legend class="panel-title">{t('Timeout')}</legend>
+      <DurationInput label={t('Durata')} bind:value={draft.timeoutMs} />
       <label class="field">
-        Timeout per squadra
+        {t('Timeout per squadra')}
         <input
           class="input small"
           type="number"
@@ -236,16 +245,17 @@
 
     <section class="panel">
       <h2 class="panel-title">
-        Regolamenti salvati
-        <HelpTip title="Regolamenti salvati" align="right">
-          Salva le regole che usi spesso (es. “Under 13”): le ritrovi nel menu qui sopra e quando
-          inizi una nuova partita.
+        {t('Regolamenti salvati')}
+        <HelpTip title={t('Regolamenti salvati')} align="right">
+          {t(
+            'Salva le regole che usi spesso (es. “Under 13”): le ritrovi nel menu qui sopra e quando inizi una nuova partita.',
+          )}
         </HelpTip>
       </h2>
       <div class="save-row">
         <input
           class="input"
-          placeholder="Nome, es. Under 13"
+          placeholder={t('Nome, es. Under 13')}
           maxlength="40"
           bind:value={presetName}
           onkeydown={(e) => e.key === 'Enter' && savePreset()}
@@ -256,7 +266,7 @@
           disabled={!presetName.trim() || errors.length > 0}
           onclick={savePreset}
         >
-          Salva
+          {t('Salva')}
         </button>
       </div>
       <ul class="saved">
@@ -269,14 +279,14 @@
             <button
               type="button"
               class="btn btn-sm btn-danger"
-              aria-label="Elimina {p.name}"
+              aria-label={t('Elimina {name}', { name: p.name })}
               onclick={() => deletePreset(p.id, p.name)}
             >
               ✕
             </button>
           </li>
         {:else}
-          <li class="muted">Nessun regolamento salvato.</li>
+          <li class="muted">{t('Nessun regolamento salvato.')}</li>
         {/each}
       </ul>
     </section>
@@ -291,11 +301,11 @@
       <p class="message">{message}</p>
     {:else if dirty}
       <p class="muted">
-        Modifiche non ancora applicate.
-        {#if gameStarted}Le nuove durate varranno dal prossimo periodo.{/if}
+        {t('Modifiche non ancora applicate.')}
+        {#if gameStarted}{t('Le nuove durate varranno dal prossimo periodo.')}{/if}
       </p>
     {:else}
-      <p class="muted">Queste sono le regole della partita in corso.</p>
+      <p class="muted">{t('Queste sono le regole della partita in corso.')}</p>
     {/if}
     <div class="buttons">
       <button
@@ -307,7 +317,7 @@
           message = null
         }}
       >
-        Annulla modifiche
+        {t('Annulla modifiche')}
       </button>
       <button
         type="button"
@@ -315,7 +325,7 @@
         disabled={!dirty || errors.length > 0}
         onclick={applyDraft}
       >
-        Applica alla partita
+        {t('Applica alla partita')}
       </button>
     </div>
   </footer>

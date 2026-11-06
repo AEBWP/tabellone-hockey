@@ -1,5 +1,12 @@
 <script lang="ts">
-  let { shots, rounds, winner }: { shots: boolean[]; rounds: number; winner: boolean } = $props()
+  import type { BoardText } from '../../i18n/board'
+
+  let {
+    shots,
+    rounds,
+    winner,
+    text,
+  }: { shots: boolean[]; rounds: number; winner: boolean; text: BoardText } = $props()
 
   /** Sempre almeno la serie regolare; nella morte improvvisa compaiono i tiri in più. */
   const slots = $derived(
@@ -12,7 +19,7 @@
 </script>
 
 <div class="so-panel" class:winner>
-  <div class="title">RIGORI · {goals}</div>
+  <div class="title">{text.shootout} · {goals}</div>
   <div class="dots">
     {#each slots as shot, i (i)}
       <span

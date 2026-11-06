@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { t } from '../i18n/ui.svelte'
 
   /** Finestra di dialogo (si chiude con Esc o con il pulsante ×). */
   let {
@@ -35,7 +36,7 @@
   {#if open}
     <header>
       <h2>{title}</h2>
-      <button type="button" class="btn btn-ghost btn-sm" onclick={onclose} aria-label="Chiudi">
+      <button type="button" class="btn btn-ghost btn-sm" onclick={onclose} aria-label={t('Chiudi')}>
         ✕
       </button>
     </header>

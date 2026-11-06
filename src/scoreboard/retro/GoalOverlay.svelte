@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { boardText } from '../../i18n/board'
   import type { GameView } from '../../engine'
   import { watchGoals } from '../goal-watch.svelte'
   import PixelLogo from './PixelLogo.svelte'
@@ -9,6 +10,7 @@
    * il bordo, GOAL lampeggiante e nome della squadra che scorre.
    */
   let { view }: { view: GameView } = $props()
+  const text = $derived(boardText(view))
 
   const watch = watchGoals(() => view)
 </script>
@@ -20,7 +22,7 @@
     <div class="goal" style:--lamp={lamp}>
       <div class="chase"></div>
 
-      <div class="word">GOAL!</div>
+      <div class="word">{text.goalExclaimed}</div>
 
       <div class="marquee">
         <div class="track">

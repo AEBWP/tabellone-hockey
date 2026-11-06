@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { GameView, TeamId, TeamView } from '../../engine'
   import { textColorOn } from '../../shared/color'
-  import { fitFontSize, periodLabel, phaseLabel } from '../../shared/labels'
+  import { boardText, phaseLabel } from '../../i18n/board'
+  import { fitFontSize } from '../../shared/labels'
   import GoalOverlay from './GoalOverlay.svelte'
 
   /**
@@ -10,6 +11,7 @@
    */
   let { view, animations = true }: { view: GameView; animations?: boolean } = $props()
 
+  const text = $derived(boardText(view))
   const sides: TeamId[] = ['home', 'away']
   const lastMinute = $derived(view.phase === 'play' && view.clockText.includes('.'))
   const winner = $derived.by<TeamId | null>(() => {
@@ -20,29 +22,31 @@
 
   /** Periodo in forma breve per il riquadro centrale: "1°", "OT", "OT2", "SO". */
   const periodShort = $derived.by(() => {
-    if (view.phase === 'shootout' || view.shootout) return { big: 'SO', small: 'RIGORI' }
+    if (view.phase === 'shootout' || view.shootout)
+      return { big: text.shootoutShort, small: text.shootoutAbbr }
     if (view.periodKind === 'overtime') {
-      return { big: view.overtimeNumber > 1 ? `OT${view.overtimeNumber}` : 'OT', small: 'SUPPL.' }
+      const big = text.overtimeShort + (view.overtimeNumber > 1 ? view.overtimeNumber : '')
+      return { big, small: text.overtimeAbbr }
     }
-    return { big: `${view.period}°`, small: 'TEMPO' }
+    return { big: text.periodNumber(view.period), small: text.periodWord(view.regularPeriods) }
   })
 
   const caption = $derived.by(() => {
     switch (view.phase) {
       case 'intermission':
-        return `INTERVALLO · POI ${periodLabel(view)}`
+        return text.intermissionThen(view)
       case 'shootout':
-        return 'RIGORI'
+        return text.shootout
       case 'final':
         return phaseLabel(view)
       default:
-        return periodLabel(view)
+        return text.period(view)
     }
   })
 
   const status = $derived.by(() => {
-    if (view.phase === 'play' && view.clockRunning) return { text: 'IN GIOCO', cls: 'live' }
-    if (view.phase === 'play' || view.phase === 'ready') return { text: 'FERMO', cls: 'stop' }
+    if (view.phase === 'play' && view.clockRunning) return { text: text.live, cls: 'live' }
+    if (view.phase === 'play' || view.phase === 'ready') return { text: text.stopped, cls: 'stop' }
     return null
   })
 
@@ -72,7 +76,7 @@
             {#each { length: Math.max(1, t.timeoutsLeft) }, i (i)}
               <i class:on={i < t.timeoutsLeft}></i>
             {/each}
-            <b>TIMEOUT</b>
+            <b>{text.timeout}</b>
           </span>
         </div>
       </div>
@@ -114,7 +118,7 @@
               >
             </div>
           {:else if view.phase === 'final'}
-            <div class="clock word">FINALE</div>
+            <div class="clock word">{text.finalShort}</div>
           {:else}
             <div class="clock" class:stopped={!view.clockRunning}>{view.clockText}</div>
           {/if}
@@ -124,7 +128,7 @@
       <div class="side {id}" style:--team={t.color} style:--on-team={textColorOn(t.color)}>
         {#if view.shootout}
           {@const shots = view.shootout[id]}
-          <div class="side-head">RIGORI <b>{shots.filter(Boolean).length}</b></div>
+          <div class="side-head">{text.shootout} <b>{shots.filter(Boolean).length}</b></div>
           <div class="so">
             {#each { length: Math.max(view.shootout.rounds, shots.length) }, k (k)}
               <span class="so-dot" class:goal={shots[k] === true} class:miss={shots[k] === false}
@@ -135,7 +139,8 @@
           {@const rows = penaltyRows(t)}
           {@const waiting = t.penalties.length - rows.length}
           <div class="side-head">
-            PENALITÀ {#if waiting > 0}<b class="waiting">+{waiting}</b>{/if}
+            {text.penalties}
+            {#if waiting > 0}<b class="waiting">+{waiting}</b>{/if}
           </div>
           <div class="pens">
             {#each rows as p (p.id)}
@@ -144,7 +149,7 @@
                 <span class="pen-time">{p.text}</span>
               </div>
             {:else}
-              <div class="pen-none">NESSUNA</div>
+              <div class="pen-none">{text.none}</div>
             {/each}
           </div>
         {/if}
@@ -160,13 +165,13 @@
         {#if view.timeout}
           {@const tt = view.teams[view.timeout.team]}
           <div class="timeout" style:--team={tt.color} style:--on-team={textColorOn(tt.color)}>
-            <span class="timeout-label">TIMEOUT {tt.shortName}</span>
+            <span class="timeout-label">{text.timeout} {tt.shortName}</span>
             <span class="timeout-clock">{view.timeout.text}</span>
           </div>
         {:else}
           <div class="shots">
             <span class="shots-val">{view.teams.home.shots}</span>
-            <span class="shots-label">TIRI IN PORTA</span>
+            <span class="shots-label">{text.shotsOnGoal}</span>
             <span class="shots-val">{view.teams.away.shots}</span>
           </div>
         {/if}
@@ -174,7 +179,7 @@
       <div class="pp-slot {id}">
         {#if view.powerPlay === id}
           <div class="pp" style:--team={t.color} style:--on-team={textColorOn(t.color)}>
-            <span class="pp-label">SUPERIORITÀ</span>
+            <span class="pp-label">{text.powerPlay}</span>
             <span class="pp-strength">{view.teams.home.skaters} vs {view.teams.away.skaters}</span>
           </div>
         {/if}

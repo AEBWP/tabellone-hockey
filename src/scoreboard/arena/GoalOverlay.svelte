@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { boardText } from '../../i18n/board'
   import type { GameView, TeamId } from '../../engine'
   import { textColorOn } from '../../shared/color'
 
   let { view }: { view: GameView } = $props()
+  const text = $derived(boardText(view))
 
   const DURATION_MS = 7_000
 
@@ -60,7 +62,9 @@
             <div class="logo"><img src={t.logo} alt="" /></div>
           {/if}
           <div class="word">
-            GOAL!<span class="shine" aria-hidden="true"><span>GOAL!</span></span>
+            {text.goalExclaimed}<span class="shine" aria-hidden="true"
+              ><span>{text.goalExclaimed}</span></span
+            >
           </div>
         </div>
         <div class="team-plate"><span>{t.name}</span></div>

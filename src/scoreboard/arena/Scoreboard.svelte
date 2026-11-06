@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { GameView, TeamId } from '../../engine'
   import { textColorOn } from '../../shared/color'
-  import { phaseLabel, periodLabel, previousPeriodLabel } from '../../shared/labels'
+  import { boardText, phaseLabel, previousPeriod } from '../../i18n/board'
   import GoalOverlay from './GoalOverlay.svelte'
   import PenaltyPanel from './PenaltyPanel.svelte'
   import ShootoutPanel from './ShootoutPanel.svelte'
@@ -14,6 +14,7 @@
    */
   let { view, animations = true }: { view: GameView; animations?: boolean } = $props()
 
+  const text = $derived(boardText(view))
   const lastMinute = $derived(view.phase === 'play' && view.clockText.includes('.'))
   const winner = $derived.by<TeamId | null>(() => {
     if (view.phase !== 'final') return null
@@ -25,15 +26,15 @@
   const caption = $derived.by(() => {
     switch (view.phase) {
       case 'intermission':
-        return `IL ${periodLabel(view)} INIZIA TRA`
+        return text.startsIn(view)
       case 'shootout':
-        return 'GOL AI RIGORI'
+        return text.shootoutGoals
       case 'final':
-        return 'RISULTATO'
+        return text.result
       case 'ready':
-        return 'PRONTI'
+        return text.ready
       default:
-        return 'TEMPO'
+        return text.time
     }
   })
 </script>
@@ -44,13 +45,13 @@
   <header class="topbar">
     <span class="rule"></span>
     <div class="plate" class:final={view.phase === 'final'}>
-      {view.phase === 'intermission' ? `FINE ${previousPeriodLabel(view)}` : phaseLabel(view)}
+      {view.phase === 'intermission' ? text.endOf(previousPeriod(view)) : phaseLabel(view)}
     </div>
     <span class="rule"></span>
   </header>
 
   <section class="main">
-    <TeamPanel team={view.teams.home} side="home" dimmed={winner === 'away'} />
+    <TeamPanel team={view.teams.home} side="home" {text} dimmed={winner === 'away'} />
 
     <div class="center">
       <div
@@ -68,7 +69,7 @@
             >{view.shootout.away.filter(Boolean).length}
           </div>
         {:else if view.phase === 'final'}
-          <div class="clock word">FINALE</div>
+          <div class="clock word">{text.finalShort}</div>
         {:else}
           <div class="clock" class:stopped={!view.clockRunning}>{view.clockText}</div>
         {/if}
@@ -76,7 +77,7 @@
         {#if view.powerPlay}
           {@const pp = view.teams[view.powerPlay]}
           <div class="powerplay" style:--team={pp.color} style:--on-team={textColorOn(pp.color)}>
-            <span class="pp-label">SUPERIORITÀ</span>
+            <span class="pp-label">{text.powerPlay}</span>
             <span class="pp-team">{pp.shortName}</span>
             <span class="pp-strength"
               >{view.teams.home.skaters}<i>vs</i>{view.teams.away.skaters}</span
@@ -86,7 +87,7 @@
       </div>
     </div>
 
-    <TeamPanel team={view.teams.away} side="away" dimmed={winner === 'home'} />
+    <TeamPanel team={view.teams.away} side="away" {text} dimmed={winner === 'home'} />
   </section>
 
   <section class="bottom">
@@ -97,6 +98,7 @@
         shots={so.home}
         rounds={so.rounds}
         winner={so.winner === 'home'}
+        {text}
       />
       <div></div>
       <ShootoutPanel
@@ -104,18 +106,19 @@
         shots={so.away}
         rounds={so.rounds}
         winner={so.winner === 'away'}
+        {text}
       />
     {:else}
-      <PenaltyPanel team={view.teams.home} />
+      <PenaltyPanel team={view.teams.home} {text} />
       {#if view.timeout}
         {@const t = view.teams[view.timeout.team]}
         <div class="timeout" style:--team={t.color} style:--on-team={textColorOn(t.color)}>
-          <div class="timeout-head">TIMEOUT <b>{t.shortName}</b></div>
+          <div class="timeout-head">{text.timeout} <b>{t.shortName}</b></div>
           <div class="timeout-clock">{view.timeout.text}</div>
         </div>
       {:else}
         <div class="stats">
-          <div class="stats-head">TIRI IN PORTA</div>
+          <div class="stats-head">{text.shotsOnGoal}</div>
           <div class="stats-row">
             {#each [view.teams.home, view.teams.away] as t, i (i)}
               <div class="stat" style:--team={t.color}>
@@ -126,7 +129,7 @@
           </div>
         </div>
       {/if}
-      <PenaltyPanel team={view.teams.away} />
+      <PenaltyPanel team={view.teams.away} {text} />
     {/if}
   </section>
 

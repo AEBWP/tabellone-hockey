@@ -44,7 +44,11 @@ function run(
   return s
 }
 
+/** Prima del via i comandi di gioco sono bloccati: si avvia e si ferma il tempo. */
+const KICKOFF: Command[] = [{ type: 'startClock' }, { type: 'stopClock' }]
+
 const toThirdPeriod: Command[] = [
+  ...KICKOFF,
   { type: 'endPeriod' },
   { type: 'endIntermission' },
   { type: 'endPeriod' },
@@ -134,7 +138,7 @@ export const DEMO_SCENES: DemoScene[] = [
     key: '5',
     label: 'Intervallo',
     build(now) {
-      return run([{ type: 'goal', team: 'home' }, { type: 'endPeriod' }], now - 2 * MIN)
+      return run([...KICKOFF, { type: 'goal', team: 'home' }, { type: 'endPeriod' }], now - 2 * MIN)
     },
   },
   {

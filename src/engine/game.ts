@@ -13,9 +13,11 @@ import { DEFAULT_RULES, periodLengthMs, type Rules } from './rules'
 import { shootoutWinner } from './shootout'
 import {
   BOARD_STYLES,
+  LANGUAGES,
   opponent,
   type BoardStyle,
   type GameState,
+  type Language,
   type PenaltyKind,
   type TeamId,
   type TeamSetup,
@@ -52,6 +54,8 @@ export type Command =
   | { type: 'setShowLogos'; show: boolean }
   /** Cambia lo stile grafico del tabellone. */
   | { type: 'setBoardStyle'; style: BoardStyle }
+  /** Cambia la lingua delle scritte del tabellone. */
+  | { type: 'setBoardLanguage'; language: Language }
   /**
    * Cambia le regole della partita in corso. Valgono dal prossimo periodo;
    * se il periodo attuale non è ancora iniziato, anche la sua durata si adegua.
@@ -72,6 +76,7 @@ export function createGame(
   rules: Rules = DEFAULT_RULES,
   teams: Partial<Record<TeamId, TeamSetup>> = {},
   boardStyle: BoardStyle = 'arena',
+  boardLanguage: Language = 'it',
 ): GameState {
   const periodMs = periodLengthMs(rules, 1)
   return {
@@ -90,6 +95,7 @@ export function createGame(
     shootout: null,
     showLogos: true,
     boardStyle,
+    boardLanguage,
     nextId: 1,
   }
 }
@@ -459,6 +465,10 @@ export function apply(state: GameState, command: Command, now: number): GameStat
       if (BOARD_STYLES.includes(command.style)) s.boardStyle = command.style
       break
 
+    case 'setBoardLanguage':
+      if (LANGUAGES.includes(command.language)) s.boardLanguage = command.language
+      break
+
     case 'setShowLogos':
       s.showLogos = command.show
       break
@@ -485,7 +495,7 @@ export function apply(state: GameState, command: Command, now: number): GameStat
         home: pickSetup(s.teams.home),
         away: pickSetup(s.teams.away),
       }
-      return createGame(command.rules ?? s.rules, teams, s.boardStyle)
+      return createGame(command.rules ?? s.rules, teams, s.boardStyle, s.boardLanguage)
     }
   }
 

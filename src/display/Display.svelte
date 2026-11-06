@@ -1,6 +1,13 @@
 <script lang="ts">
   import { onDestroy, untrack } from 'svelte'
-  import { apply, BOARD_STYLES, deriveView, type GameState } from '../engine'
+  import {
+    apply,
+    BOARD_STYLES,
+    deriveView,
+    LANGUAGES,
+    type GameState,
+    type Language,
+  } from '../engine'
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import { createChannel } from '../shared/channel'
   import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
@@ -10,6 +17,7 @@
   import { DEMO_GOAL_KEYS, DEMO_SCENES, DEMO_TEAMS } from './demo'
   import Stage from './Stage.svelte'
   import Warmup from '../scoreboard/Warmup.svelte'
+  import { t as tr } from '../i18n/ui.svelte'
 
   /** Attesa prima della prova generale: le animazioni di apertura finiscono indisturbate. */
   const WARMUP_DELAY_MS = 1_500
@@ -67,10 +75,12 @@
     game = DEMO_SCENES[0].build(now())
     // Lo stile scelto con S resta anche cambiando scena.
     let demoStyle: GameState['boardStyle'] = 'arena'
+    let demoLanguage: Language = 'it'
     const onKey = (e: KeyboardEvent) => {
       const scene = DEMO_SCENES.find((s) => s.key === e.key)
       if (scene) {
         game = apply(scene.build(now()), { type: 'setBoardStyle', style: demoStyle }, now())
+        game = apply(game, { type: 'setBoardLanguage', language: demoLanguage }, now())
         // Cambiare scena non è un gol: si riparte senza animazione.
         sceneVersion++
       }
@@ -84,6 +94,11 @@
           BOARD_STYLES[(BOARD_STYLES.indexOf(game.boardStyle) + 1) % BOARD_STYLES.length]
         demoStyle = style
         game = apply(game, { type: 'setBoardStyle', style }, now())
+      }
+      // K: cambia lingua del tabellone (a giro).
+      if (e.key.toLowerCase() === 'k' && game) {
+        demoLanguage = LANGUAGES[(LANGUAGES.indexOf(game.boardLanguage) + 1) % LANGUAGES.length]
+        game = apply(game, { type: 'setBoardLanguage', language: demoLanguage }, now())
       }
       // L: mostra/nasconde i loghi, per vedere entrambe le versioni.
       if (e.key.toLowerCase() === 'l' && game) {
@@ -144,12 +159,12 @@
     {:else}
       <div class="waiting">
         <h1>TABELLONE HOCKEY</h1>
-        <p>In attesa della console…</p>
+        <p>{tr('In attesa della console…')}</p>
       </div>
     {/if}
 
     {#if !demo && game && !connected}
-      <div class="offline" title="Console non collegata"></div>
+      <div class="offline" title={tr('Console non collegata')}></div>
     {/if}
   </Stage>
 
@@ -161,7 +176,7 @@
       {/each}
       <span
         ><kbd>G</kbd> gol casa · <kbd>H</kbd> gol ospiti · <kbd>L</kbd> loghi sì/no · <kbd>S</kbd>
-        stile · <kbd>P</kbd> avvia tempo</span
+        stile · <kbd>K</kbd> lingua · <kbd>P</kbd> avvia tempo</span
       >
     </aside>
   {/if}

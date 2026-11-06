@@ -78,6 +78,89 @@ function writeFileAtomic(file, data) {
   fs.renameSync(tmp, file)
 }
 
+// ── Lingua delle finestre del programma ──────────────────────────────────
+// La sceglie l'operatore nella console; qui serve per la conferma di chiusura
+// nativa, la finestra di avvio, i titoli e il numero sugli schermi.
+
+const MAIN_TEXT = {
+  it: {
+    close: 'Chiudi il programma',
+    cancel: 'Annulla',
+    closeTitle: 'Chiudere il Tabellone Hockey?',
+    closeDetail: 'Anche il tabellone sul maxischermo verrà chiuso. La partita resta salvata.',
+    starting: 'Avvio in corso…',
+    setup: 'Scelta degli schermi',
+    console: 'Console',
+    display: 'Maxischermo',
+    screen: 'Schermo',
+    primary: '(principale)',
+  },
+  en: {
+    close: 'Close the program',
+    cancel: 'Cancel',
+    closeTitle: 'Close Tabellone Hockey?',
+    closeDetail: 'The scoreboard on the big screen will close too. The game stays saved.',
+    starting: 'Starting…',
+    setup: 'Screen selection',
+    console: 'Console',
+    display: 'Big screen',
+    screen: 'Screen',
+    primary: '(main)',
+  },
+  de: {
+    close: 'Programm schließen',
+    cancel: 'Abbrechen',
+    closeTitle: 'Tabellone Hockey schließen?',
+    closeDetail:
+      'Auch die Anzeigetafel auf dem Großbildschirm wird geschlossen. Das Spiel bleibt gespeichert.',
+    starting: 'Wird gestartet…',
+    setup: 'Bildschirmauswahl',
+    console: 'Konsole',
+    display: 'Großbildschirm',
+    screen: 'Bildschirm',
+    primary: '(Hauptbildschirm)',
+  },
+  es: {
+    close: 'Cerrar el programa',
+    cancel: 'Cancelar',
+    closeTitle: '¿Cerrar Tabellone Hockey?',
+    closeDetail:
+      'También se cerrará el marcador de la pantalla gigante. El partido queda guardado.',
+    starting: 'Iniciando…',
+    setup: 'Elección de pantallas',
+    console: 'Consola',
+    display: 'Pantalla gigante',
+    screen: 'Pantalla',
+    primary: '(principal)',
+  },
+  fr: {
+    close: 'Fermer le programme',
+    cancel: 'Annuler',
+    closeTitle: 'Fermer Tabellone Hockey ?',
+    closeDetail: 'Le tableau sur l’écran géant sera aussi fermé. Le match reste enregistré.',
+    starting: 'Démarrage…',
+    setup: 'Choix des écrans',
+    console: 'Console',
+    display: 'Écran géant',
+    screen: 'Écran',
+    primary: '(principal)',
+  },
+}
+
+let uiLanguage = Object.hasOwn(MAIN_TEXT, readConfig().language) ? readConfig().language : 'it'
+const text = () => MAIN_TEXT[uiLanguage]
+const windowTitle = (part) => `Tabellone Hockey – ${text()[part]}`
+
+/** La console ha cambiato lingua: si ricorda e si aggiornano i titoli delle finestre. */
+function setUiLanguage(language) {
+  if (!Object.hasOwn(MAIN_TEXT, language) || language === uiLanguage) return
+  uiLanguage = language
+  writeConfig({ ...readConfig(), language })
+  if (consoleWin && !consoleWin.isDestroyed()) consoleWin.setTitle(windowTitle('console'))
+  if (setupWin && !setupWin.isDestroyed()) setupWin.setTitle(windowTitle('setup'))
+  if (displayWin && !displayWin.isDestroyed()) displayWin.setTitle(windowTitle('display'))
+}
+
 // ── Schermi ───────────────────────────────────────────────────────────────
 
 function screens() {
@@ -148,7 +231,9 @@ function showSplash() {
   splashWin.once('show', () => timing('finestra di caricamento aperta'))
   splashWin.once('ready-to-show', () => timing('finestra di caricamento disegnata'))
   splashWin.on('closed', () => (splashWin = null))
-  void splashWin.loadFile(path.join(__dirname, 'splash.html'))
+  void splashWin.loadFile(path.join(__dirname, 'splash.html'), {
+    query: { lang: uiLanguage, text: text().starting },
+  })
 }
 
 function closeSplash() {
@@ -167,7 +252,7 @@ function openSetup() {
     height: 720,
     x: primary.workArea.x + Math.round((primary.workArea.width - 980) / 2),
     y: primary.workArea.y + Math.round((primary.workArea.height - 720) / 2),
-    title: 'Tabellone Hockey – Scelta degli schermi',
+    title: windowTitle('setup'),
     backgroundColor: '#050d18',
     show: false,
     webPreferences: baseWebPreferences(),
@@ -195,7 +280,7 @@ function placeConsole() {
       ...d.workArea,
       minWidth: 900,
       minHeight: 600,
-      title: 'Tabellone Hockey – Console',
+      title: windowTitle('console'),
       backgroundColor: '#050d18',
       show: false,
       webPreferences: baseWebPreferences(),
@@ -285,12 +370,12 @@ let nativeCloseConfirm = function () {
   if (!consoleWin) return
   const answer = dialog.showMessageBoxSync(consoleWin, {
     type: 'question',
-    buttons: ['Chiudi il programma', 'Annulla'],
+    buttons: [text().close, text().cancel],
     defaultId: 1,
     cancelId: 1,
-    title: 'Chiudere il Tabellone Hockey?',
-    message: 'Chiudere il Tabellone Hockey?',
-    detail: 'Anche il tabellone sul maxischermo verrà chiuso. La partita resta salvata.',
+    title: text().closeTitle,
+    message: text().closeTitle,
+    detail: text().closeDetail,
   })
   if (answer === 0) quitApp()
 }
@@ -325,7 +410,7 @@ function openDisplay() {
   displayMode = mode
   const win = new BrowserWindow({
     ...(fullscreen ? d.bounds : windowedBounds(d)),
-    title: 'Tabellone Hockey – Maxischermo',
+    title: windowTitle('display'),
     backgroundColor: '#000000',
     // Sul maxischermo: niente barra del titolo, niente pulsanti, niente icona
     // nella barra delle applicazioni. Si chiude solo dalla console.
@@ -397,7 +482,14 @@ function identifyScreens() {
       webPreferences: { sandbox: true, contextIsolation: true },
     })
     win.setIgnoreMouseEvents(true)
-    const query = new URLSearchParams({ n: String(s.number), title: s.title, res: s.resolution })
+    const title = [`${text().screen} ${s.number}`, s.primary ? text().primary : '']
+      .filter(Boolean)
+      .join(' ')
+    const query = new URLSearchParams({
+      n: String(s.number),
+      title: title + (s.label ? ` – ${s.label}` : ''),
+      res: s.resolution,
+    })
     void win.loadURL(`${BASE_URL}identify.html?${query}`)
     win.once('ready-to-show', () => win.showInactive())
     identifyWins.push(win)
@@ -435,6 +527,7 @@ function registerIpc() {
 
   // La console ha ricevuto la richiesta di chiusura e mostra la sua finestra.
   ipcMain.on('app:close-ack', () => clearTimeout(closeAckTimer))
+  ipcMain.on('app:language', (_event, language) => setUiLanguage(String(language)))
   // Risposta dell'operatore: true = chiudi il programma.
   ipcMain.on('app:close-answer', (_event, confirmed) => {
     clearTimeout(closeAckTimer)

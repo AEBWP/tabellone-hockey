@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { boardText } from '../../i18n/board'
   import type { GameView, TeamId } from '../../engine'
   import { textColorOn } from '../../shared/color'
 
   let { view }: { view: GameView } = $props()
+  const text = $derived(boardText(view))
 
   const DURATION_MS = 7_000
 
@@ -47,7 +49,7 @@
       {#if t.logo}
         <img class="logo" src={t.logo} alt="" />
       {/if}
-      <div class="word">GOAL!</div>
+      <div class="word">{text.goalExclaimed}</div>
       <div class="team">{t.name.toUpperCase()}</div>
       <div class="score">{view.teams.home.score} – {view.teams.away.score}</div>
     </div>

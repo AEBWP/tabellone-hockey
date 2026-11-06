@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { TeamView } from '../../engine'
+  import type { BoardText } from '../../i18n/board'
 
-  let { team }: { team: TeamView } = $props()
+  let { team, text }: { team: TeamView; text: BoardText } = $props()
 
   /** Righe visibili: penalità in corso (max 3); le altre compaiono come "in attesa". */
   const MAX_ROWS = 3
@@ -11,7 +12,7 @@
 
 <div class="pen-panel" style:--team={team.color}>
   {#if team.penalties.length > 0}
-    <div class="title">PENALITÀ</div>
+    <div class="title">{text.penalties}</div>
     {#each shown as p (p.id)}
       <div class="row" class:misconduct={!p.countsForStrength}>
         <span class="player">#{p.player}</span>
@@ -19,7 +20,7 @@
       </div>
     {/each}
     {#if waiting > 0}
-      <div class="waiting">+{waiting} IN ATTESA</div>
+      <div class="waiting">{text.waiting(waiting)}</div>
     {/if}
   {/if}
 </div>

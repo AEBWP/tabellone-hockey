@@ -2,6 +2,7 @@
   import type { GameState } from '../engine'
   import { describeEvent } from './format'
   import HelpTip from './HelpTip.svelte'
+  import { t } from '../i18n/ui.svelte'
 
   let {
     game,
@@ -21,16 +22,16 @@
 
 <section class="panel log">
   <h2 class="panel-title">
-    Cronaca
-    <HelpTip title="Cronaca e annulla">
-      Qui compaiono gol e penalità con il momento in cui sono avvenuti. Se hai sbagliato, usa
-      <b>Annulla</b> (o <kbd>Ctrl</kbd> + <kbd>Z</kbd>): annulla l’ultima azione di gioco senza
-      toccare il cronometro. Si può annullare solo all’interno del periodo in corso.
+    {t('Cronaca')}
+    <HelpTip title={t('Cronaca e annulla')}>
+      {@html t(
+        'Qui compaiono gol e penalità con il momento in cui sono avvenuti. Se hai sbagliato, usa <b>Annulla</b> (o <kbd>Ctrl</kbd> + <kbd>Z</kbd>): annulla l’ultima azione di gioco senza toccare il cronometro. Si può annullare solo all’interno del periodo in corso.',
+      )}
     </HelpTip>
   </h2>
 
   <button type="button" class="btn undo" disabled={!undoLabel} onclick={onundo}>
-    ↶ {undoLabel ? `Annulla: ${undoLabel}` : 'Niente da annullare'}
+    ↶ {undoLabel ? t('Annulla: {label}', { label: undoLabel }) : t('Niente da annullare')}
     {#if undoLabel}<kbd>Ctrl</kbd><kbd>Z</kbd>{/if}
   </button>
 
@@ -42,7 +43,7 @@
         <span class="text">{line.text}</span>
       </li>
     {:else}
-      <li class="empty muted">Ancora nessun evento.</li>
+      <li class="empty muted">{t('Ancora nessun evento.')}</li>
     {/each}
   </ol>
 </section>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { t } from '../i18n/ui.svelte'
 
   /** Pulsante "?" che apre una breve spiegazione. Si chiude con Esc o cliccando fuori. */
   let {
@@ -28,7 +29,7 @@
     class="q"
     class:active={open}
     aria-expanded={open}
-    aria-label="Aiuto: {title}"
+    aria-label={t('Aiuto: {title}', { title })}
     onclick={() => (open = !open)}
   >
     ?

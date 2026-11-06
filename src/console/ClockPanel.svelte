@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Command, GameView } from '../engine'
-  import { phaseLabel, previousPeriodLabel, periodLabel } from '../shared/labels'
+  import { BOARD_TEXT, phaseLabel, previousPeriod } from '../i18n/board'
+  import { t, ui } from '../i18n/ui.svelte'
   import HelpTip from './HelpTip.svelte'
   import type { ConfirmRequest } from './confirm'
 
@@ -20,22 +21,27 @@
 
   const canRunClock = $derived(view.phase === 'ready' || view.phase === 'play')
   const lastMinute = $derived(view.clockText.includes('.'))
+  /** Nomi dei periodi nella lingua della console (non in quella del tabellone). */
+  const words = $derived(BOARD_TEXT[ui.lang])
 
   function endPeriod() {
     confirm({
-      title: `Terminare il ${periodLabel(view).toLowerCase()}?`,
-      message:
+      title: t('Terminare il periodo?'),
+      message: t(
         'Il tempo va a zero e si passa all’intervallo (o al supplementare / fine partita). Usalo se il tempo è finito ma il cronometro non era sincronizzato.',
-      confirmLabel: 'Termina periodo',
+      ),
+      confirmLabel: t('Termina periodo'),
       action: () => run({ type: 'endPeriod' }),
     })
   }
 
   function endGame() {
     confirm({
-      title: 'Terminare la partita?',
-      message: 'Il tabellone mostrerà “FINALE” con il punteggio attuale.',
-      confirmLabel: 'Termina partita',
+      title: t('Terminare la partita?'),
+      message: t('Il tabellone mostrerà “{final}” con il punteggio attuale.', {
+        final: BOARD_TEXT[view.language].final,
+      }),
+      confirmLabel: t('Termina partita'),
       danger: true,
       action: () => run({ type: 'endGame' }),
     })
@@ -44,38 +50,39 @@
 
 <section class="panel clock-panel">
   <h2 class="panel-title">
-    Tempo di gioco
-    <HelpTip title="Tempo di gioco">
-      Avvia e ferma il cronometro con il pulsante grande o con la <kbd>barra spaziatrice</kbd>.
-      Quando il tempo arriva a zero si passa da solo all’intervallo e poi al periodo successivo. Le
-      penalità scorrono solo quando il tempo è in moto.
+    {t('Tempo di gioco')}
+    <HelpTip title={t('Tempo di gioco')}>
+      {@html t(
+        'Avvia e ferma il cronometro con il pulsante grande o con la <kbd>barra spaziatrice</kbd>. Quando il tempo arriva a zero si passa da solo all’intervallo e poi al periodo successivo. Le penalità scorrono solo quando il tempo è in moto.',
+      )}
     </HelpTip>
   </h2>
 
-  <div class="phase">{phaseLabel(view)}</div>
+  <div class="phase">{phaseLabel({ ...view, language: ui.lang })}</div>
 
   {#if view.phase === 'intermission' && view.intermission}
     <div class="time intermission">{view.intermission.text}</div>
     <div class="state">
-      Intervallo dopo il {previousPeriodLabel(view).toLowerCase()} · poi {periodLabel(
-        view,
-      ).toLowerCase()}
+      {t('Finito: {ended} · prossimo: {next}', {
+        ended: words.period(previousPeriod(view)),
+        next: words.period(view),
+      })}
     </div>
     <button
       type="button"
       class="btn btn-primary btn-lg main-btn"
       onclick={() => run({ type: 'endIntermission' })}
     >
-      Termina intervallo
+      {t('Termina intervallo')}
     </button>
   {:else if view.phase === 'shootout'}
-    <div class="time word">RIGORI</div>
-    <div class="state">Segna i tiri nei pannelli delle squadre</div>
+    <div class="time word">{words.shootoutWord}</div>
+    <div class="state">{t('Segna i tiri nei pannelli delle squadre')}</div>
   {:else if view.phase === 'final'}
-    <div class="time word">FINALE</div>
-    <div class="state">Partita terminata</div>
+    <div class="time word">{words.finalShort}</div>
+    <div class="state">{t('Partita terminata')}</div>
     <button type="button" class="btn btn-primary btn-lg main-btn" onclick={onNewGame}>
-      Nuova partita…
+      {t('Nuova partita…')}
     </button>
   {:else}
     <div class="time" class:running={view.clockRunning} class:urgent={lastMinute}>
@@ -83,12 +90,12 @@
     </div>
     <div class="state" class:running={view.clockRunning}>
       {view.clockRunning
-        ? '● Tempo in moto'
+        ? `● ${t('Tempo in moto')}`
         : view.phase === 'ready'
           ? view.pregame
-            ? 'Partita non iniziata: avvia il tempo per cominciare'
-            : 'Pronto a iniziare'
-          : '❚❚ Tempo fermo'}
+            ? t('Partita non iniziata: avvia il tempo per cominciare')
+            : t('Pronto a iniziare')
+          : `❚❚ ${t('Tempo fermo')}`}
     </div>
     <button
       type="button"
@@ -96,17 +103,19 @@
       disabled={!canRunClock || view.clockMs <= 0}
       onclick={() => run({ type: 'toggleClock' })}
     >
-      {view.clockRunning ? '■ Ferma tempo' : view.pregame ? '▶ Avvia partita' : '▶ Avvia tempo'}
-      <kbd>Spazio</kbd>
+      {view.clockRunning
+        ? `■ ${t('Ferma tempo')}`
+        : `▶ ${view.pregame ? t('Avvia partita') : t('Avvia tempo')}`}
+      <kbd>{t('Spazio')}</kbd>
     </button>
   {/if}
 
   {#if view.timeout}
     <div class="timeout">
-      <span>Timeout {view.teams[view.timeout.team].name}</span>
+      <span>{t('Timeout {team}', { team: view.teams[view.timeout.team].name })}</span>
       <strong>{view.timeout.text}</strong>
       <button type="button" class="btn btn-sm" onclick={() => run({ type: 'endTimeout' })}>
-        Termina
+        {t('Termina')}
       </button>
     </div>
   {/if}
@@ -118,7 +127,7 @@
       disabled={!canRunClock || view.pregame}
       onclick={onEditClock}
     >
-      Correggi tempo…
+      {t('Correggi tempo…')}
     </button>
     <button
       type="button"
@@ -126,7 +135,7 @@
       disabled={!canRunClock || view.pregame}
       onclick={endPeriod}
     >
-      Fine periodo
+      {t('Fine periodo')}
     </button>
     <button
       type="button"
@@ -134,7 +143,7 @@
       disabled={view.pregame || view.phase === 'final'}
       onclick={endGame}
     >
-      Fine partita
+      {t('Fine partita')}
     </button>
   </div>
 </section>

@@ -1,6 +1,7 @@
 import { SOUND_IDS, type SoundId } from './sound-events'
 import { deleteSound, loadSound, saveSound } from './sound-store'
 import { scheduleSound } from './synth'
+import { t } from '../i18n/ui.svelte'
 
 /**
  * Audio della console: sirene e segnali, con volume, silenzio e scelta
@@ -192,7 +193,7 @@ class AudioEngine {
       this.outputs = outputs.map((d, i) => ({
         id: d.deviceId,
         // Nel browser i nomi possono essere nascosti per privacy; in Electron ci sono.
-        label: d.label || `Uscita audio ${i + 1}`,
+        label: d.label || t('Uscita audio {n}', { n: i + 1 }),
       }))
     } catch {
       this.outputs = []

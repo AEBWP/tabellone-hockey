@@ -10,6 +10,8 @@ export interface ScreenItem {
   title: string
   resolution: string
   primary: boolean
+  /** Nome dello schermo dato da Windows (può mancare). */
+  label?: string
   bounds: { x: number; y: number; width: number; height: number }
 }
 
@@ -34,6 +36,8 @@ export interface DesktopApi {
   answerClose(confirmed: boolean): void
   saveGame(json: string): void
   loadGame(): string | null
+  /** Lingua della console: la usano le finestre del programma (chiusura, avvio). */
+  setLanguage?(language: string): void
 }
 
 export const desktop: DesktopApi | undefined = (

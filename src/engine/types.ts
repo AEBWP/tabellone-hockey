@@ -11,6 +11,10 @@ export const BOARD_STYLES: readonly BoardStyle[] = [
   'retro',
   'classico',
 ]
+/** Lingue disponibili (tabellone e console, scelte separatamente). */
+export type Language = 'it' | 'en' | 'de' | 'es' | 'fr'
+export const LANGUAGES: readonly Language[] = ['it', 'en', 'de', 'es', 'fr']
+
 export const TEAM_IDS: readonly TeamId[] = ['home', 'away']
 
 export function opponent(team: TeamId): TeamId {
@@ -134,6 +138,8 @@ export interface GameState {
   showLogos: boolean
   /** Stile del tabellone: è un'impostazione, resta uguale nelle nuove partite. */
   boardStyle: BoardStyle
+  /** Lingua delle scritte del tabellone: è un'impostazione, come lo stile. */
+  boardLanguage: Language
   nextId: number
 }
 

@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { GameView } from '../engine'
   import { textColorOn } from '../shared/color'
-  import { phaseLabel } from '../shared/labels'
+  import { phaseLabel } from '../i18n/board'
+  import { t, ui } from '../i18n/ui.svelte'
 
   /**
    * Conferma di chiusura del programma, nello stile della console.
@@ -48,8 +49,8 @@
           />
         </svg>
       </div>
-      <h2>Chiudere il Tabellone Hockey?</h2>
-      <p>Si chiuderà anche il <b>tabellone sul maxischermo</b>.</p>
+      <h2>{t('Chiudere il Tabellone Hockey?')}</h2>
+      <p>{@html t('Si chiuderà anche il <b>tabellone sul maxischermo</b>.')}</p>
 
       <div class="match">
         <span class="team" style:--team={view.teams.home.color}>
@@ -66,17 +67,18 @@
           >
         </span>
         <span class="meta"
-          >{phaseLabel(view)}{view.phase === 'play' || view.phase === 'ready'
+          >{phaseLabel({ ...view, language: ui.lang })}{view.phase === 'play' ||
+          view.phase === 'ready'
             ? ` · ${view.clockText}`
             : ''}</span
         >
       </div>
 
       {#if running}
-        <p class="warn">⚠ Il tempo sta scorrendo: forse vuoi fermarlo prima.</p>
+        <p class="warn">⚠ {t('Il tempo sta scorrendo: forse vuoi fermarlo prima.')}</p>
       {/if}
       <p class="muted">
-        La partita resta salvata: alla riapertura il programma riparte esattamente da qui.
+        {t('La partita resta salvata: alla riapertura il programma riparte esattamente da qui.')}
       </p>
 
       <div class="actions">
@@ -86,10 +88,10 @@
           class="btn btn-lg"
           onclick={() => onanswer(false)}
         >
-          Annulla
+          {t('Annulla')}
         </button>
         <button type="button" class="btn btn-lg btn-stop" onclick={() => onanswer(true)}>
-          Chiudi il programma
+          {t('Chiudi il programma')}
         </button>
       </div>
     </div>

@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { TeamView } from '../../engine'
+  import type { BoardText } from '../../i18n/board'
 
-  let { team }: { team: TeamView } = $props()
+  let { team, text }: { team: TeamView; text: BoardText } = $props()
 
   /** Righe sempre presenti (anche vuote): il tabellone non "salta" quando arriva una penalità. */
   const MIN_ROWS = 2
@@ -13,8 +14,8 @@
 
 <div class="pen" style:--team={team.color}>
   <div class="head">
-    <span>PENALITÀ</span>
-    {#if waiting > 0}<span class="waiting">+{waiting} IN ATTESA</span>{/if}
+    <span>{text.penalties}</span>
+    {#if waiting > 0}<span class="waiting">{text.waiting(waiting)}</span>{/if}
   </div>
   <div class="rows">
     {#each shown as p (p.id)}

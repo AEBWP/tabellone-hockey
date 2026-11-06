@@ -1,8 +1,10 @@
 <script lang="ts">
   import { exportLibrary, parseBackup } from '../shared/library'
   import { library } from './library.svelte'
+  import { t } from '../i18n/ui.svelte'
 
-  const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+  const teamsCount = (n: number) => (n === 1 ? t('1 squadra') : t('{n} squadre', { n }))
+  const presetsCount = (n: number) => (n === 1 ? t('1 regolamento') : t('{n} regolamenti', { n }))
 
   let result = $state<{ ok: boolean; text: string } | null>(null)
   let fileInput: HTMLInputElement | undefined = $state()
@@ -16,7 +18,7 @@
     a.download = `tabellone-hockey-impostazioni-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
-    result = { ok: true, text: 'File di backup creato: lo trovi nella cartella dei download.' }
+    result = { ok: true, text: t('File di backup creato: lo trovi nella cartella dei download.') }
   }
 
   async function importFile(event: Event) {
@@ -28,37 +30,43 @@
       const data = parseBackup(await file.text())
       library.import(data)
       result = library.error
-        ? { ok: false, text: library.error }
+        ? { ok: false, text: t(library.error) }
         : {
             ok: true,
-            text: `Importati: ${count(data.teams.length, 'squadra', 'squadre')} e ${count(data.presets.length, 'regolamento', 'regolamenti')}.`,
+            text: t('Importati: {teams} e {presets}.', {
+              teams: teamsCount(data.teams.length),
+              presets: presetsCount(data.presets.length),
+            }),
           }
     } catch (e) {
-      result = { ok: false, text: e instanceof Error ? e.message : String(e) }
+      result = { ok: false, text: t(e instanceof Error ? e.message : String(e)) }
     }
   }
 </script>
 
 <div class="backup-tab">
   <section class="panel">
-    <h2 class="panel-title">Esporta</h2>
+    <h2 class="panel-title">{t('Esporta')}</h2>
     <p>
-      Salva in un file l’archivio di <b>{count(library.teams.length, 'squadra', 'squadre')}</b> (con
-      i loghi) e
-      <b>{count(library.presets.length, 'regolamento', 'regolamenti')}</b>. Utile per portare le
-      impostazioni dal tuo PC a quello del palaghiaccio, o come copia di sicurezza.
+      {@html t(
+        'Salva in un file l’archivio di <b>{teams}</b> (con i loghi) e <b>{presets}</b>. Utile per portare le impostazioni dal tuo PC a quello del palaghiaccio, o come copia di sicurezza.',
+        { teams: teamsCount(library.teams.length), presets: presetsCount(library.presets.length) },
+      )}
     </p>
-    <button type="button" class="btn btn-primary" onclick={download}>Scarica file di backup</button>
+    <button type="button" class="btn btn-primary" onclick={download}
+      >{t('Scarica file di backup')}</button
+    >
   </section>
 
   <section class="panel">
-    <h2 class="panel-title">Importa</h2>
+    <h2 class="panel-title">{t('Importa')}</h2>
     <p>
-      Carica un file di backup. Le squadre e i regolamenti vengono <b>aggiunti</b> a quelli che hai già;
-      quelli presenti in entrambi vengono aggiornati. Niente viene cancellato.
+      {@html t(
+        'Carica un file di backup. Le squadre e i regolamenti vengono <b>aggiunti</b> a quelli che hai già; quelli presenti in entrambi vengono aggiornati. Niente viene cancellato.',
+      )}
     </p>
     <button type="button" class="btn" onclick={() => fileInput?.click()}>
-      Scegli file di backup…
+      {t('Scegli file di backup…')}
     </button>
     <input
       bind:this={fileInput}
@@ -74,7 +82,7 @@
   {/if}
 
   <p class="muted note">
-    La partita in corso non fa parte del backup: viene già salvata in automatico.
+    {t('La partita in corso non fa parte del backup: viene già salvata in automatico.')}
   </p>
 </div>
 

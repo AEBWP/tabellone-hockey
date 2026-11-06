@@ -52,6 +52,8 @@ export function undo(
       clock: structuredClone(current.clock),
       intermission: structuredClone(current.intermission),
       nextId: Math.max(previous.nextId, current.nextId),
+      // La lingua del tabellone è un'impostazione: non torna indietro con l'annulla.
+      boardLanguage: current.boardLanguage,
     },
     history: history.slice(0, -1),
     label: last.label,

@@ -29,4 +29,7 @@ contextBridge.exposeInMainWorld('tabelloneApp', {
   // Salvataggio della partita su file (oltre che nel browser interno)
   saveGame: (json) => ipcRenderer.send('game:save', json),
   loadGame: () => ipcRenderer.sendSync('game:load'),
+
+  // Lingua della console, per le finestre del programma (chiusura, avvio)
+  setLanguage: (language) => ipcRenderer.send('app:language', String(language)),
 })

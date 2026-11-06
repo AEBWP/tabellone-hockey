@@ -2,7 +2,14 @@ import { countdownRemainingMs, formatClock, gameTimeMs, periodRemainingMs } from
 import { advance, isClockRunning, isOvertime, isPregame } from './game'
 import { countsForStrength, skatersOnIce } from './penalties'
 import { shootoutWinner } from './shootout'
-import { TEAM_IDS, type GameState, type Phase, type PenaltyKind, type TeamId } from './types'
+import {
+  TEAM_IDS,
+  type GameState,
+  type Language,
+  type Phase,
+  type PenaltyKind,
+  type TeamId,
+} from './types'
 
 /** Tutto ciò che serve per disegnare tabellone e console all'istante `now`. */
 export interface GameView {
@@ -17,6 +24,10 @@ export interface GameView {
   periodKind: 'regular' | 'overtime'
   /** Numero del supplementare (1, 2, …), 0 nei tempi regolamentari. */
   overtimeNumber: number
+  /** Periodi regolamentari (es. 3): servono per chiamarli "terzi" o "tempi". */
+  regularPeriods: number
+  /** Lingua delle scritte del tabellone. */
+  language: Language
   clockMs: number
   clockText: string
   clockRunning: boolean
@@ -123,6 +134,8 @@ export function deriveView(state: GameState, now: number): GameView {
     period: s.period,
     periodKind: overtime ? 'overtime' : 'regular',
     overtimeNumber: overtime ? s.period - s.rules.periods : 0,
+    regularPeriods: s.rules.periods,
+    language: s.boardLanguage,
     clockMs,
     clockText: formatClock(clockMs, tenths),
     clockRunning: isClockRunning(s),

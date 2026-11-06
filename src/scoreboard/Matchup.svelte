@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { BoardStyle, GameView, TeamView } from '../engine'
+  import { boardText } from '../i18n/board'
   import { fitFontSize } from '../shared/labels'
   import PixelLogo from './retro/PixelLogo.svelte'
-  import { periodLabel } from '../shared/labels'
 
   /**
    * Presentazione prima della partita: “Squadra A VS Squadra B”.
@@ -11,6 +11,7 @@
    */
   let { view, variant = 'arena' }: { view: GameView; variant?: BoardStyle } = $props()
 
+  const text = $derived(boardText(view))
   const monogram = (t: TeamView) => t.shortName.slice(0, 3)
 </script>
 
@@ -43,10 +44,10 @@
   {/each}
 
   <div class="divider"></div>
-  <div class="vs"><span>VS</span></div>
+  <div class="vs"><span>{text.vs}</span></div>
 
-  <div class="plate top">INIZIO PARTITA</div>
-  <div class="plate bottom">{periodLabel(view)} · {view.clockText}</div>
+  <div class="plate top">{text.gameStart}</div>
+  <div class="plate bottom">{text.period(view)} · {view.clockText}</div>
 </div>
 
 <style>

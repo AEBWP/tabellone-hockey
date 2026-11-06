@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { desktop, type ScreenItem } from '../shared/desktop'
+  import { LANGUAGES, type Language } from '../engine/types'
+  import { LANGUAGE_NAMES, t, ui } from '../i18n/ui.svelte'
 
   let screens = $state<ScreenItem[]>([])
   let consoleId = $state<number | null>(null)
@@ -37,13 +39,19 @@
 
   const single = $derived(screens.length === 1)
 
+  /** "Schermo 1 (principale) – DELL U2419H" nella lingua scelta. */
+  const screenTitle = (s: ScreenItem) =>
+    [t('Schermo {n}', { n: s.number }), s.primary ? t('(principale)') : '']
+      .filter(Boolean)
+      .join(' ') + (s.label ? ` – ${s.label}` : '')
+
   async function start() {
     if (!desktop || consoleId === null || displayId === null) return
     starting = true
     error = null
     const ok = await desktop.startWithScreens({ consoleId, displayId, remember })
     if (!ok) {
-      error = 'Uno degli schermi scelti non è più collegato. Riprova.'
+      error = t('Uno degli schermi scelti non è più collegato. Riprova.')
       starting = false
       await load()
     }
@@ -52,14 +60,29 @@
 
 <main>
   <header>
-    <h1>Tabellone Hockey <small class="version">v{__APP_VERSION__}</small></h1>
-    <p>Scegli dove mostrare la console dell’operatore e dove il tabellone per il pubblico.</p>
+    <div class="title-row">
+      <h1>Tabellone Hockey <small class="version">v{__APP_VERSION__}</small></h1>
+      <select
+        class="lang"
+        aria-label={t('Lingua della console')}
+        title={t('Lingua della console')}
+        value={ui.lang}
+        onchange={(e) => ui.set(e.currentTarget.value as Language)}
+      >
+        {#each LANGUAGES as l (l)}
+          <option value={l}>{LANGUAGE_NAMES[l]}</option>
+        {/each}
+      </select>
+    </div>
+    <p>
+      {t('Scegli dove mostrare la console dell’operatore e dove il tabellone per il pubblico.')}
+    </p>
   </header>
 
   {#if !desktop}
-    <p class="warn">Questa schermata funziona solo nel programma installato.</p>
+    <p class="warn">{t('Questa schermata funziona solo nel programma installato.')}</p>
   {:else if !screens.length}
-    <p class="muted">Ricerca degli schermi…</p>
+    <p class="muted">{t('Ricerca degli schermi…')}</p>
   {:else}
     {#if layout}
       <div class="map" style:aspect-ratio="{layout.width} / {layout.height}">
@@ -76,8 +99,8 @@
             <span class="num">{s.number}</span>
             <span class="res">{s.resolution}</span>
             <span class="roles">
-              {#if s.id === consoleId}<span class="tag console">Console</span>{/if}
-              {#if s.id === displayId}<span class="tag display">Tabellone</span>{/if}
+              {#if s.id === consoleId}<span class="tag console">{t('Console')}</span>{/if}
+              {#if s.id === displayId}<span class="tag display">{t('Tabellone')}</span>{/if}
             </span>
           </div>
         {/each}
@@ -85,17 +108,17 @@
     {/if}
 
     <button type="button" class="btn identify" onclick={() => desktop?.identifyScreens()}>
-      Mostra il numero su ogni schermo
+      {t('Mostra il numero su ogni schermo')}
     </button>
 
     <div class="choices">
       <fieldset>
-        <legend><span class="tag console">Console</span> per l’operatore</legend>
+        <legend><span class="tag console">{t('Console')}</span> {t('per l’operatore')}</legend>
         {#each screens as s (s.id)}
           <label class="option" class:selected={s.id === consoleId}>
             <input type="radio" name="console" value={s.id} bind:group={consoleId} />
             <span>
-              <strong>{s.title}</strong>
+              <strong>{screenTitle(s)}</strong>
               <small>{s.resolution}</small>
             </span>
           </label>
@@ -103,12 +126,15 @@
       </fieldset>
 
       <fieldset>
-        <legend><span class="tag display">Tabellone</span> per il pubblico (maxischermo)</legend>
+        <legend>
+          <span class="tag display">{t('Tabellone')}</span>
+          {t('per il pubblico (maxischermo)')}
+        </legend>
         {#each screens as s (s.id)}
           <label class="option" class:selected={s.id === displayId}>
             <input type="radio" name="display" value={s.id} bind:group={displayId} />
             <span>
-              <strong>{s.title}</strong>
+              <strong>{screenTitle(s)}</strong>
               <small>{s.resolution}</small>
             </span>
           </label>
@@ -118,32 +144,53 @@
 
     {#if single}
       <p class="note">
-        È collegato un solo schermo: il tabellone si aprirà in una finestra normale, comoda per le
-        prove. Collega il maxischermo per averlo a schermo intero.
+        {t(
+          'È collegato un solo schermo: il tabellone si aprirà in una finestra normale, comoda per le prove. Collega il maxischermo per averlo a schermo intero.',
+        )}
       </p>
     {:else if consoleId === displayId}
       <p class="note">
-        Console e tabellone sullo stesso schermo: il tabellone si aprirà in una finestra normale.
+        {t(
+          'Console e tabellone sullo stesso schermo: il tabellone si aprirà in una finestra normale.',
+        )}
       </p>
     {/if}
 
     <footer>
       <label class="remember">
         <input type="checkbox" bind:checked={remember} />
-        Ricorda la scelta e avvia direttamente la prossima volta
+        {t('Ricorda la scelta e avvia direttamente la prossima volta')}
       </label>
       {#if error}<p class="error">{error}</p>{/if}
       <button type="button" class="btn btn-primary start" disabled={starting} onclick={start}>
-        {starting ? 'Avvio…' : 'Avvia il tabellone'}
+        {starting ? t('Avvio…') : t('Avvia il tabellone')}
       </button>
     </footer>
     <p class="muted hint">
-      Potrai cambiare la scelta in qualsiasi momento dal pulsante <b>Schermi</b> nella console.
+      {@html t(
+        'Potrai cambiare la scelta in qualsiasi momento dal pulsante <b>Schermi</b> nella console.',
+      )}
     </p>
   {/if}
 </main>
 
 <style>
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .lang {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--ice-700, #2a4a6e);
+    border-radius: 8px;
+    background: var(--ice-950, #06121f);
+    color: inherit;
+    font: inherit;
+  }
+
   main {
     display: flex;
     flex-direction: column;

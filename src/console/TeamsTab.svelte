@@ -2,6 +2,7 @@
   import type { TeamId, TeamSetup, TeamState } from '../engine'
   import { textColorOn } from '../shared/color'
   import HelpTip from './HelpTip.svelte'
+  import { t, t as tr } from '../i18n/ui.svelte'
   import { library } from './library.svelte'
   import TeamEditor from './TeamEditor.svelte'
 
@@ -34,19 +35,24 @@
     const saved = library.teams.find((t) => t.id === id)
     if (!saved) return
     onchange(team, setupOf({ ...saved, goals: 0, shots: 0, timeoutsUsed: 0 }))
-    message = `${saved.name} impostata come squadra ${team === 'home' ? 'di casa' : 'ospite'}.`
+    message =
+      team === 'home'
+        ? t('{name} impostata come squadra di casa.', { name: saved.name })
+        : t('{name} impostata come squadra ospite.', { name: saved.name })
   }
 
   function save(team: TeamId) {
-    const t = teams[team]
-    if (!t.name.trim()) return
+    const current = teams[team]
+    if (!current.name.trim()) return
     const exists = library.teams.some(
-      (x) => x.name.trim().toLowerCase() === t.name.trim().toLowerCase(),
+      (x) => x.name.trim().toLowerCase() === current.name.trim().toLowerCase(),
     )
-    library.saveTeam(setupOf(t))
+    library.saveTeam(setupOf(current))
     message =
-      library.error ??
-      (exists ? `${t.name} aggiornata nell’archivio.` : `${t.name} salvata nell’archivio.`)
+      (library.error && t(library.error)) ??
+      (exists
+        ? t('{name} aggiornata nell’archivio.', { name: current.name })
+        : t('{name} salvata nell’archivio.', { name: current.name }))
   }
 
   function swap() {
@@ -54,19 +60,20 @@
     const away = setupOf(teams.away)
     onchange('home', away)
     onchange('away', home)
-    message = 'Squadre invertite.'
+    message = t('Squadre invertite.')
   }
 
   function remove(id: string, name: string) {
-    if (!confirm(`Eliminare ${name} dall’archivio?`)) return
+    if (!confirm(t('Eliminare {name} dall’archivio?', { name }))) return
     library.deleteTeam(id)
   }
 </script>
 
 <div class="teams-tab">
   <p class="muted intro">
-    Le modifiche compaiono subito sul tabellone. Salva nell’archivio le squadre che giocano spesso:
-    la prossima volta basta sceglierle dall’elenco.
+    {t(
+      'Le modifiche compaiono subito sul tabellone. Salva nell’archivio le squadre che giocano spesso: la prossima volta basta sceglierle dall’elenco.',
+    )}
   </p>
 
   <div class="team-grid">
@@ -82,26 +89,29 @@
               pick(id, e.currentTarget.value)
               e.currentTarget.value = ''
             }}
-            aria-label="Scegli dall'archivio"
+            aria-label={t('Scegli dall’archivio')}
           >
             <option value="" disabled>
-              {library.teams.length ? 'Scegli dall’archivio…' : 'Archivio vuoto'}
+              {library.teams.length ? t('Scegli dall’archivio…') : t('Archivio vuoto')}
             </option>
             {#each library.teams as t (t.id)}
               <option value={t.id}>{t.name}</option>
             {/each}
           </select>
-          <button type="button" class="btn" onclick={() => save(id)}>Salva nell’archivio</button>
+          <button type="button" class="btn" onclick={() => save(id)}
+            >{t('Salva nell’archivio')}</button
+          >
         </div>
       </div>
     {/each}
   </div>
 
   <div class="swap-row">
-    <button type="button" class="btn" onclick={swap}>⇄ Inverti casa e ospiti</button>
-    <HelpTip title="Inverti casa e ospiti">
-      Scambia nomi, colori e loghi delle due squadre. Il punteggio resta dov’è: usalo prima
-      dell’inizio della partita.
+    <button type="button" class="btn" onclick={swap}>⇄ {t('Inverti casa e ospiti')}</button>
+    <HelpTip title={t('Inverti casa e ospiti')}>
+      {t(
+        'Scambia nomi, colori e loghi delle due squadre. Il punteggio resta dov’è: usalo prima dell’inizio della partita.',
+      )}
     </HelpTip>
 
     <span class="separator" aria-hidden="true"></span>
@@ -115,24 +125,24 @@
       onclick={() => {
         const show = !showLogos
         onShowLogos(show)
-        message = show ? 'Loghi di nuovo visibili.' : 'Loghi nascosti sul tabellone.'
+        message = show ? t('Loghi di nuovo visibili.') : t('Loghi nascosti sul tabellone.')
       }}
     >
-      {showLogos ? '🚫 Nascondi loghi' : '🖼 Mostra loghi'}
+      {showLogos ? `🚫 ${t('Nascondi loghi')}` : `🖼 ${t('Mostra loghi')}`}
     </button>
-    <HelpTip title="Nascondi loghi">
-      Toglie i loghi di tutte e due le squadre dal tabellone (fascia della squadra e animazione del
-      gol), senza cancellarli. Utile quando una sola squadra ha il logo. Con
-      <b>Nuova partita</b> i loghi tornano visibili.
+    <HelpTip title={t('Nascondi loghi')}>
+      {@html t(
+        'Toglie i loghi di tutte e due le squadre dal tabellone (fascia della squadra e animazione del gol), senza cancellarli. Utile quando una sola squadra ha il logo. Con <b>Nuova partita</b> i loghi tornano visibili.',
+      )}
     </HelpTip>
     {#if showLogos && onlyOneLogo}
-      <span class="hint">Solo una squadra ha il logo: puoi nasconderli per uniformità.</span>
+      <span class="hint">{t('Solo una squadra ha il logo: puoi nasconderli per uniformità.')}</span>
     {/if}
     {#if message}<span class="message">{message}</span>{/if}
   </div>
 
   <section class="panel archive">
-    <h2 class="panel-title">Archivio squadre ({library.teams.length})</h2>
+    <h2 class="panel-title">{t('Archivio squadre ({n})', { n: library.teams.length })}</h2>
     {#if library.teams.length}
       <ul>
         {#each library.teams as t (t.id)}
@@ -144,15 +154,16 @@
               <strong>{t.name}</strong>
               <small class="muted">{t.shortName}</small>
             </span>
-            <button type="button" class="btn btn-sm" onclick={() => pick('home', t.id)}>Casa</button
+            <button type="button" class="btn btn-sm" onclick={() => pick('home', t.id)}
+              >{tr('Casa')}</button
             >
             <button type="button" class="btn btn-sm" onclick={() => pick('away', t.id)}>
-              Ospiti
+              {tr('Ospiti')}
             </button>
             <button
               type="button"
               class="btn btn-sm btn-danger"
-              aria-label="Elimina {t.name}"
+              aria-label={tr('Elimina {name}', { name: t.name })}
               onclick={() => remove(t.id, t.name)}
             >
               ✕
@@ -161,7 +172,9 @@
         {/each}
       </ul>
     {:else}
-      <p class="muted">Nessuna squadra salvata. Usa “Salva nell’archivio” sotto ogni squadra.</p>
+      <p class="muted">
+        {t('Nessuna squadra salvata. Usa “Salva nell’archivio” sotto ogni squadra.')}
+      </p>
     {/if}
   </section>
 </div>

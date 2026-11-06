@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { GameView, TeamId, TeamView } from '../../engine'
   import { textColorOn } from '../../shared/color'
-  import { fitFontSize, periodLabel, phaseLabel, previousPeriodLabel } from '../../shared/labels'
+  import { boardText, phaseLabel, previousPeriod } from '../../i18n/board'
+  import { fitFontSize } from '../../shared/labels'
   import GoalOverlay from './GoalOverlay.svelte'
 
   /**
@@ -11,6 +12,7 @@
    */
   let { view, animations = true }: { view: GameView; animations?: boolean } = $props()
 
+  const text = $derived(boardText(view))
   const sides: TeamId[] = ['home', 'away']
   const lastMinute = $derived(view.phase === 'play' && view.clockText.includes('.'))
   const winner = $derived.by<TeamId | null>(() => {
@@ -22,15 +24,15 @@
   const caption = $derived.by(() => {
     switch (view.phase) {
       case 'intermission':
-        return `${periodLabel(view)} TRA`
+        return text.startsInShort(view)
       case 'shootout':
-        return 'GOL AI RIGORI'
+        return text.shootoutGoals
       case 'final':
-        return 'RISULTATO'
+        return text.result
       case 'ready':
-        return 'TEMPO · FERMO'
+        return text.timeStopped
       default:
-        return view.clockRunning ? 'TEMPO' : 'TEMPO · FERMO'
+        return view.clockRunning ? text.time : text.timeStopped
     }
   })
 
@@ -42,7 +44,7 @@
 
   <header class="head">
     <div class="pill" class:final={view.phase === 'final'}>
-      {view.phase === 'intermission' ? `FINE ${previousPeriodLabel(view)}` : phaseLabel(view)}
+      {view.phase === 'intermission' ? text.endOf(previousPeriod(view)) : phaseLabel(view)}
     </div>
   </header>
 
@@ -64,7 +66,7 @@
               >{view.shootout.away.filter(Boolean).length}
             </div>
           {:else if view.phase === 'final'}
-            <div class="clock word">FINALE</div>
+            <div class="clock word">{text.finalShort}</div>
           {:else}
             <div class="clock" class:stopped={!view.clockRunning}>{view.clockText}</div>
           {/if}
@@ -72,7 +74,7 @@
           {#if view.powerPlay}
             {@const pp = view.teams[view.powerPlay]}
             <div class="pp" style:--team={pp.color} style:--on-team={textColorOn(pp.color)}>
-              <span>SUPERIORITÀ</span>
+              <span>{text.powerPlay}</span>
               <b>{pp.shortName}</b>
               <span>{view.teams.home.skaters} vs {view.teams.away.skaters}</span>
             </div>
@@ -105,7 +107,7 @@
           {#each { length: Math.max(1, t.timeoutsLeft) }, k (k)}
             <i class:on={k < t.timeoutsLeft}></i>
           {/each}
-          <span>TIMEOUT</span>
+          <span>{text.timeout}</span>
         </div>
       </div>
     {/each}
@@ -118,12 +120,12 @@
         {#if view.timeout}
           {@const tt = view.teams[view.timeout.team]}
           <div class="card timeout" style:--team={tt.color} style:--on-team={textColorOn(tt.color)}>
-            <div class="card-head">TIMEOUT {tt.shortName}</div>
+            <div class="card-head">{text.timeout} {tt.shortName}</div>
             <div class="timeout-clock">{view.timeout.text}</div>
           </div>
         {:else}
           <div class="card shots">
-            <div class="card-head">TIRI IN PORTA</div>
+            <div class="card-head">{text.shotsOnGoal}</div>
             <div class="shots-row">
               {#each sides as s (s)}
                 <div class="shot" style:--team={view.teams[s].color}>
@@ -140,7 +142,7 @@
         {#if view.shootout}
           {@const shots = view.shootout[id]}
           <div class="card-head">
-            <i class="sq"></i>RIGORI <b>{shots.filter(Boolean).length}</b>
+            <i class="sq"></i>{text.shootout} <b>{shots.filter(Boolean).length}</b>
           </div>
           <div class="so">
             {#each { length: Math.max(view.shootout.rounds, shots.length) }, k (k)}
@@ -152,8 +154,8 @@
           {@const rows = penaltyRows(t)}
           {@const waiting = t.penalties.length - rows.length}
           <div class="card-head">
-            <i class="sq"></i>PENALITÀ
-            {#if waiting > 0}<b class="waiting">+{waiting} in attesa</b>{/if}
+            <i class="sq"></i>{text.penalties}
+            {#if waiting > 0}<b class="waiting">{text.waiting(waiting).toLowerCase()}</b>{/if}
           </div>
           <div class="rows">
             {#each rows as p (p.id)}
@@ -162,7 +164,7 @@
                 <span class="time">{p.text}</span>
               </div>
             {:else}
-              <div class="none">Nessuna penalità</div>
+              <div class="none">{text.noPenalties}</div>
             {/each}
           </div>
         {/if}

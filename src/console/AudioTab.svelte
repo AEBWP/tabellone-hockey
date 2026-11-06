@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { audio } from './audio.svelte'
   import HelpTip from './HelpTip.svelte'
+  import { t } from '../i18n/ui.svelte'
   import { SOUND_IDS, SOUND_LABELS, type SoundId } from './sound-events'
 
   onMount(() => {
@@ -29,7 +30,10 @@
       await audio.setCustom(id, file)
       audio.test(id)
     } catch (e) {
-      errors = { ...errors, [id]: e instanceof Error ? e.message : 'Impossibile usare il file.' }
+      errors = {
+        ...errors,
+        [id]: t(e instanceof Error ? e.message : 'Impossibile usare il file.'),
+      }
     } finally {
       busy = null
     }
@@ -46,14 +50,14 @@
 
 <div class="audio-tab">
   <section class="panel">
-    <h2 class="panel-title">Volume</h2>
+    <h2 class="panel-title">{t('Volume')}</h2>
     <div class="volume-row">
       <button
         type="button"
         class="btn {audio.settings.muted ? 'btn-stop' : ''}"
         onclick={() => audio.toggleMute()}
       >
-        {audio.settings.muted ? '🔇 Audio disattivato' : '🔊 Audio attivo'}
+        {audio.settings.muted ? `🔇 ${t('Audio disattivato')}` : `🔊 ${t('Audio attivo')}`}
         <kbd>M</kbd>
       </button>
       <input
@@ -63,27 +67,26 @@
         step="5"
         value={audio.settings.volume}
         oninput={(e) => audio.update({ volume: e.currentTarget.valueAsNumber })}
-        aria-label="Volume"
+        aria-label={t('Volume')}
       />
       <strong class="value">{audio.settings.volume}%</strong>
     </div>
     {#if !audio.unlocked}
       <p class="warn">
-        Il browser tiene l’audio in pausa finché non clicchi o premi un tasto nella console: basta
-        un’azione qualsiasi.
+        {t(
+          'Il browser tiene l’audio in pausa finché non clicchi o premi un tasto nella console: basta un’azione qualsiasi.',
+        )}
       </p>
     {/if}
   </section>
 
   <section class="panel">
     <h2 class="panel-title">
-      Suoni
-      <HelpTip title="Suoni">
-        I suoni partono da soli al momento giusto. Togli la spunta per quelli che non vuoi (es. se
-        il palazzetto ha già una sua sirena). “Prova” li fa sentire anche se sono disattivati. Con
-        “Carica file…” puoi usare una tua registrazione (es. la sirena vera del palazzetto, in MP3 o
-        WAV): resta salvata nel programma e funziona anche senza internet. “Ripristina” torna al
-        suono incluso.
+      {t('Suoni')}
+      <HelpTip title={t('Suoni')}>
+        {t(
+          'I suoni partono da soli al momento giusto. Togli la spunta per quelli che non vuoi (es. se il palazzetto ha già una sua sirena). “Prova” li fa sentire anche se sono disattivati. Con “Carica file…” puoi usare una tua registrazione (es. la sirena vera del palazzetto, in MP3 o WAV): resta salvata nel programma e funziona anche senza internet. “Ripristina” torna al suono incluso.',
+        )}
       </HelpTip>
     </h2>
     <ul class="sounds">
@@ -96,8 +99,8 @@
               onchange={(e) => audio.setEnabled(id, e.currentTarget.checked)}
             />
             <span>
-              <strong>{SOUND_LABELS[id].name}</strong>
-              <small class="muted">{SOUND_LABELS[id].description}</small>
+              <strong>{t(SOUND_LABELS[id].name)}</strong>
+              <small class="muted">{t(SOUND_LABELS[id].description)}</small>
               {#if audio.settings.custom[id]}
                 <small class="custom">🎵 {audio.settings.custom[id]}</small>
               {/if}
@@ -105,21 +108,24 @@
             </span>
           </label>
           <div class="actions">
-            <button type="button" class="btn btn-sm" onclick={() => audio.test(id)}>▶ Prova</button>
+            <button type="button" class="btn btn-sm" onclick={() => audio.test(id)}
+              >▶ {t('Prova')}</button
+            >
             {#if audio.settings.custom[id]}
               <button
                 type="button"
                 class="btn btn-sm"
-                title="Torna al suono incluso nel programma"
-                onclick={() => void audio.removeCustom(id)}>Ripristina</button
+                title={t('Torna al suono incluso nel programma')}
+                onclick={() => void audio.removeCustom(id)}>{t('Ripristina')}</button
               >
             {:else}
               <button
                 type="button"
                 class="btn btn-sm"
-                title="Usa un tuo file audio (MP3, WAV, OGG)"
+                title={t('Usa un tuo file audio (MP3, WAV, OGG)')}
                 disabled={busy === id}
-                onclick={() => pickFile(id)}>{busy === id ? 'Carico…' : 'Carica file…'}</button
+                onclick={() => pickFile(id)}
+                >{busy === id ? t('Carico…') : t('Carica file…')}</button
               >
             {/if}
           </div>
@@ -130,10 +136,11 @@
 
   <section class="panel">
     <h2 class="panel-title">
-      Uscita audio
-      <HelpTip title="Uscita audio">
-        Scegli dove mandare i suoni: le casse del palazzetto, l’uscita HDMI del maxischermo o quella
-        predefinita di Windows. Se l’elenco mostra solo nomi generici, prova le uscite con “Prova”.
+      {t('Uscita audio')}
+      <HelpTip title={t('Uscita audio')}>
+        {t(
+          'Scegli dove mandare i suoni: le casse del palazzetto, l’uscita HDMI del maxischermo o quella predefinita di Windows. Se l’elenco mostra solo nomi generici, prova le uscite con “Prova”.',
+        )}
       </HelpTip>
     </h2>
     {#if audio.canChooseOutput}
@@ -143,20 +150,21 @@
           value={audio.settings.outputId}
           onchange={(e) => void audio.setOutput(e.currentTarget.value)}
         >
-          <option value="">Predefinita di Windows</option>
+          <option value="">{t('Predefinita di Windows')}</option>
           {#each audio.outputs as o (o.id)}
             <option value={o.id}>{o.label}</option>
           {/each}
         </select>
         <button type="button" class="btn" onclick={() => void audio.refreshOutputs()}
-          >Aggiorna</button
+          >{t('Aggiorna')}</button
         >
       </div>
-      {#if audio.outputError}<p class="warn">{audio.outputError}</p>{/if}
+      {#if audio.outputError}<p class="warn">{t(audio.outputError)}</p>{/if}
     {:else}
       <p class="muted">
-        Questo browser usa sempre l’uscita predefinita di Windows. Nella versione installabile del
-        programma si potrà scegliere l’uscita.
+        {t(
+          'Questo browser usa sempre l’uscita predefinita di Windows. Nella versione installabile del programma si potrà scegliere l’uscita.',
+        )}
       </p>
     {/if}
   </section>

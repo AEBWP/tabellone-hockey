@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte'
-  import { apply, deriveView, type BoardStyle, type GameState } from '../engine'
+  import { apply, deriveView, type BoardStyle, type GameState, type Language } from '../engine'
+  import { t } from '../i18n/ui.svelte'
   import { DEMO_SCENES } from '../display/demo'
   import Stage from '../display/Stage.svelte'
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
@@ -13,11 +14,14 @@
    */
   let {
     style,
+    language,
     playing,
     onplay,
     onend,
   }: {
     style: BoardStyle
+    /** Lingua scelta per il tabellone: la demo la mostra subito. */
+    language: Language
     /** True mentre questa demo è in riproduzione (una sola alla volta). */
     playing: boolean
     onplay: () => void
@@ -40,13 +44,13 @@
   const posterGame = scene('1').build(posterTime)
 
   let game = $state.raw<GameState>(posterGame)
-  let t = $state(posterTime)
+  let time = $state(posterTime)
   let step = $state(-1)
   let frame = 0
   let startedAt = 0
 
-  const view = $derived(deriveView(game, t))
-  const progress = $derived(step < 0 ? 0 : Math.min(1, (t - startedAt) / TOTAL_MS))
+  const view = $derived({ ...deriveView(game, time), language })
+  const progress = $derived(step < 0 ? 0 : Math.min(1, (time - startedAt) / TOTAL_MS))
 
   function stepAt(elapsed: number): number {
     let acc = 0
@@ -81,7 +85,7 @@
     cancelAnimationFrame(frame)
     step = -1
     game = posterGame
-    t = posterTime
+    time = posterTime
   }
 
   function start() {
@@ -89,8 +93,8 @@
     startedAt = now()
     step = -1
     const tick = () => {
-      t = now()
-      const next = stepAt(t - startedAt)
+      time = now()
+      const next = stepAt(time - startedAt)
       if (next >= STEPS.length) {
         stop()
         onend()
@@ -98,7 +102,7 @@
       }
       if (next !== step) {
         step = next
-        enter(next, t)
+        enter(next, time)
       }
       frame = requestAnimationFrame(tick)
     }
@@ -121,19 +125,19 @@
     </Stage>
 
     {#if playing}
-      <button type="button" class="stop" onclick={onend} aria-label="Ferma la demo">■</button>
+      <button type="button" class="stop" onclick={onend} aria-label={t('Ferma la demo')}>■</button>
       <div class="progress" style:width="{progress * 100}%"></div>
     {:else}
-      <button type="button" class="play" onclick={onplay} aria-label="Guarda la demo">
+      <button type="button" class="play" onclick={onplay} aria-label={t('Guarda la demo')}>
         <span class="play-icon">▶</span>
-        <span>Guarda la demo</span>
+        <span>{t('Guarda la demo')}</span>
       </button>
     {/if}
   </div>
 
   <div class="steps" class:idle={!playing}>
     {#each STEPS as s, i (s.id)}
-      <span class="step" class:active={i === step}>{s.label}</span>
+      <span class="step" class:active={i === step}>{t(s.label)}</span>
     {/each}
   </div>
 </div>

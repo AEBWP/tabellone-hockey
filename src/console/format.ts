@@ -5,6 +5,7 @@ import {
   type Rules,
   type TeamState,
 } from '../engine'
+import { t } from '../i18n/ui.svelte'
 
 /** Durata breve per i pulsanti: "2′", "1′30″", "10′". */
 export function durationLabel(ms: number): string {
@@ -16,11 +17,17 @@ export function durationLabel(ms: number): string {
   return `${minutes}′${String(seconds).padStart(2, '0')}″`
 }
 
+/** Nomi delle penalità in italiano (chiavi per la traduzione). */
 export const PENALTY_NAMES: Record<PenaltyKind, string> = {
   minor: 'Minore',
   'double-minor': 'Doppia minore',
   major: 'Maggiore',
   misconduct: 'Cattiva condotta',
+}
+
+/** Nome della penalità nella lingua della console. */
+export function penaltyName(kind: PenaltyKind): string {
+  return t(PENALTY_NAMES[kind])
 }
 
 export function penaltyButtonLabel(kind: PenaltyKind, rules: Rules): string {
@@ -39,9 +46,9 @@ export function penaltyButtonLabel(kind: PenaltyKind, rules: Rules): string {
 
 /** Periodo per il registro eventi: "1° T", "SUPPL.", "SUPPL. 2". */
 export function shortPeriod(period: number, rules: Rules): string {
-  if (period <= rules.periods) return `${period}° T`
+  if (period <= rules.periods) return t('{n}° T', { n: period })
   const ot = period - rules.periods
-  return ot > 1 ? `SUPPL. ${ot}` : 'SUPPL.'
+  return ot > 1 ? t('SUPPL. {n}', { n: ot }) : t('SUPPL.')
 }
 
 /** Riga del registro eventi. */
@@ -53,9 +60,13 @@ export function describeEvent(
   const when = `${shortPeriod(event.period, rules)} ${formatClock(event.periodElapsedMs, 0)}`
   const team = teams[event.team].name
   if (event.type === 'goal') {
-    const extra = event.powerPlay ? ' (superiorità)' : event.shortHanded ? ' (inferiorità)' : ''
+    const extra = event.powerPlay
+      ? ` ${t('(superiorità)')}`
+      : event.shortHanded
+        ? ` ${t('(inferiorità)')}`
+        : ''
     const who = event.player ? ` #${event.player}` : ''
-    return { when, text: `Gol ${team}${who}${extra}` }
+    return { when, text: `${t('Gol {team}', { team })}${who}${extra}` }
   }
-  return { when, text: `${PENALTY_NAMES[event.kind]} #${event.player} ${team}` }
+  return { when, text: `${penaltyName(event.kind)} #${event.player} ${team}` }
 }

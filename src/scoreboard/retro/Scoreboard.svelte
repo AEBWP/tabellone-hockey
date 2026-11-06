@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { GameView, TeamId, TeamView } from '../../engine'
-  import { fitFontSize, periodLabel } from '../../shared/labels'
+  import { boardText } from '../../i18n/board'
+  import { fitFontSize } from '../../shared/labels'
   import GoalOverlay from './GoalOverlay.svelte'
   import PixelLogo from './PixelLogo.svelte'
   import SevenSegment from './SevenSegment.svelte'
@@ -11,6 +12,7 @@
    * Disegnato su 1920×1080.
    */
   let { view, animations = true }: { view: GameView; animations?: boolean } = $props()
+  const text = $derived(boardText(view))
 
   const RED = '#ff3b2f'
   const AMBER = '#ffb000'
@@ -30,9 +32,9 @@
   const penaltyRows = (t: TeamView) => t.penalties.filter((p) => !p.queued).slice(0, 2)
 
   const periodText = $derived.by(() => {
-    if (view.phase === 'shootout' || view.shootout) return 'SO'
+    if (view.phase === 'shootout' || view.shootout) return text.shootoutShort
     if (view.periodKind === 'overtime')
-      return view.overtimeNumber > 1 ? `OT${view.overtimeNumber}` : 'OT'
+      return text.overtimeShort + (view.overtimeNumber > 1 ? view.overtimeNumber : '')
     return String(view.period)
   })
 </script>
@@ -47,20 +49,20 @@
         <!-- Centro: tempo e periodo -->
         <div class="center">
           {#if view.phase === 'intermission' && view.intermission}
-            <div class="label green">INTERVALLO</div>
+            <div class="label green">{text.intermission}</div>
             <SevenSegment value={pad(view.intermission.text, 5)} height={210} color={GREEN} />
           {:else if view.phase === 'shootout' && view.shootout}
-            <div class="label">RIGORI</div>
+            <div class="label">{text.shootout}</div>
             <SevenSegment
               value={`${view.shootout.home.filter(Boolean).length}-${view.shootout.away.filter(Boolean).length}`}
               height={210}
               color={AMBER}
             />
           {:else if view.phase === 'final'}
-            <div class="label">TEMPO</div>
-            <div class="final blink">FINALE</div>
+            <div class="label">{text.time}</div>
+            <div class="final blink">{text.finalShort}</div>
           {:else}
-            <div class="label">TEMPO</div>
+            <div class="label">{text.time}</div>
             <SevenSegment
               value={pad(view.clockText, 5)}
               height={210}
@@ -68,7 +70,7 @@
             />
           {/if}
           <div class="period">
-            <span class="label small">PERIODO</span>
+            <span class="label small">{text.periodWord(view.regularPeriods)}</span>
             {#if /^\d$/.test(periodText)}
               <SevenSegment value={periodText} height={96} color={AMBER} />
             {:else}
@@ -87,7 +89,7 @@
         </div>
         <SevenSegment value={pad(t.score, 2)} height={300} color={RED} />
         <div class="tos">
-          <span class="label small">TIMEOUT</span>
+          <span class="label small">{text.timeout}</span>
           {#each { length: Math.max(1, t.timeoutsLeft) }, k (k)}
             <span class="bulb" class:on={k < t.timeoutsLeft}></span>
           {/each}
@@ -99,7 +101,8 @@
   {#if view.powerPlay}
     {@const pp = view.teams[view.powerPlay]}
     <div class="pp" style:color={lamp(pp)}>
-      SUPERIORITÀ {pp.shortName} · {view.teams.home.skaters} CONTRO {view.teams.away.skaters}
+      {text.powerPlay}
+      {pp.shortName} · {text.strength(view.teams.home.skaters, view.teams.away.skaters)}
     </div>
   {/if}
 
@@ -110,10 +113,10 @@
         <div class="mid">
           {#if view.timeout}
             {@const tt = view.teams[view.timeout.team]}
-            <div class="label blink" style:color={lamp(tt)}>TIMEOUT {tt.shortName}</div>
+            <div class="label blink" style:color={lamp(tt)}>{text.timeout} {tt.shortName}</div>
             <SevenSegment value={pad(view.timeout.text, 4)} height={130} color={AMBER} />
           {:else}
-            <div class="label">TIRI IN PORTA</div>
+            <div class="label">{text.shotsOnGoal}</div>
             <div class="shots">
               <SevenSegment value={pad(view.teams.home.shots, 2)} height={120} color={AMBER} />
               <SevenSegment value={pad(view.teams.away.shots, 2)} height={120} color={AMBER} />
@@ -125,7 +128,7 @@
       <div class="pens {id}">
         {#if view.shootout}
           {@const shots = view.shootout[id]}
-          <div class="label">RIGORI {t.shortName}</div>
+          <div class="label">{text.shootout} {t.shortName}</div>
           <div class="so">
             {#each { length: Math.max(view.shootout.rounds, shots.length) }, k (k)}
               <span class="bulb big" class:goal={shots[k] === true} class:miss={shots[k] === false}
@@ -136,7 +139,8 @@
           {@const rows = penaltyRows(t)}
           {@const waiting = t.penalties.length - rows.length}
           <div class="label">
-            PENALITÀ {#if waiting > 0}<span class="waiting">+{waiting}</span>{/if}
+            {text.penalties}
+            {#if waiting > 0}<span class="waiting">+{waiting}</span>{/if}
           </div>
           {#each [0, 1] as r (r)}
             {@const p = rows[r]}
@@ -160,7 +164,7 @@
     {/each}
   </section>
 
-  <div class="caption">{view.phase === 'intermission' ? `PROSSIMO: ${periodLabel(view)}` : ''}</div>
+  <div class="caption">{view.phase === 'intermission' ? text.next(view) : ''}</div>
 
   {#if animations}
     <GoalOverlay {view} />

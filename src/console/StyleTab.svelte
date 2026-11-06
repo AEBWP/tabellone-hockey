@@ -1,24 +1,56 @@
 <script lang="ts">
-  import { BOARD_STYLES, type BoardStyle } from '../engine'
+  import { BOARD_STYLES, LANGUAGES, type BoardStyle, type Language } from '../engine'
+  import { LANGUAGE_NAMES, t } from '../i18n/ui.svelte'
   import { STYLE_INFO } from '../scoreboard/styles'
   import HelpTip from './HelpTip.svelte'
   import StyleDemo from './StyleDemo.svelte'
 
-  let { current, onchoose }: { current: BoardStyle; onchoose: (style: BoardStyle) => void } =
-    $props()
+  let {
+    current,
+    language,
+    onchoose,
+    onlanguage,
+  }: {
+    current: BoardStyle
+    /** Lingua delle scritte sul tabellone (indipendente da quella della console). */
+    language: Language
+    onchoose: (style: BoardStyle) => void
+    onlanguage: (language: Language) => void
+  } = $props()
 
   /** Demo in riproduzione: una sola alla volta. */
   let playing = $state<BoardStyle | null>(null)
 </script>
 
 <div class="style-tab">
+  <section class="panel language">
+    <label class="field">
+      <span class="panel-title">{t('Lingua del tabellone')}</span>
+      <select
+        class="input"
+        value={language}
+        onchange={(e) => onlanguage(e.currentTarget.value as Language)}
+      >
+        {#each LANGUAGES as l (l)}
+          <option value={l}>{LANGUAGE_NAMES[l]}</option>
+        {/each}
+      </select>
+    </label>
+    <p class="muted">
+      {t(
+        'Lingua delle scritte sul maxischermo (gol, periodi, penalità…). È indipendente dalla lingua della console e resta salvata.',
+      )}
+    </p>
+  </section>
+
   <p class="muted intro">
-    Scegli l’aspetto del tabellone sul maxischermo. Il cambio è immediato, anche a partita in corso,
-    e resta per le partite successive.
-    <HelpTip title="Stile del tabellone">
-      Le funzioni sono identiche in tutti gli stili: cambia solo la grafica. Premi ▶ per vedere la
-      demo: presentazione delle squadre, inizio partita, gioco, gol e intervallo. Parte una demo
-      alla volta.
+    {t(
+      'Scegli l’aspetto del tabellone sul maxischermo. Il cambio è immediato, anche a partita in corso, e resta per le partite successive.',
+    )}
+    <HelpTip title={t('Stile del tabellone')}>
+      {t(
+        'Le funzioni sono identiche in tutti gli stili: cambia solo la grafica. Premi ▶ per vedere la demo: presentazione delle squadre, inizio partita, gioco, gol e intervallo. Parte una demo alla volta.',
+      )}
     </HelpTip>
   </p>
 
@@ -26,25 +58,28 @@
     {#each BOARD_STYLES as id (id)}
       <section class="panel card" class:selected={id === current}>
         <header>
-          <h2>{STYLE_INFO[id].name}</h2>
-          {#if id === current}<span class="in-use">✓ In uso</span>{/if}
+          <h2>{t(STYLE_INFO[id].name)}</h2>
+          {#if id === current}<span class="in-use">✓ {t('In uso')}</span>{/if}
         </header>
         <StyleDemo
           style={id}
+          {language}
           playing={playing === id}
           onplay={() => (playing = id)}
           onend={() => {
             if (playing === id) playing = null
           }}
         />
-        <p class="desc">{STYLE_INFO[id].description}</p>
+        <p class="desc">{t(STYLE_INFO[id].description)}</p>
         <button
           type="button"
           class="btn {id === current ? '' : 'btn-primary'}"
           disabled={id === current}
           onclick={() => onchoose(id)}
         >
-          {id === current ? 'Stile in uso' : `Usa lo stile ${STYLE_INFO[id].name}`}
+          {id === current
+            ? t('Stile in uso')
+            : t('Usa lo stile {name}', { name: t(STYLE_INFO[id].name) })}
         </button>
       </section>
     {/each}
@@ -52,6 +87,34 @@
 </div>
 
 <style>
+  .language {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .language .field {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .language .panel-title {
+    margin: 0;
+  }
+
+  .language select {
+    width: auto;
+  }
+
+  .language p {
+    flex: 1;
+    min-width: 260px;
+    margin: 0;
+  }
+
   .style-tab {
     display: flex;
     flex-direction: column;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte'
   import Modal from './Modal.svelte'
+  import { t } from '../i18n/ui.svelte'
 
   /** Correzione del tempo rimanente nel periodo. */
   let {
@@ -43,9 +44,11 @@
   }
 </script>
 
-<Modal {open} {onclose} title="Correggi tempo">
+<Modal {open} {onclose} title={t('Correggi tempo')}>
   <p class="muted">
-    Imposta il tempo che deve <b>rimanere</b> nel periodo. Le penalità in corso non cambiano.
+    {@html t(
+      'Imposta il tempo che deve <b>rimanere</b> nel periodo. Le penalità in corso non cambiano.',
+    )}
   </p>
   <form
     onsubmit={(e) => {
@@ -54,29 +57,31 @@
     }}
   >
     <label class="field">
-      Minuti
+      {t('Minuti')}
       <input class="input" type="number" min="0" max="99" bind:value={minutes} />
     </label>
     <span class="sep">:</span>
     <label class="field">
-      Secondi
+      {t('Secondi')}
       <input class="input" type="number" min="0" max="59" bind:value={seconds} />
     </label>
     <span class="sep">.</span>
     <label class="field">
-      Decimi
+      {t('Decimi')}
       <input class="input" type="number" min="0" max="9" bind:value={tenths} />
     </label>
-    <button type="submit" hidden>Salva</button>
+    <button type="submit" hidden>{t('Salva')}</button>
   </form>
   {#if !valid}
-    <p class="error">Tempo non valido (massimo {Math.round(maxMs / 60_000)} minuti).</p>
+    <p class="error">
+      {t('Tempo non valido (massimo {n} minuti).', { n: Math.round(maxMs / 60_000) })}
+    </p>
   {/if}
 
   {#snippet actions()}
-    <button type="button" class="btn" onclick={onclose}>Annulla</button>
+    <button type="button" class="btn" onclick={onclose}>{t('Annulla')}</button>
     <button type="button" class="btn btn-primary" disabled={!valid} onclick={save}>
-      Imposta tempo
+      {t('Imposta tempo')}
     </button>
   {/snippet}
 </Modal>

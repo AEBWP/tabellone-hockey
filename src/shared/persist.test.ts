@@ -21,6 +21,17 @@ describe('ripristino partita salvata', () => {
     expect(migrate(old)?.showLogos).toBe(true)
   })
 
+  it('le partite salvate prima della scelta della lingua restano in italiano', () => {
+    const old = JSON.parse(JSON.stringify(createGame()))
+    delete old.boardLanguage
+    expect(migrate(old)?.boardLanguage).toBe('it')
+  })
+
+  it('ricorda la lingua del tabellone', () => {
+    const state = createGame(undefined, undefined, 'arena', 'es')
+    expect(migrate(JSON.parse(JSON.stringify(state)))?.boardLanguage).toBe('es')
+  })
+
   it('scarta dati non validi', () => {
     expect(migrate(null)).toBeNull()
     expect(migrate({ foo: 1 })).toBeNull()

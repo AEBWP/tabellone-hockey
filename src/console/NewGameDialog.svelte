@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { describeRules, PRESETS, rulesFromPreset, type Rules } from '../engine'
+  import { PRESETS, rulesFromPreset, type Rules } from '../engine'
+  import { t } from '../i18n/ui.svelte'
+  import { describeRules } from './rules-text'
   import { library } from './library.svelte'
   import Modal from './Modal.svelte'
 
@@ -35,20 +37,20 @@
   }
 </script>
 
-<Modal {open} {onclose} title="Nuova partita">
-  <p>Punteggio, tempo, penalità e cronaca verranno azzerati. Squadre e loghi restano.</p>
+<Modal {open} {onclose} title={t('Nuova partita')}>
+  <p>{t('Punteggio, tempo, penalità e cronaca verranno azzerati. Squadre e loghi restano.')}</p>
 
   <label class="field">
-    Regolamento
+    {t('Regolamento')}
     <select class="input" bind:value={choice}>
-      <option value="current">Come la partita attuale</option>
-      <optgroup label="Predefiniti">
+      <option value="current">{t('Come la partita attuale')}</option>
+      <optgroup label={t('Predefiniti')}>
         {#each PRESETS as p (p.id)}
-          <option value="b:{p.id}">{p.name}</option>
+          <option value="b:{p.id}">{t(p.name)}</option>
         {/each}
       </optgroup>
       {#if library.presets.length}
-        <optgroup label="Salvati da te">
+        <optgroup label={t('Salvati da te')}>
           {#each library.presets as p (p.id)}
             <option value="s:{p.id}">{p.name}</option>
           {/each}
@@ -57,11 +59,15 @@
     </select>
   </label>
   <p class="muted desc">{describeRules(selected)}</p>
-  <p class="muted small">Puoi modificare ogni regola nella scheda <b>Regolamento</b>.</p>
+  <p class="muted small">
+    {@html t('Puoi modificare ogni regola nella scheda <b>Regolamento</b>.')}
+  </p>
 
   {#snippet actions()}
-    <button type="button" class="btn" onclick={onclose}>Annulla</button>
-    <button type="button" class="btn btn-primary" onclick={start}>Inizia nuova partita</button>
+    <button type="button" class="btn" onclick={onclose}>{t('Annulla')}</button>
+    <button type="button" class="btn btn-primary" onclick={start}
+      >{t('Inizia nuova partita')}</button
+    >
   {/snippet}
 </Modal>
 

@@ -1,13 +1,15 @@
 <script lang="ts">
   import type { TeamView } from '../../engine'
   import { textColorOn } from '../../shared/color'
+  import type { BoardText } from '../../i18n/board'
   import { fitFontSize } from '../../shared/labels'
 
   let {
     team,
     side,
+    text,
     dimmed = false,
-  }: { team: TeamView; side: 'home' | 'away'; dimmed?: boolean } = $props()
+  }: { team: TeamView; side: 'home' | 'away'; text: BoardText; dimmed?: boolean } = $props()
 
   /** Timeout: almeno una spia (spenta se non ne restano). */
   const timeoutPills = $derived(Math.max(1, team.timeoutsLeft))
@@ -38,7 +40,7 @@
   </div>
 
   <div class="timeouts">
-    <span class="to-label">TIMEOUT</span>
+    <span class="to-label">{text.timeout}</span>
     {#each { length: timeoutPills }, i (i)}
       <span class="pill" class:on={i < team.timeoutsLeft}></span>
     {/each}

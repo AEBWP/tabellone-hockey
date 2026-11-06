@@ -412,6 +412,26 @@ describe('stile del tabellone', () => {
   })
 })
 
+describe('lingua del tabellone', () => {
+  it('di default è l’italiano e si può cambiare', () => {
+    const g = game()
+    expect(g.state.boardLanguage).toBe('it')
+    g.do({ type: 'setBoardLanguage', language: 'de' })
+    expect(g.state.boardLanguage).toBe('de')
+    expect(deriveView(g.state, g.now).language).toBe('de')
+  })
+
+  it('resta uguale con una nuova partita', () => {
+    const g = game().do({ type: 'setBoardLanguage', language: 'fr' }, { type: 'newGame' })
+    expect(g.state.boardLanguage).toBe('fr')
+  })
+
+  it('ignora lingue sconosciute', () => {
+    const g = game().do({ type: 'setBoardLanguage', language: 'xx' as never })
+    expect(g.state.boardLanguage).toBe('it')
+  })
+})
+
 describe('immutabilità', () => {
   it('apply e advance non modificano lo stato ricevuto', () => {
     const start = createGame()

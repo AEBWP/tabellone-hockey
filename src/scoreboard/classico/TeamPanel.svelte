@@ -1,8 +1,13 @@
 <script lang="ts">
   import type { TeamView } from '../../engine'
+  import type { BoardText } from '../../i18n/board'
   import { textColorOn } from '../../shared/color'
 
-  let { team, dimmed = false }: { team: TeamView; dimmed?: boolean } = $props()
+  let {
+    team,
+    text,
+    dimmed = false,
+  }: { team: TeamView; text: BoardText; dimmed?: boolean } = $props()
 </script>
 
 <div class="team" class:dimmed style:--team={team.color} style:--on-team={textColorOn(team.color)}>
@@ -16,7 +21,7 @@
   <div class="score">{team.score}</div>
   <div class="timeouts" title="Timeout disponibili">
     {#each { length: team.timeoutsLeft }, i (i)}
-      <span class="to">TO</span>
+      <span class="to">{text.timeoutAbbr}</span>
     {/each}
   </div>
 </div>

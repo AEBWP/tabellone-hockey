@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '../i18n/ui.svelte'
   /** Durata in minuti e secondi, salvata in millisecondi. */
   let {
     value = $bindable(),
@@ -24,7 +25,7 @@
       max="99"
       value={minutes}
       {disabled}
-      aria-label="{label}: minuti"
+      aria-label="{label}: {t('Minuti')}"
       oninput={(e) => set(e.currentTarget.valueAsNumber, seconds)}
     />
     <span class="unit">min</span>
@@ -35,7 +36,7 @@
       max="59"
       value={seconds}
       {disabled}
-      aria-label="{label}: secondi"
+      aria-label="{label}: {t('Secondi')}"
       oninput={(e) => set(minutes, e.currentTarget.valueAsNumber)}
     />
     <span class="unit">s</span>

@@ -37,22 +37,25 @@
   import RulesTab from './RulesTab.svelte'
   import StyleTab from './StyleTab.svelte'
   import TeamsTab from './TeamsTab.svelte'
+  import { t, ui, LANGUAGE_NAMES } from '../i18n/ui.svelte'
+  import { LANGUAGES, type Language } from '../engine'
 
   // ── Stato ─────────────────────────────────────────────────────────────
   // `$state.raw`: lo stato viene sempre sostituito per intero, mai modificato,
   // così si può salvare e inviare al tabellone tale e quale.
   let game = $state.raw<GameState>(loadGame() ?? createGame())
   let history = $state.raw<HistoryEntry[]>([])
-  let t = $state(now())
+  let clock = $state(now())
   let lastDisplaySeen = $state(0)
 
-  const view = $derived(deriveView(game, t))
-  const displayConnected = $derived(t - lastDisplaySeen < HEARTBEAT_TIMEOUT_MS)
+  const view = $derived(deriveView(game, clock))
+  const displayConnected = $derived(clock - lastDisplaySeen < HEARTBEAT_TIMEOUT_MS)
   const undoLabel = $derived(
-    canUndo(history, advance(game, t)) ? (history.at(-1)?.label ?? null) : null,
+    canUndo(history, advance(game, clock)) ? (history.at(-1)?.label ?? null) : null,
   )
 
   type Tab = 'game' | 'teams' | 'style' | 'rules' | 'audio' | 'backup'
+  // Etichette in italiano: tradotte al momento di mostrarle.
   const TABS: { id: Tab; label: string }[] = [
     { id: 'game', label: 'Partita' },
     { id: 'teams', label: 'Squadre' },
@@ -105,7 +108,7 @@
   )
 
   let frame = requestAnimationFrame(function tick() {
-    t = now()
+    clock = now()
     frame = requestAnimationFrame(tick)
   })
 
@@ -128,7 +131,7 @@
     const before = game
     if (!isAllowed(advance(before, now()), command.type)) {
       // Es. una scorciatoia (C, O…) premuta prima del via.
-      showToast('Partita non ancora iniziata: premi ▶ Avvia partita')
+      showToast(t('Partita non ancora iniziata: premi ▶ Avvia partita'))
       return false
     }
     const after = apply(before, command, now())
@@ -146,14 +149,14 @@
     game = result.state
     history = result.history
     publish()
-    showToast(`Annullato: ${result.label}`)
+    showToast(t('Annullato: {label}', { label: result.label }))
   }
 
   function startNewGame(rules: Rules) {
     run({ type: 'newGame', rules })
     history = []
     tab = 'game'
-    showToast('Nuova partita pronta')
+    showToast(t('Nuova partita pronta'))
   }
 
   function showToast(text: string) {
@@ -203,18 +206,19 @@
       case 'goalAway': {
         const team = action === 'goalHome' ? 'home' : 'away'
         if (view.phase === 'shootout') break
-        if (run({ type: 'goal', team }, `Gol ${teamName(team)}`)) showToast(`Gol ${teamName(team)}`)
+        const label = t('Gol {team}', { team: teamName(team) })
+        if (run({ type: 'goal', team }, label)) showToast(label)
         break
       }
       case 'shotHome':
       case 'shotAway': {
         const team = action === 'shotHome' ? 'home' : 'away'
-        run({ type: 'shot', team, delta: 1 }, `Tiro ${teamName(team)}`)
+        run({ type: 'shot', team, delta: 1 }, t('Tiro {team}', { team: teamName(team) }))
         break
       }
       case 'mute':
         audio.toggleMute()
-        showToast(audio.settings.muted ? 'Audio disattivato' : 'Audio attivo')
+        showToast(audio.settings.muted ? t('Audio disattivato') : t('Audio attivo'))
         break
       case 'undo':
         doUndo()
@@ -236,10 +240,10 @@
   <header class="topbar">
     <h1>Tabellone Hockey <span class="version">v{__APP_VERSION__}</span></h1>
 
-    <nav class="tabs" aria-label="Sezioni">
-      {#each TABS as t (t.id)}
-        <button type="button" class:active={tab === t.id} onclick={() => (tab = t.id)}>
-          {t.label}
+    <nav class="tabs" aria-label={t('Sezioni')}>
+      {#each TABS as item (item.id)}
+        <button type="button" class:active={tab === item.id} onclick={() => (tab = item.id)}>
+          {t(item.label)}
         </button>
       {/each}
     </nav>
@@ -248,14 +252,14 @@
 
     {#if !audio.unlocked && !audio.settings.muted}
       <button type="button" class="btn btn-sm audio-locked" onclick={() => audio.unlock()}>
-        🔈 Clicca per attivare l’audio
+        🔈 {t('Clicca per attivare l’audio')}
       </button>
     {/if}
     <button
       type="button"
       class="btn btn-ghost mute"
-      title={audio.settings.muted ? 'Audio disattivato (M)' : 'Audio attivo (M)'}
-      aria-label={audio.settings.muted ? 'Attiva audio' : 'Disattiva audio'}
+      title={`${audio.settings.muted ? t('Audio disattivato') : t('Audio attivo')} (M)`}
+      aria-label={audio.settings.muted ? t('Attiva audio') : t('Disattiva audio')}
       onclick={() => audio.toggleMute()}
     >
       {audio.settings.muted ? '🔇' : '🔊'}
@@ -263,38 +267,53 @@
 
     <span class="status" class:ok={displayConnected}>
       <span class="dot"></span>
-      {displayConnected ? 'Tabellone collegato' : 'Tabellone non aperto'}
-      <HelpTip title="Tabellone" align="right">
-        Indica se la finestra del tabellone (quella per il maxischermo) è aperta. Se l’hai chiusa
-        per sbaglio, premi <b>Apri tabellone</b>: riprende subito con il punteggio e il tempo
-        giusti.
+      {displayConnected ? t('Tabellone collegato') : t('Tabellone non aperto')}
+      <HelpTip title={t('Tabellone')} align="right">
+        {@html t(
+          'Indica se la finestra del tabellone (quella per il maxischermo) è aperta. Se l’hai chiusa per sbaglio, premi <b>Apri tabellone</b>: riprende subito con il punteggio e il tempo giusti.',
+        )}
       </HelpTip>
     </span>
     {#if desktop && displayConnected}
       <button
         type="button"
         class="btn"
-        title="Spegne il tabellone sul maxischermo (si riapre con Apri tabellone)"
+        title={t('Spegne il tabellone sul maxischermo (si riapre con Apri tabellone)')}
         onclick={() => desktop?.closeDisplay()}
       >
-        Chiudi tabellone
+        {t('Chiudi tabellone')}
       </button>
     {:else}
-      <button type="button" class="btn btn-primary" onclick={openDisplay}>Apri tabellone</button>
+      <button type="button" class="btn btn-primary" onclick={openDisplay}
+        >{t('Apri tabellone')}</button
+      >
     {/if}
     {#if desktop}
       <button
         type="button"
         class="btn"
-        title="Scegli su quale schermo mostrare console e tabellone"
+        title={t('Scegli su quale schermo mostrare console e tabellone')}
         onclick={() => desktop?.chooseScreens()}
       >
-        Schermi…
+        {t('Schermi…')}
       </button>
     {/if}
-    <button type="button" class="btn" onclick={() => (newGameOpen = true)}>Nuova partita…</button>
+    <button type="button" class="btn" onclick={() => (newGameOpen = true)}
+      >{t('Nuova partita…')}</button
+    >
+    <select
+      class="input lang"
+      title={t('Lingua della console')}
+      aria-label={t('Lingua della console')}
+      value={ui.lang}
+      onchange={(e) => ui.set(e.currentTarget.value as Language)}
+    >
+      {#each LANGUAGES as l (l)}
+        <option value={l}>{LANGUAGE_NAMES[l]}</option>
+      {/each}
+    </select>
     <button type="button" class="btn btn-ghost" onclick={() => (helpOpen = true)}>
-      Guida <kbd>F1</kbd>
+      {t('Guida')} <kbd>F1</kbd>
     </button>
   </header>
 
@@ -329,9 +348,14 @@
     <main class="page">
       <StyleTab
         current={game.boardStyle}
+        language={game.boardLanguage}
         onchoose={(style) => {
           run({ type: 'setBoardStyle', style })
-          showToast('Stile del tabellone cambiato')
+          showToast(t('Stile del tabellone cambiato'))
+        }}
+        onlanguage={(language) => {
+          run({ type: 'setBoardLanguage', language })
+          showToast(t('Lingua del tabellone cambiata'))
         }}
       />
     </main>
@@ -384,7 +408,8 @@
 >
   <p>{confirmRequest?.message}</p>
   {#snippet actions()}
-    <button type="button" class="btn" onclick={() => (confirmRequest = null)}>Annulla</button>
+    <button type="button" class="btn" onclick={() => (confirmRequest = null)}>{t('Annulla')}</button
+    >
     <button
       type="button"
       class="btn {confirmRequest?.danger ? 'btn-stop' : 'btn-primary'}"
@@ -458,6 +483,11 @@
   .audio-locked {
     border-color: var(--warn);
     color: var(--warn);
+  }
+
+  .lang {
+    width: auto;
+    padding: 0.35rem 0.5rem;
   }
 
   .mute {

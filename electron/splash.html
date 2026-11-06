@@ -109,7 +109,13 @@
       </svg>
       <h1>Tabellone Hockey</h1>
       <div class="bar"></div>
-      <p>Avvio in corso…</p>
+      <p id="status">Avvio in corso…</p>
     </main>
+    <script>
+      // Lingua scelta nella console (la passa il programma all'apertura).
+      const q = new URLSearchParams(location.search)
+      if (q.get('text')) document.getElementById('status').textContent = q.get('text')
+      if (q.get('lang')) document.documentElement.lang = q.get('lang')
+    </script>
   </body>
 </html>
