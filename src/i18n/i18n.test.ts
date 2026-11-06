@@ -15,6 +15,7 @@ const SOURCES = import.meta.glob(
     '../console/**/*.{ts,svelte}',
     '../setup/**/*.{ts,svelte}',
     '../display/**/*.{ts,svelte}',
+    '../live/**/*.{ts,svelte}',
     './*.ts',
     '!**/*.test.ts',
   ],

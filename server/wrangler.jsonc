@@ -1,0 +1,22 @@
+// Servizio online dello streaming (Cloudflare Workers, piano gratuito).
+// Pubblicazione: npm run live:deploy
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "live",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // Ogni indirizzo (/nome-palaghiaccio) apre la pagina per gli spettatori.
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "CHANNELS", "class_name": "Channel" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Channel"] }],
+  "observability": { "enabled": true },
+}

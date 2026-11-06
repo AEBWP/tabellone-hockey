@@ -37,6 +37,8 @@
   import RulesTab from './RulesTab.svelte'
   import StyleTab from './StyleTab.svelte'
   import TeamsTab from './TeamsTab.svelte'
+  import StreamingTab from './StreamingTab.svelte'
+  import { streaming } from './streaming.svelte'
   import { t, ui, LANGUAGE_NAMES } from '../i18n/ui.svelte'
   import { LANGUAGES, type Language } from '../engine'
 
@@ -54,7 +56,7 @@
     canUndo(history, advance(game, clock)) ? (history.at(-1)?.label ?? null) : null,
   )
 
-  type Tab = 'game' | 'teams' | 'style' | 'rules' | 'audio' | 'backup'
+  type Tab = 'game' | 'teams' | 'style' | 'rules' | 'audio' | 'streaming' | 'backup'
   // Etichette in italiano: tradotte al momento di mostrarle.
   const TABS: { id: Tab; label: string }[] = [
     { id: 'game', label: 'Partita' },
@@ -62,6 +64,7 @@
     { id: 'style', label: 'Stile' },
     { id: 'rules', label: 'Regolamento' },
     { id: 'audio', label: 'Audio' },
+    { id: 'streaming', label: 'Streaming' },
     { id: 'backup', label: 'Backup' },
   ]
   let tab = $state<Tab>('game')
@@ -86,7 +89,10 @@
   function publish() {
     saveGame(game)
     channel.send({ type: 'state', state: game })
+    streaming.push()
   }
+  // Lo streaming su internet invia la stessa situazione del tabellone.
+  streaming.attach(() => game)
 
   const unsubscribe = channel.subscribe((message) => {
     if (message.type === 'hello') channel.send({ type: 'state', state: game })
@@ -242,9 +248,29 @@
 
     <nav class="tabs" aria-label={t('Sezioni')}>
       {#each TABS as item (item.id)}
-        <button type="button" class:active={tab === item.id} onclick={() => (tab = item.id)}>
-          {t(item.label)}
-        </button>
+        {#if item.id === 'streaming'}
+          <!-- Lo stato dello streaming sta nella sua scheda: grigio se spento, verde se in corso. -->
+          <button
+            type="button"
+            class="stream"
+            class:active={tab === item.id}
+            class:live={streaming.status === 'live'}
+            class:warn={streaming.status === 'error' || streaming.status === 'connecting'}
+            title={streaming.status === 'live'
+              ? t('Streaming in corso')
+              : streaming.active
+                ? t('Streaming: collegamento…')
+                : t('Streaming disabilitato')}
+            onclick={() => (tab = item.id)}
+          >
+            <span class="dot"></span>
+            {streaming.status === 'live' ? t('Streaming in corso') : t(item.label)}
+          </button>
+        {:else}
+          <button type="button" class:active={tab === item.id} onclick={() => (tab = item.id)}>
+            {t(item.label)}
+          </button>
+        {/if}
       {/each}
     </nav>
 
@@ -372,6 +398,10 @@
   {:else if tab === 'audio'}
     <main class="page">
       <AudioTab />
+    </main>
+  {:else if tab === 'streaming'}
+    <main class="page">
+      <StreamingTab />
     </main>
   {:else}
     <main class="page">
@@ -516,6 +546,43 @@
 
   .status.ok {
     color: var(--ok);
+  }
+
+  /* Streaming: spento con un pallino grigio, discreto; in corso tutto verde, ben visibile. */
+  .tabs button.stream {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .tabs button.stream .dot {
+    width: 8px;
+    height: 8px;
+    opacity: 0.5;
+  }
+
+  .tabs button.stream.live {
+    color: #062b16;
+    background: var(--ok);
+  }
+
+  .tabs button.stream.live .dot {
+    opacity: 1;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  .tabs button.stream.warn {
+    color: var(--warn);
+  }
+
+  .tabs button.stream.warn .dot {
+    opacity: 1;
+  }
+
+  @keyframes pulse {
+    50% {
+      opacity: 0.3;
+    }
   }
 
   .dot {

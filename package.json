@@ -17,9 +17,13 @@
     "icon": "electron scripts/make-icon.cjs",
     "dist": "vite build && electron scripts/make-icon.cjs && electron-builder --win",
     "screenshots": "electron scripts/screenshots.mjs",
-    "perf": "vite build && electron scripts/perf.mjs"
+    "perf": "vite build && electron scripts/perf.mjs",
+    "live:build": "vite build --config vite.live.config.ts",
+    "live:dev": "npm run live:build && wrangler dev --config server/wrangler.jsonc",
+    "live:deploy": "npm run live:build && wrangler deploy --config server/wrangler.jsonc"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261104.1",
     "@fontsource/barlow-condensed": "^5.3.0",
     "@fontsource/doto": "^5.3.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
@@ -33,7 +37,8 @@
     "svelte-check": "^4.7.7",
     "typescript": "~6.0.3",
     "vite": "^8.3.5",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "wrangler": "^4.158.0"
   },
   "description": "Tabellone segnapunti per hockey su ghiaccio, funzionante offline",
   "main": "electron/main.cjs",
@@ -83,5 +88,8 @@
       "installerSidebar": "build/installerSidebar.bmp",
       "uninstallerSidebar": "build/installerSidebar.bmp"
     }
+  },
+  "dependencies": {
+    "qrcode-generator": "^1.4.4"
   }
 }

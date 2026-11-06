@@ -7,7 +7,8 @@
 
 Tabellone segnapunti per hockey su ghiaccio, pensato per il palaghiaccio:
 una **console operatore** sul PC e un **tabellone spettatori** a schermo intero
-sul maxischermo. Funziona completamente **offline**.
+sul maxischermo. Funziona completamente **offline**; se c'è internet, la partita si può
+anche seguire **in streaming** dal telefono, con un link e un QR code fissi per il palaghiaccio.
 
 ![Il tabellone sul maxischermo (stile Arena)](https://raw.githubusercontent.com/wiki/AEBWP/tabellone-hockey/images/tabellone-arena.png)
 
@@ -37,6 +38,7 @@ Tutto su installazione e uso è nella **[wiki](https://github.com/AEBWP/tabellon
 [console](https://github.com/AEBWP/tabellone-hockey/wiki/Usare-la-console),
 [stili del tabellone](https://github.com/AEBWP/tabellone-hockey/wiki/Il-tabellone-e-gli-stili),
 [squadre, regolamento e audio](https://github.com/AEBWP/tabellone-hockey/wiki/Squadre-regolamento-audio-e-backup),
+[streaming su internet](https://github.com/AEBWP/tabellone-hockey/wiki/Streaming),
 [domande frequenti](https://github.com/AEBWP/tabellone-hockey/wiki/Domande-frequenti).
 Una guida sintetica per il palaghiaccio è anche in [INSTALLAZIONE.md](INSTALLAZIONE.md).
 
@@ -62,6 +64,8 @@ npm run app:smoke  # collaudo automatico del programma desktop, con screenshot
 npm run dist       # crea il file di installazione in release/
 npm run screenshots # immagini di tabellone e console (per wiki e release) in screenshots/
 npm run perf        # misura la fluidità delle animazioni (fotogrammi lenti per stile)
+npm run live:dev    # servizio dello streaming in locale (http://127.0.0.1:8787/<nome>)
+npm run live:deploy # pubblica il servizio dello streaming su Cloudflare (a ogni release)
 ```
 
 In sviluppo la console è su `http://localhost:5173/` (premi `F1` per la guida rapida). Il pulsante
@@ -91,6 +95,18 @@ cambiata in seguito dal pulsante **Schermi…** nella console.
 - niente standby dello schermo mentre il programma è aperto
 - un solo programma aperto alla volta
 
+## Streaming online
+
+Il servizio dello streaming è un Cloudflare Worker (cartella `server/`, piano gratuito) con
+la pagina per gli spettatori (`src/live/`), pubblicato su
+`https://live.tabellone-hockey.workers.dev`. La console invia solo i dati della partita;
+la pagina ridisegna il tabellone con lo stesso stile. Ogni palaghiaccio registra un nome (la
+parte finale del link) e riceve una chiave segreta salvata sul suo PC.
+
+⚠️ Il servizio si aggiorna a ogni release, ma nei palaghiacci restano console più vecchie: il
+protocollo (`src/shared/live.ts`) può solo crescere, con valori predefiniti per tutto ciò che
+manca o non si conosce.
+
 ## Struttura
 
 ```
@@ -105,6 +121,8 @@ src/
   scoreboard/       grafica del tabellone spettatori: arena/, broadcast/, ghiaccio/, retro/ e classico/ (stili), Matchup (presentazione “A VS B”)
   styles/           stili comuni
   setup/            scelta degli schermi all'avvio (programma desktop)
+  live/             pagina per gli spettatori dello streaming su internet
+server/             servizio online dello streaming (Cloudflare Worker)
 electron/           processo principale del programma desktop
 public/             file statici (icona, identificazione schermi)
 scripts/            strumenti di sviluppo (collaudo automatico, icone, screenshot)

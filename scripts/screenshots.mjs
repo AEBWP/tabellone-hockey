@@ -17,6 +17,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 app.commandLine.appendSwitch('force-device-scale-factor', '1')
 
+// Streaming: un nome d'esempio registrato solo per il tempo delle foto.
+const LIVE = 'https://live.tabellone-hockey.workers.dev'
+const LIVE_NAME = 'palaghiaccio-esempio'
+
 app.whenReady().then(async () => {
   const server = await createServer({ root, logLevel: 'error', server: { port: 5199 } })
   await server.listen()
@@ -137,6 +141,68 @@ app.whenReady().then(async () => {
   await open('/')
   await snap('console-inglese')
   await js(`localStorage.removeItem('tabellone-hockey:lingua-console')`)
+
+  // Streaming: scheda della console, pagina vista dal telefono e schermata
+  // d'attesa. Il nome d'esempio viene poi liberato. Senza internet si salta.
+  try {
+    await streamingShots()
+  } catch (e) {
+    console.log(`  (streaming saltato: ${e.message})`)
+  }
+
+  async function streamingShots() {
+    const claim = await fetch(`${LIVE}/api/channels/${LIVE_NAME}/claim`, { method: 'POST' })
+    if (!claim.ok) throw new Error(`nome d'esempio non disponibile (${claim.status})`)
+    const { key: secret } = await claim.json()
+    const settings = { service: LIVE, name: LIVE_NAME, key: secret, qrLogo: null }
+    try {
+      await js(
+        `localStorage.setItem('tabellone-hockey:streaming', ${JSON.stringify(JSON.stringify(settings))})`,
+      )
+      await open('/')
+      await clickTab('Streaming')
+      await sleep(500)
+      await clickTab('Avvia streaming')
+      await sleep(6000)
+      await snap('console-streaming')
+
+      // Il pubblico, in un'altra finestra (la console deve restare aperta).
+      const viewer = new BrowserWindow({
+        show: false,
+        width: 390,
+        height: 844,
+        useContentSize: true,
+        webPreferences: { backgroundThrottling: false, offscreen: true },
+      })
+      const snapViewer = async (name) => {
+        await sleep(150)
+        writeFileSync(
+          path.join(outDir, `${name}.png`),
+          (await viewer.webContents.capturePage()).toPNG(),
+        )
+        console.log(`  ${name}.png`)
+      }
+      await viewer.loadURL(`${LIVE}/${LIVE_NAME}`)
+      await sleep(4000)
+      await snapViewer('streaming-telefono')
+
+      // Streaming fermo: chi apre il link vede la schermata d'attesa.
+      await clickTab('Ferma streaming')
+      await sleep(1500)
+      viewer.setContentSize(1280, 720)
+      await viewer.loadURL(`${LIVE}/${LIVE_NAME}`)
+      await sleep(3000)
+      await snapViewer('streaming-attesa')
+      viewer.destroy()
+    } finally {
+      await fetch(`${LIVE}/api/channels/${LIVE_NAME}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${secret}` },
+      })
+      await open('/')
+      await js(`localStorage.removeItem('tabellone-hockey:streaming')`)
+    }
+  }
 
   await server.close()
   console.log(`\nImmagini in ${outDir}`)

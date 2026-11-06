@@ -28,3 +28,8 @@ release
 release-*
 build/installerSidebar.bmp
 screenshots/
+
+# Streaming online (pagina generata e file locali di wrangler)
+server/public
+server/.wrangler
+.wrangler

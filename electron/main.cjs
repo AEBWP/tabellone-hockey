@@ -17,6 +17,7 @@ const {
   powerSaveBlocker,
   protocol,
   screen,
+  shell,
 } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -192,10 +193,14 @@ function baseWebPreferences() {
   }
 }
 
-/** Blocca navigazioni e finestre esterne: l'app non apre mai pagine web. */
+/**
+ * Blocca navigazioni e finestre esterne: l'app non apre mai pagine web al suo
+ * interno. I link https (es. quello dello streaming) si aprono nel browser.
+ */
 function lockDown(win) {
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.includes('display.html')) openDisplay()
+    else if (url.startsWith('https://')) shell.openExternal(url)
     return { action: 'deny' }
   })
   win.webContents.on('will-navigate', (event, url) => {
