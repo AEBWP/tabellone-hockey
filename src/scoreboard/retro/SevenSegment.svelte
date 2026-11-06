@@ -77,6 +77,9 @@
     height: 100%;
     width: auto;
     overflow: visible;
+    /* Ogni cifra è un livello a sé: i bagliori sfocati sono costosi da
+       disegnare, così quando cambia una cifra si ridisegna solo quella. */
+    will-change: transform;
   }
 
   polygon,

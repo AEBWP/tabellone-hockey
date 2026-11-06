@@ -219,11 +219,41 @@ function finishPeriod(state: GameState, at: number): void {
  * Porta lo stato all'istante `now`: fine periodo, fine intervallo, fine
  * timeout e scadenza delle penalità. Ogni passaggio avviene nell'istante
  * esatto in cui è dovuto, quindi il risultato non dipende da quanto spesso
- * viene chiamata. Non modifica lo stato ricevuto.
+ * viene chiamata. Non modifica lo stato ricevuto: se non c'è nulla da fare
+ * restituisce lo stesso oggetto (da non modificare).
  */
 export function advance(state: GameState, now: number): GameState {
-  const s = structuredClone(state)
+  // Quasi sempre (a ogni fotogramma) non c'è nulla da fare: si evita di
+  // copiare lo stato, che con i loghi pesa centinaia di kB.
+  if (!hasPendingTransition(state, now)) return state
+  return advanceInPlace(structuredClone(state), now)
+}
 
+/**
+ * C'è un passaggio dovuto entro `now`? (fine timeout, fine periodo, penalità
+ * scaduta, fine intervallo). Deve coprire tutti i casi di `advanceInPlace`.
+ */
+function hasPendingTransition(s: GameState, now: number): boolean {
+  if (s.timeout) {
+    const end = countdownEndsAt(s.timeout.clock)
+    if (end !== null && end <= now) return true
+  }
+  if (s.phase === 'play') {
+    const gameMs = gameTimeMs(s.clock, now)
+    if (gameMs >= s.clock.periodEndMs) return true
+    for (const p of s.penalties) {
+      if (p.status === 'active' && p.endMs !== null && p.endMs <= gameMs) return true
+    }
+  }
+  if (s.phase === 'intermission' && s.intermission) {
+    const end = countdownEndsAt(s.intermission)
+    if (end !== null && end <= now) return true
+  }
+  return false
+}
+
+/** Come `advance`, ma modifica lo stato ricevuto. */
+function advanceInPlace(s: GameState, now: number): GameState {
   // Al massimo qualche passaggio per chiamata (es. fine periodo + fine intervallo).
   for (let guard = 0; guard < 10; guard++) {
     if (s.timeout) {
@@ -256,7 +286,7 @@ export function advance(state: GameState, now: number): GameState {
 
 /** Applica un comando all'istante `now`. Non modifica lo stato ricevuto. */
 export function apply(state: GameState, command: Command, now: number): GameState {
-  const s = advance(state, now)
+  const s = advanceInPlace(structuredClone(state), now)
   if (!isAllowed(s, command.type)) return s
   const max = s.rules.maxPenalizedOnIce
   const gameMs = gameTimeMs(s.clock, now)
@@ -459,7 +489,7 @@ export function apply(state: GameState, command: Command, now: number): GameStat
     }
   }
 
-  return advance(s, now)
+  return advanceInPlace(s, now)
 }
 
 function pickSetup({ name, shortName, color, logo }: TeamState): TeamSetup {

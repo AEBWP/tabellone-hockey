@@ -61,6 +61,7 @@ npm run app        # avvia il programma desktop (Electron)
 npm run app:smoke  # collaudo automatico del programma desktop, con screenshot
 npm run dist       # crea il file di installazione in release/
 npm run screenshots # immagini di tabellone e console (per wiki e release) in screenshots/
+npm run perf        # misura la fluidità delle animazioni (fotogrammi lenti per stile)
 ```
 
 In sviluppo la console è su `http://localhost:5173/` (premi `F1` per la guida rapida). Il pulsante

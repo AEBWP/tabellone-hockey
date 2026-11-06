@@ -59,7 +59,9 @@
           {#if t.logo}
             <div class="logo"><img src={t.logo} alt="" /></div>
           {/if}
-          <div class="word" data-text="GOAL!">GOAL!</div>
+          <div class="word">
+            GOAL!<span class="shine" aria-hidden="true"><span>GOAL!</span></span>
+          </div>
         </div>
         <div class="team-plate"><span>{t.name}</span></div>
       </div>
@@ -126,15 +128,31 @@
   .band-fill {
     position: absolute;
     inset: 0;
-    background:
-      repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.07) 0 36px, transparent 36px 120px),
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--team) 80%, white) 0%,
-        var(--team) 22%,
-        color-mix(in srgb, var(--team) 70%, black) 100%
-      );
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--team) 80%, white) 0%,
+      var(--team) 22%,
+      color-mix(in srgb, var(--team) 70%, black) 100%
+    );
     box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+  }
+
+  /* Strisce che scorrono: livello a parte spostato con transform, così a ogni
+     fotogramma non si ridisegna la fascia (con l'ombra) ma si sposta solo. */
+  .band-fill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -480px;
+    right: 0;
+    background: repeating-linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.07) 0 36px,
+      transparent 36px 120px
+    );
+    will-change: transform;
     animation: stripes 6s linear infinite;
   }
 
@@ -172,9 +190,7 @@
 
   @keyframes stripes {
     to {
-      background-position:
-        480px 0,
-        0 0;
+      transform: translateX(480px);
     }
   }
 
@@ -225,6 +241,8 @@
     width: 300px;
     height: 300px;
     animation: logo-in 700ms 280ms cubic-bezier(0.18, 1.5, 0.4, 1) both;
+    /* Livello a sé: logo e ombra si disegnano una volta sola, poi si muovono. */
+    will-change: transform;
   }
 
   .logo img {
@@ -256,30 +274,41 @@
     animation:
       word-in 560ms 220ms cubic-bezier(0.2, 1.2, 0.3, 1) both,
       pulse 1.1s 900ms ease-in-out 4;
+    /* Livello a sé: la scritta con le ombre non si ridisegna a ogni pulsazione. */
+    will-change: transform;
   }
 
   .goal:not(.with-logo) .word {
     font-size: 400px;
   }
 
-  /* Riflesso di luce che attraversa la scritta */
-  .word::after {
-    content: attr(data-text);
+  /* Riflesso di luce che attraversa la scritta.
+     Una finestra larga 2,6 volte la scritta, sfumata con una maschera, scorre
+     sopra a una copia bianca del testo che si sposta al contrario e resta
+     ferma: solo transform, nessun ridisegno del testo a ogni fotogramma. */
+  .shine {
     position: absolute;
-    inset: 0;
-    color: transparent;
-    background: linear-gradient(
-      100deg,
-      transparent 35%,
-      rgba(255, 255, 255, 0.85) 48%,
-      transparent 60%
-    );
-    background-size: 260% 100%;
-    background-clip: text;
-    -webkit-background-clip: text;
-    text-shadow: none;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 260%;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(100deg, transparent 35%, #000 48%, transparent 60%);
+    mask-image: linear-gradient(100deg, transparent 35%, #000 48%, transparent 60%);
+    transform: translateX(-80%);
     animation: shine 2.2s 700ms ease-in-out 3;
-    background-position: 130% 0;
+  }
+
+  .shine > span {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% / 2.6);
+    height: 100%;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: none;
+    transform: translateX(208%);
+    animation: shine-text 2.2s 700ms ease-in-out 3;
   }
 
   @keyframes word-in {
@@ -295,12 +324,22 @@
     }
   }
 
+  /* Equivale a un gradiente largo 260% che va da background-position 130% a -30%. */
   @keyframes shine {
     from {
-      background-position: 130% 0;
+      transform: translateX(-80%);
     }
     to {
-      background-position: -30% 0;
+      transform: translateX(18.4615%);
+    }
+  }
+
+  @keyframes shine-text {
+    from {
+      transform: translateX(208%);
+    }
+    to {
+      transform: translateX(-48%);
     }
   }
 
@@ -403,12 +442,13 @@
 
   @media (prefers-reduced-motion: reduce) {
     .band,
-    .band-fill,
+    .band-fill::before,
     .band-edge,
     .flash,
     .logo,
     .word,
-    .word::after,
+    .shine,
+    .shine > span,
     .team-plate,
     .bug,
     .bug-score {

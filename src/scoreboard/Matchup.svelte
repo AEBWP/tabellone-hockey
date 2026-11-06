@@ -60,6 +60,19 @@
     color: #fff;
   }
 
+  /* Gli elementi guidati da --p sono livelli a sé, già pronti: durante
+     l'uscita si spostano e sfumano senza essere ridisegnati. */
+  .half,
+  .divider,
+  .vs {
+    will-change: transform;
+  }
+
+  .team,
+  .plate {
+    will-change: opacity;
+  }
+
   /* ── Metà colorate con taglio diagonale ───────────────────────── */
   .half {
     position: absolute;
@@ -236,6 +249,17 @@
     font-style: italic;
     line-height: 1;
     letter-spacing: -0.02em;
+  }
+
+  /* Il corsivo sposta le lettere a destra e in basso: si ricentrano nel cerchio. */
+  .v-arena .vs span {
+    translate: -0.14em -0.04em;
+  }
+
+  /* In diritto basta alzarle un poco (il carattere ha più spazio sotto). */
+  .v-classico .vs span,
+  .v-ghiaccio .vs span {
+    translate: 0 -0.04em;
   }
 
   @keyframes vs-in {

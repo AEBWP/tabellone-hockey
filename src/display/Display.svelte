@@ -1,13 +1,18 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { onDestroy, untrack } from 'svelte'
   import { apply, BOARD_STYLES, deriveView, type GameState } from '../engine'
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import { createChannel } from '../shared/channel'
   import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
   import { desktop } from '../shared/desktop'
+  import { preloadImages } from '../shared/preload-images'
   import { now } from '../shared/time'
   import { DEMO_GOAL_KEYS, DEMO_SCENES, DEMO_TEAMS } from './demo'
   import Stage from './Stage.svelte'
+  import Warmup from '../scoreboard/Warmup.svelte'
+
+  /** Attesa prima della prova generale: le animazioni di apertura finiscono indisturbate. */
+  const WARMUP_DELAY_MS = 1_500
 
   const demo = new URLSearchParams(location.search).has('demo')
 
@@ -20,6 +25,35 @@
   // Il tempo è calcolato qui dai timestamp: il tabellone continua a scorrere
   // anche se la console si blocca per un attimo.
   const view = $derived(game ? deriveView(game, t) : null)
+
+  // Loghi già decodificati prima del gol: l'animazione parte senza intoppi.
+  const logos = $derived([game?.teams.home.logo, game?.teams.away.logo])
+  $effect(() => preloadImages(logos))
+
+  // Prova generale invisibile delle animazioni, poco dopo l'apertura (vedi
+  // Warmup.svelte). Si interrompe subito se nel frattempo succede qualcosa
+  // di vero: un gol, l'inizio della partita, un cambio di scena nella demo.
+  let warmup = $state<'waiting' | 'running' | 'done'>('waiting')
+  const hasView = $derived(view !== null)
+  const activity = $derived(
+    view ? `${view.pregame}:${view.teams.home.goals}:${view.teams.away.goals}:${sceneVersion}` : '',
+  )
+  let activityAtStart = ''
+  $effect(() => {
+    if (!hasView || untrack(() => warmup) !== 'waiting') return
+    const timer = setTimeout(() => {
+      activityAtStart = untrack(() => activity)
+      warmup = 'running'
+    }, WARMUP_DELAY_MS)
+    return () => clearTimeout(timer)
+  })
+  $effect(() => {
+    if (warmup === 'running' && activity !== activityAtStart) warmup = 'done'
+  })
+  $effect(() => {
+    // Per gli strumenti di misura (scripts/perf.mjs).
+    document.documentElement.dataset.warmup = warmup
+  })
 
   // Aggiorna l'orologio a ogni fotogramma (servono i decimi di secondo).
   let frame = requestAnimationFrame(function tick() {
@@ -104,6 +138,9 @@
       {#key sceneVersion}
         <Scoreboard {view} style={game?.boardStyle} />
       {/key}
+      {#if warmup === 'running'}
+        <Warmup {view} style={game?.boardStyle ?? 'arena'} ondone={() => (warmup = 'done')} />
+      {/if}
     {:else}
       <div class="waiting">
         <h1>TABELLONE HOCKEY</h1>

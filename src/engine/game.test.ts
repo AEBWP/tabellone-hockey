@@ -421,3 +421,19 @@ describe('immutabilità', () => {
     expect(start).toEqual(copy)
   })
 })
+
+describe('advance senza passaggi dovuti', () => {
+  it('restituisce lo stesso stato (nessuna copia) e dà lo stesso risultato della copia', () => {
+    const g = game().do(
+      { type: 'startClock' },
+      { type: 'penalty', team: 'home', player: '7', kind: 'minor' },
+    )
+    const s = g.state
+    expect(advance(s, g.now + 1000)).toBe(s)
+    // Alla scadenza della penalità, invece, lo stato cambia (in una copia).
+    const later = advance(s, g.now + 3 * MIN)
+    expect(later).not.toBe(s)
+    expect(later.penalties[0].status).toBe('ended')
+    expect(s.penalties[0].status).toBe('active')
+  })
+})
