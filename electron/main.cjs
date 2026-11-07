@@ -29,6 +29,7 @@ const {
   isChoiceValid,
   normalizeChoice,
 } = require('./screens.cjs')
+const { createUpdater } = require('./updater.cjs')
 
 const DIST = path.join(__dirname, '..', 'dist')
 // In sviluppo si può puntare al server di Vite: TABELLONE_DEV_URL=http://localhost:5173/
@@ -69,6 +70,19 @@ let displayOpen = false
 let quitting = false
 /** Blocco dello standby, attivo per tutta la durata del programma. */
 let sleepBlocker = -1
+
+// Aggiornamenti dal sito del progetto (solo nel programma installato).
+const updater = createUpdater({
+  enabled: !SMOKE_TEST,
+  send: (state) => {
+    if (consoleWin && !consoleWin.isDestroyed()) consoleWin.webContents.send('update:state', state)
+  },
+  // Niente richiesta di conferma: il programma si chiude per installare.
+  beforeInstall: () => {
+    quitting = true
+    closeDisplay()
+  },
+})
 
 // ── Impostazioni (schermi scelti) ─────────────────────────────────────────
 
@@ -496,6 +510,7 @@ function startMain(newChoice) {
   choice = newChoice
   placeConsole()
   openDisplay()
+  updater.start()
 }
 
 // ── Identificazione schermi: un grande numero su ognuno ───────────────────
@@ -540,6 +555,10 @@ function identifyScreens() {
 
 function registerIpc() {
   ipcMain.on('app:version', (event) => (event.returnValue = app.getVersion()))
+
+  ipcMain.handle('update:state', () => updater.getState())
+  ipcMain.handle('update:check', () => updater.check())
+  ipcMain.handle('update:install', () => updater.install())
 
   ipcMain.handle('screens:list', () => {
     const list = describeScreens(screens())

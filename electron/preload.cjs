@@ -30,6 +30,14 @@ contextBridge.exposeInMainWorld('tabelloneApp', {
   saveGame: (json) => ipcRenderer.send('game:save', json),
   loadGame: () => ipcRenderer.sendSync('game:load'),
 
+  // Aggiornamento del programma dalle release su GitHub
+  getUpdateState: () => ipcRenderer.invoke('update:state'),
+  checkForUpdate: () => ipcRenderer.invoke('update:check'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  onUpdateState: (callback) => {
+    ipcRenderer.on('update:state', (_event, state) => callback(state))
+  },
+
   // Lingua della console, per le finestre del programma (chiusura, avvio)
   setLanguage: (language) => ipcRenderer.send('app:language', String(language)),
 })

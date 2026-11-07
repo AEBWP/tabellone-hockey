@@ -21,6 +21,33 @@ export interface ScreenChoice {
   displayIds: number[]
 }
 
+export type UpdateStatus =
+  | 'unsupported'
+  | 'idle'
+  | 'checking'
+  | 'none'
+  | 'available'
+  | 'downloading'
+  | 'installing'
+  | 'error'
+
+/** Stato dell'aggiornamento del programma (vedi electron/updater.cjs). */
+export interface UpdateState {
+  status: UpdateStatus
+  /** Versione installata. */
+  current: string
+  /** Versione nuova trovata. */
+  version?: string
+  /** Avanzamento dello scaricamento, da 0 a 100. */
+  percent?: number
+  transferred?: number
+  total?: number
+  error?: 'offline' | 'check' | 'download' | 'install'
+  /** Messaggio tecnico dell'errore. */
+  detail?: string
+  checkedAt?: number
+}
+
 export interface DesktopApi {
   isDesktop: true
   version: string
@@ -37,6 +64,11 @@ export interface DesktopApi {
   answerClose(confirmed: boolean): void
   saveGame(json: string): void
   loadGame(): string | null
+  getUpdateState(): Promise<UpdateState>
+  checkForUpdate(): Promise<UpdateState>
+  /** Scarica la versione nuova, chiude il programma, la installa e lo riapre. */
+  installUpdate(): Promise<UpdateState>
+  onUpdateState(callback: (state: UpdateState) => void): void
   /** Lingua della console: la usano le finestre del programma (chiusura, avvio). */
   setLanguage?(language: string): void
 }

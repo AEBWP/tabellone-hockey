@@ -29,6 +29,8 @@
   import HelpTip from './HelpTip.svelte'
   import Modal from './Modal.svelte'
   import QuitDialog from './QuitDialog.svelte'
+  import UpdateDialog from './UpdateDialog.svelte'
+  import { updates } from './updates.svelte'
   import NewGameDialog from './NewGameDialog.svelte'
   import { actionForKey, isTypingTarget } from './shortcuts'
   import TeamControls from './TeamControls.svelte'
@@ -203,6 +205,7 @@
 
   // Chiusura del programma: conferma con la finestra della console.
   let quitOpen = $state(false)
+  let updateOpen = $state(false)
   desktop?.onCloseRequested(() => (quitOpen = true))
   function answerQuit(confirmed: boolean) {
     quitOpen = false
@@ -269,7 +272,40 @@
 <div class="console">
   <header class="topbar">
     <div class="bar-main">
-      <h1>Tabellone Hockey <span class="version">v{__APP_VERSION__}</span></h1>
+      <h1>
+        Tabellone Hockey
+        {#if updates.supported}
+          <!-- Il numero di versione apre la finestra degli aggiornamenti. -->
+          <button
+            type="button"
+            class="version as-link"
+            title={t('Aggiornamento del programma')}
+            onclick={() => (updateOpen = true)}>v{__APP_VERSION__}</button
+          >
+        {:else}
+          <span class="version">v{__APP_VERSION__}</span>
+        {/if}
+        {#if updates.pending}
+          <button
+            type="button"
+            class="update-pill"
+            class:busy={updates.state.status === 'downloading' ||
+              updates.state.status === 'installing'}
+            title={t('È disponibile la versione {version}', {
+              version: updates.state.version ?? '',
+            })}
+            onclick={() => (updateOpen = true)}
+          >
+            {#if updates.state.status === 'downloading'}
+              ⬇ {updates.state.percent ?? 0}%
+            {:else if updates.state.status === 'installing'}
+              {t('Installazione…')}
+            {:else}
+              ⬆ {t('Aggiorna alla {version}', { version: updates.state.version ?? '' })}
+            {/if}
+          </button>
+        {/if}
+      </h1>
 
       <nav class="tabs" aria-label={t('Sezioni')}>
         {#each TABS as item (item.id)}
@@ -449,6 +485,7 @@
 {/if}
 
 <QuitDialog open={quitOpen} {view} onanswer={answerQuit} />
+<UpdateDialog open={updateOpen} {view} onclose={() => (updateOpen = false)} />
 
 <HelpOverlay open={helpOpen} onclose={() => (helpOpen = false)} />
 
@@ -517,6 +554,47 @@
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--ice-300);
+  }
+
+  .version.as-link {
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .version.as-link:hover {
+    color: var(--ice-50);
+    text-decoration: underline;
+  }
+
+  /* Compare solo quando c'è una versione nuova. */
+  .update-pill {
+    margin-left: 0.3rem;
+    padding: 0.15rem 0.6rem;
+    border: none;
+    border-radius: 999px;
+    background: #3ccf7a;
+    color: #06121f;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    vertical-align: middle;
+    cursor: pointer;
+    animation: pill-glow 2.4s ease-in-out infinite;
+  }
+
+  .update-pill.busy {
+    animation: none;
+    background: var(--ice-600);
+    color: #fff;
+  }
+
+  @keyframes pill-glow {
+    50% {
+      box-shadow: 0 0 0 4px rgba(60, 207, 122, 0.25);
+    }
   }
 
   .tabs {

@@ -21,13 +21,17 @@ anche seguire **in streaming** dal telefono, con un link e un QR code fissi per 
 
 | Versione                  | Data       | Download                                                                                                                                                      |
 | ------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **0.9.10** (ultima, beta) | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.10-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.10/Tabellone-Hockey-0.9.10-installazione.exe) |
+| **0.9.11** (ultima, beta) | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.11-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.11/Tabellone-Hockey-0.9.11-installazione.exe) |
+| 0.9.10 (beta)             | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.10-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.10/Tabellone-Hockey-0.9.10-installazione.exe) |
 | 0.9.9 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.9-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.9/Tabellone-Hockey-0.9.9-installazione.exe)    |
 | 0.9.8 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.8-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.8/Tabellone-Hockey-0.9.8-installazione.exe)    |
 | 0.9.7 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.7-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.7/Tabellone-Hockey-0.9.7-installazione.exe)    |
 | Versioni precedenti       |            | [Tutte le versioni](https://github.com/AEBWP/tabellone-hockey/wiki/Download)                                                                                  |
 
-Per aggiornare basta eseguire l'installer della versione nuova: i dati restano.
+Dalla 0.9.11 il programma **si aggiorna da solo**: quando esce una versione nuova compare il
+pulsante **⬆ Aggiorna** nella console
+([come funziona](https://github.com/AEBWP/tabellone-hockey/wiki/Aggiornamenti)). Dalle versioni
+precedenti basta eseguire l'installer della versione nuova: i dati restano.
 
 > 🛡️ Al primo avvio Windows può mostrare **"PC protetto da Windows"**: è normale, il programma
 > non ha un certificato di firma a pagamento. Clicca **Ulteriori informazioni → Esegui comunque**.
@@ -98,6 +102,14 @@ cambiata in seguito dal pulsante **Schermi…** nella console.
 - niente standby dello schermo mentre il programma è aperto (nella versione da
   browser e nella pagina dello streaming con il wake lock del browser)
 - un solo programma aperto alla volta
+- aggiornamento automatico con [electron-updater](https://www.electron.build/auto-update)
+  (`electron/updater.cjs`): controlla le release di GitHub all'avvio e ogni 6 ore; con
+  **Aggiorna ora** scarica l'installer (solo le parti cambiate, grazie al `.blockmap`),
+  verifica lo SHA-512, installa in silenzio e riapre il programma. Ogni release deve quindi
+  pubblicare **`latest.yml`, l'installer e il suo `.blockmap`**, generati da
+  `npm run dist` in `release/`. Per provarlo in locale: avviare il programma installato con
+  `TABELLONE_UPDATE_URL=http://127.0.0.1:8123/` (accetta solo indirizzi locali) e servire
+  da lì una cartella con quei tre file
 
 ## Streaming online
 

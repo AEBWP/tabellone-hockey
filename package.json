@@ -1,7 +1,7 @@
 {
   "name": "tabellone-hockey",
   "private": true,
-  "version": "0.9.10",
+  "version": "0.9.11",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,7 @@
     "app": "vite build && electron .",
     "app:smoke": "vite build && node scripts/smoke.mjs",
     "icon": "electron scripts/make-icon.cjs",
-    "dist": "vite build && electron scripts/make-icon.cjs && electron-builder --win",
+    "dist": "vite build && electron scripts/make-icon.cjs && electron-builder --win --publish never",
     "screenshots": "electron scripts/screenshots.mjs",
     "perf": "vite build && electron scripts/perf.mjs",
     "live:build": "vite build --config vite.live.config.ts",
@@ -87,9 +87,18 @@
       "artifactName": "Tabellone-Hockey-${version}-installazione.${ext}",
       "installerSidebar": "build/installerSidebar.bmp",
       "uninstallerSidebar": "build/installerSidebar.bmp"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "AEBWP",
+        "repo": "tabellone-hockey",
+        "releaseType": "release"
+      }
+    ]
   },
   "dependencies": {
+    "electron-updater": "^6.8.11",
     "qrcode-generator": "^1.4.4"
   }
 }

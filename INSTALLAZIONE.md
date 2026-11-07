@@ -100,6 +100,20 @@ il programma i dati **non** vengono cancellati.
 
 ## Aggiornare a una nuova versione
 
+Dalla versione **0.9.11** il programma **si aggiorna da solo**. Quando c'è una versione nuova,
+nella console accanto al numero di versione compare il pulsante verde **⬆ Aggiorna alla …**:
+
+1. clic sul pulsante, poi **Aggiorna ora** (meglio **fuori dalla partita**: il tabellone si
+   spegne per circa un minuto);
+2. il programma scarica l'aggiornamento da GitHub, si chiude, si installa e si riapre da solo;
+3. **partita, squadre, loghi, regolamenti, impostazioni audio e schermi restano** com'erano.
+
+Cliccando il numero di versione si può anche controllare a mano (**Controlla adesso**). Serve
+internet; senza, il programma funziona come sempre. Guida completa:
+[Aggiornamenti](https://github.com/AEBWP/tabellone-hockey/wiki/Aggiornamenti).
+
+### A mano (o dalle versioni fino alla 0.9.10)
+
 Basta eseguire l'installer della versione nuova, anche con il programma aperto:
 
 1. doppio clic su `Tabellone-Hockey-<versione>-installazione.exe`;
