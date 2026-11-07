@@ -4,7 +4,7 @@
 /**
  * @typedef {{ x: number, y: number, width: number, height: number }} Rect
  * @typedef {{ id: number, bounds: Rect, primary: boolean, scaleFactor: number, label?: string }} ScreenInfo
- * @typedef {{ consoleId: number, displayId: number }} ScreenChoice
+ * @typedef {{ consoleId: number, displayIds: number[] }} ScreenChoice
  */
 
 /**
@@ -19,21 +19,66 @@ function defaultChoice(screens) {
   const others = screens
     .filter((s) => s.id !== primary.id)
     .sort((a, b) => b.bounds.width * b.bounds.height - a.bounds.width * a.bounds.height)
-  return { consoleId: primary.id, displayId: (others[0] ?? primary).id }
+  return { consoleId: primary.id, displayIds: [(others[0] ?? primary).id] }
 }
 
 /**
- * Verifica che una scelta salvata sia ancora valida (entrambi gli schermi collegati).
- * @param {Partial<ScreenChoice> | null | undefined} choice
+ * Scelta salvata nel formato attuale. Le versioni fino alla 0.9.9 salvavano un
+ * solo schermo per il tabellone (`displayId`): diventa un elenco di uno.
+ * @param {unknown} saved
+ * @returns {ScreenChoice | null}
+ */
+function normalizeChoice(saved) {
+  if (!saved || typeof saved !== 'object') return null
+  const s = /** @type {{ consoleId?: unknown, displayId?: unknown, displayIds?: unknown }} */ (
+    saved
+  )
+  if (typeof s.consoleId !== 'number') return null
+  const ids = Array.isArray(s.displayIds)
+    ? s.displayIds.filter((id) => typeof id === 'number')
+    : typeof s.displayId === 'number'
+      ? [s.displayId]
+      : []
+  if (ids.length === 0) return null
+  return { consoleId: s.consoleId, displayIds: [...new Set(ids)] }
+}
+
+/**
+ * Verifica che una scelta salvata sia ancora valida: la console e tutti gli
+ * schermi del tabellone devono essere collegati.
+ * @param {unknown} choice
  * @param {ScreenInfo[]} screens
- * @returns {choice is ScreenChoice}
+ * @returns {boolean}
  */
 function isChoiceValid(choice, screens) {
-  if (!choice || typeof choice.consoleId !== 'number' || typeof choice.displayId !== 'number') {
-    return false
-  }
+  const c = normalizeChoice(choice)
+  if (!c) return false
   const ids = new Set(screens.map((s) => s.id))
-  return ids.has(choice.consoleId) && ids.has(choice.displayId)
+  return ids.has(c.consoleId) && c.displayIds.every((id) => ids.has(id))
+}
+
+/**
+ * Su quali schermi aprire il tabellone e come. Sul maxischermo (schermo diverso
+ * da quello della console) va a schermo intero; sullo schermo della console resta
+ * una finestra normale. Gli schermi scollegati si saltano; se non ne resta
+ * nessuno, il tabellone va in una finestra sullo schermo della console (o sul
+ * principale, se manca anche quello).
+ * @param {ScreenChoice} choice
+ * @param {ScreenInfo[]} screens
+ * @param {boolean} [forceFullscreen] solo per i collaudi con un monitor
+ * @returns {{ id: number, mode: 'fullscreen' | 'window' }[]}
+ */
+function displayPlan(choice, screens, forceFullscreen = false) {
+  const connected = new Set(screens.map((s) => s.id))
+  const primary = (screens.find((s) => s.primary) ?? screens[0])?.id
+  let ids = choice.displayIds.filter((id) => connected.has(id))
+  if (ids.length === 0) ids = [connected.has(choice.consoleId) ? choice.consoleId : primary]
+  return [...new Set(ids)]
+    .filter((id) => id !== undefined)
+    .map((id) => ({
+      id,
+      mode: forceFullscreen || id !== choice.consoleId ? 'fullscreen' : 'window',
+    }))
 }
 
 /**
@@ -57,4 +102,4 @@ function describeScreens(screens) {
     })
 }
 
-module.exports = { defaultChoice, isChoiceValid, describeScreens }
+module.exports = { defaultChoice, normalizeChoice, isChoiceValid, displayPlan, describeScreens }

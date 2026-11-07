@@ -19,12 +19,13 @@ anche seguire **in streaming** dal telefono, con un link e un QR code fissi per 
 
 ### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest)
 
-| Versione                 | Data       | Download                                                                                                                                                   |
-| ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **0.9.9** (ultima, beta) | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.9-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.9/Tabellone-Hockey-0.9.9-installazione.exe) |
-| 0.9.8 (beta)             | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.8-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.8/Tabellone-Hockey-0.9.8-installazione.exe) |
-| 0.9.7 (beta)             | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.7-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.7/Tabellone-Hockey-0.9.7-installazione.exe) |
-| Versioni precedenti      |            | [Tutte le versioni](https://github.com/AEBWP/tabellone-hockey/wiki/Download)                                                                               |
+| Versione                  | Data       | Download                                                                                                                                                      |
+| ------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0.9.10** (ultima, beta) | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.10-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.10/Tabellone-Hockey-0.9.10-installazione.exe) |
+| 0.9.9 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.9-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.9/Tabellone-Hockey-0.9.9-installazione.exe)    |
+| 0.9.8 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.8-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.8/Tabellone-Hockey-0.9.8-installazione.exe)    |
+| 0.9.7 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.7-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.7/Tabellone-Hockey-0.9.7-installazione.exe)    |
+| Versioni precedenti       |            | [Tutte le versioni](https://github.com/AEBWP/tabellone-hockey/wiki/Download)                                                                                  |
 
 Per aggiornare basta eseguire l'installer della versione nuova: i dati restano.
 
@@ -82,18 +83,20 @@ mostra la presentazione prima della partita e `P` avvia il tempo per vederne la 
 ## Programma desktop
 
 `npm run app` avvia la versione desktop. Al primo avvio si sceglie su quale
-schermo mostrare la console e su quale il tabellone (pulsante **Mostra il
+schermo mostrare la console e su quale, o quali, il tabellone (pulsante **Mostra il
 numero su ogni schermo** per riconoscerli); la scelta può essere ricordata e
 cambiata in seguito dal pulsante **Schermi…** nella console.
 
 - il tabellone si apre a schermo intero sul maxischermo, senza barra del titolo e
   senza rubare il focus alla console; si chiude solo dalla console. Se il
-  maxischermo viene scollegato torna in finestra
+  maxischermo viene scollegato torna in finestra. Si può scegliere più di uno
+  schermo per il tabellone: una finestra identica su ognuno
 - all'avvio compare subito una finestra “Avvio in corso…”
 - le sirene suonano subito, senza dover prima cliccare
 - la partita è salvata anche su file (`partita.json` nella cartella dati
   dell'app, `%APPDATA%\Tabellone Hockey`)
-- niente standby dello schermo mentre il programma è aperto
+- niente standby dello schermo mentre il programma è aperto (nella versione da
+  browser e nella pagina dello streaming con il wake lock del browser)
 - un solo programma aperto alla volta
 
 ## Streaming online

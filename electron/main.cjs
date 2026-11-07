@@ -22,7 +22,13 @@ const {
 const fs = require('node:fs')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
-const { defaultChoice, describeScreens, isChoiceValid } = require('./screens.cjs')
+const {
+  defaultChoice,
+  describeScreens,
+  displayPlan,
+  isChoiceValid,
+  normalizeChoice,
+} = require('./screens.cjs')
 
 const DIST = path.join(__dirname, '..', 'dist')
 // In sviluppo si può puntare al server di Vite: TABELLONE_DEV_URL=http://localhost:5173/
@@ -48,14 +54,21 @@ const PRELOAD = path.join(__dirname, 'preload.cjs')
 const userFile = (name) => path.join(app.getPath('userData'), name)
 
 /** @type {BrowserWindow | null} */ let consoleWin = null
-/** @type {BrowserWindow | null} */ let displayWin = null
+/**
+ * Finestre del tabellone, una per ogni schermo scelto (tutte uguali).
+ * Modo: 'fullscreen' sul maxischermo, 'window' se lo schermo è quello della console.
+ * @type {Map<number, { win: BrowserWindow, mode: 'fullscreen' | 'window' }>}
+ */
+const displayWins = new Map()
+/** Il tabellone è aperto (si riapre da solo se si ricollega uno schermo). */
+let displayOpen = false
 /** @type {BrowserWindow | null} */ let setupWin = null
 /** @type {BrowserWindow | null} */ let splashWin = null
 /** @type {BrowserWindow[]} */ let identifyWins = []
-/** @type {{ consoleId: number, displayId: number } | null} */ let choice = null
+/** @type {{ consoleId: number, displayIds: number[] } | null} */ let choice = null
 let quitting = false
-/** Modo del tabellone: 'fullscreen' sul maxischermo, 'window' se condivide lo schermo con la console. */
-/** @type {'fullscreen' | 'window' | null} */ let displayMode = null
+/** Blocco dello standby, attivo per tutta la durata del programma. */
+let sleepBlocker = -1
 
 // ── Impostazioni (schermi scelti) ─────────────────────────────────────────
 
@@ -159,7 +172,9 @@ function setUiLanguage(language) {
   writeConfig({ ...readConfig(), language })
   if (consoleWin && !consoleWin.isDestroyed()) consoleWin.setTitle(windowTitle('console'))
   if (setupWin && !setupWin.isDestroyed()) setupWin.setTitle(windowTitle('setup'))
-  if (displayWin && !displayWin.isDestroyed()) displayWin.setTitle(windowTitle('display'))
+  for (const { win } of displayWins.values()) {
+    if (!win.isDestroyed()) win.setTitle(windowTitle('display'))
+  }
 }
 
 // ── Schermi ───────────────────────────────────────────────────────────────
@@ -319,16 +334,20 @@ function placeConsole() {
 }
 
 /**
- * Dove e come mostrare il tabellone. Sul maxischermo (schermo diverso da quello
- * della console) va a schermo intero, senza barra del titolo; se è sullo stesso
- * schermo della console (es. prove a casa) resta una finestra normale.
+ * Dove e come mostrare il tabellone: uno o più schermi, con lo stesso tabellone.
+ * Sul maxischermo (schermo diverso da quello della console) va a schermo intero,
+ * senza barra del titolo; se è lo schermo della console (es. prove a casa)
+ * resta una finestra normale. Gli schermi scollegati si saltano; se non ne
+ * resta nessuno, il tabellone va in una finestra sullo schermo della console.
  */
-function displayTarget() {
-  const d = displayById(choice.displayId)
-  const ownScreen = d.id === choice.displayId && choice.displayId !== choice.consoleId
+function displayTargets() {
+  if (!choice) return []
   // Solo per i collaudi: forza lo schermo intero anche con un solo monitor.
   const forced = process.env.TABELLONE_DISPLAY_FULLSCREEN === '1'
-  return { display: d, mode: ownScreen || forced ? 'fullscreen' : 'window' }
+  return displayPlan(choice, screens(), forced).map(({ id, mode }) => ({
+    display: displayById(id),
+    mode,
+  }))
 }
 
 function windowedBounds(d) {
@@ -390,29 +409,30 @@ function quitApp() {
   consoleWin?.close()
 }
 
-function placeDisplay() {
-  if (!displayWin || displayWin.isDestroyed() || !choice) return
-  const { display: d, mode } = displayTarget()
-  if (mode !== displayMode) {
-    // Il tipo di finestra (con o senza barra) si decide alla creazione: la ricreiamo.
-    closeDisplay()
-    openDisplay()
-    return
+/**
+ * Allinea le finestre del tabellone agli schermi scelti: crea quelle che
+ * mancano, chiude quelle in più e rimette al loro posto le altre.
+ */
+function syncDisplays() {
+  if (!choice || !displayOpen) return
+  const targets = displayTargets()
+  const wanted = new Map(targets.map((t) => [t.display.id, t]))
+  for (const [id, entry] of [...displayWins]) {
+    const target = wanted.get(id)
+    // Il tipo di finestra (con o senza barra) si decide alla creazione: si ricrea.
+    if (!target || target.mode !== entry.mode || entry.win.isDestroyed()) destroyDisplay(id)
   }
-  if (mode === 'fullscreen') goFullScreen(displayWin, d)
-  else displayWin.setBounds(windowedBounds(d))
+  for (const target of targets) {
+    const entry = displayWins.get(target.display.id)
+    if (!entry) createDisplay(target)
+    else if (target.mode === 'fullscreen') goFullScreen(entry.win, target.display)
+    else entry.win.setBounds(windowedBounds(target.display))
+  }
 }
 
-function openDisplay() {
-  if (!choice) return
-  if (displayWin && !displayWin.isDestroyed()) {
-    placeDisplay()
-    displayWin.showInactive()
-    return
-  }
-  const { display: d, mode } = displayTarget()
+function createDisplay({ display: d, mode }) {
   const fullscreen = mode === 'fullscreen'
-  displayMode = mode
+  const id = d.id
   const win = new BrowserWindow({
     ...(fullscreen ? d.bounds : windowedBounds(d)),
     title: windowTitle('display'),
@@ -431,31 +451,45 @@ function openDisplay() {
     show: false,
     webPreferences: baseWebPreferences(),
   })
-  displayWin = win
+  displayWins.set(id, { win, mode })
   lockDown(win)
   win.once('ready-to-show', () => {
     // Senza rubare il focus alla console: l'operatore continua a usare la tastiera.
     win.showInactive()
-    if (fullscreen) goFullScreen(win, displayTarget().display)
+    if (fullscreen) goFullScreen(win, displayById(id))
   })
   // Alt+F4 o altri tentativi di chiusura dal maxischermo vengono ignorati.
   win.on('close', (event) => {
     if (fullscreen && !quitting) event.preventDefault()
   })
   win.on('closed', () => {
-    if (displayWin === win) {
-      displayWin = null
-      displayMode = null
-    }
+    // Ancora nell'elenco = chiusa con la X (finestra normale), non da noi:
+    // se era l'ultima, il tabellone è chiuso.
+    if (displayWins.get(id)?.win !== win) return
+    displayWins.delete(id)
+    if (displayWins.size === 0) displayOpen = false
   })
   void win.loadURL(`${BASE_URL}display.html`)
 }
 
-/** Chiude il tabellone (solo su richiesta della console o all'uscita). */
+function destroyDisplay(id) {
+  const entry = displayWins.get(id)
+  displayWins.delete(id)
+  if (entry && !entry.win.isDestroyed()) entry.win.destroy()
+}
+
+function openDisplay() {
+  if (!choice) return
+  const existing = [...displayWins.values()].map((e) => e.win)
+  displayOpen = true
+  syncDisplays()
+  for (const win of existing) if (!win.isDestroyed()) win.showInactive()
+}
+
+/** Chiude il tabellone su tutti gli schermi (solo su richiesta della console o all'uscita). */
 function closeDisplay() {
-  if (displayWin && !displayWin.isDestroyed()) displayWin.destroy()
-  displayWin = null
-  displayMode = null
+  displayOpen = false
+  for (const id of [...displayWins.keys()]) destroyDisplay(id)
 }
 
 function startMain(newChoice) {
@@ -510,17 +544,19 @@ function registerIpc() {
   ipcMain.handle('screens:list', () => {
     const list = describeScreens(screens())
     const saved = readConfig().screens
-    const current = choice ?? (isChoiceValid(saved, list) ? saved : defaultChoice(list))
+    const current =
+      choice ?? (isChoiceValid(saved, list) ? normalizeChoice(saved) : defaultChoice(list))
     return { screens: list, choice: current, remember: readConfig().rememberScreens !== false }
   })
 
   ipcMain.handle('screens:identify', () => identifyScreens())
 
-  ipcMain.handle('screens:start', (_event, { consoleId, displayId, remember }) => {
+  ipcMain.handle('screens:start', (_event, { consoleId, displayIds, remember }) => {
     const list = screens()
-    if (!isChoiceValid({ consoleId, displayId }, list)) return false
-    writeConfig({ ...readConfig(), screens: { consoleId, displayId }, rememberScreens: !!remember })
-    startMain({ consoleId, displayId })
+    const next = normalizeChoice({ consoleId, displayIds })
+    if (!next || !isChoiceValid(next, list)) return false
+    writeConfig({ ...readConfig(), screens: next, rememberScreens: !!remember })
+    startMain(next)
     setupWin?.close()
     return true
   })
@@ -600,25 +636,28 @@ if (!app.requestSingleInstanceLock()) {
     registerProtocol()
     registerIpc()
     // Niente standby o salvaschermo mentre il programma è aperto.
-    powerSaveBlocker.start('prevent-display-sleep')
+    sleepBlocker = powerSaveBlocker.start('prevent-display-sleep')
 
     screen.on('display-removed', () => {
-      if (choice && displayWin) placeDisplay()
+      syncDisplays()
     })
     screen.on('display-added', () => {
-      if (choice && displayWin) placeDisplay()
+      syncDisplays()
     })
     screen.on('display-metrics-changed', () => {
-      if (choice && displayWin) placeDisplay()
+      syncDisplays()
     })
 
     const config = readConfig()
     const list = screens()
     if (SMOKE_TEST) {
-      startMain(defaultChoice(list))
+      // TABELLONE_SMOKE_ALL_SCREENS=1: tabellone su tutti gli schermi collegati.
+      const all = process.env.TABELLONE_SMOKE_ALL_SCREENS === '1'
+      const base = defaultChoice(list)
+      startMain(all && base ? { ...base, displayIds: list.map((s) => s.id) } : base)
       void runSmokeTest(SMOKE_TEST)
     } else if (config.rememberScreens && isChoiceValid(config.screens, list)) {
-      startMain(config.screens)
+      startMain(normalizeChoice(config.screens))
     } else {
       openSetup()
     }
@@ -660,8 +699,20 @@ async function runSmokeTest(outDir) {
     report.consoleText = await consoleWin.webContents.executeJavaScript(
       `document.querySelector('.clock-panel')?.innerText`,
     )
-    report.displayScore = await displayWin.webContents.executeJavaScript(
+    const firstDisplay = () => [...displayWins.values()][0]?.win ?? null
+    report.displayScore = await firstDisplay().webContents.executeJavaScript(
       `[...document.querySelectorAll('.board .score')].map(e => e.textContent.trim())`,
+    )
+    // Tutte le finestre del tabellone mostrano la stessa partita.
+    report.displayScores = await Promise.all(
+      [...displayWins.values()].map(async ({ win, mode }) => ({
+        mode,
+        fullScreen: win.isFullScreen(),
+        bounds: win.getBounds(),
+        score: await win.webContents.executeJavaScript(
+          `[...document.querySelectorAll('.board .score')].map(e => e.textContent.trim())`,
+        ),
+      })),
     )
     report.audioUnlocked = await consoleWin.webContents.executeJavaScript(
       `!document.querySelector('.audio-locked')`,
@@ -673,13 +724,15 @@ async function runSmokeTest(outDir) {
     )
     await wait(7000) // fine animazione del gol
     await snap('console', consoleWin)
-    await snap('display', displayWin)
+    await snap('display', firstDisplay())
     report.savedGame = fs.existsSync(userFile('partita.json'))
+    report.noSleep = powerSaveBlocker.isStarted(sleepBlocker)
 
     // Tabellone: schermo intero senza barra e chiudibile solo dalla console.
-    const dw = displayWin
+    const dw = firstDisplay()
     report.displayWindow = {
-      mode: displayMode,
+      windows: displayWins.size,
+      mode: [...displayWins.values()][0]?.mode,
       fullScreen: dw.isFullScreen(),
       alwaysOnTop: dw.isAlwaysOnTop(),
       // Senza barra del titolo la parte disegnabile coincide con la finestra intera.
@@ -687,14 +740,14 @@ async function runSmokeTest(outDir) {
         dw.getContentBounds().height === dw.getBounds().height &&
         dw.getContentBounds().y === dw.getBounds().y,
       bounds: dw.getBounds(),
-      screen: displayTarget().display.bounds,
+      screen: displayTargets()[0]?.display.bounds,
     }
     dw.close() // come Alt+F4 sul maxischermo
     await wait(500)
-    report.displayWindow.survivesCloseAttempt = !dw.isDestroyed() && displayWin === dw
+    report.displayWindow.survivesCloseAttempt = !dw.isDestroyed() && firstDisplay() === dw
     await consoleWin.webContents.executeJavaScript(`window.tabelloneApp.closeDisplay()`)
     await wait(500)
-    report.displayWindow.closedFromConsole = displayWin === null && dw.isDestroyed()
+    report.displayWindow.closedFromConsole = displayWins.size === 0 && dw.isDestroyed()
     await wait(4000) // la console se ne accorge (nessun segnale dal tabellone)
     report.consoleButtonAfterClose = await consoleWin.webContents.executeJavaScript(
       `[...document.querySelectorAll('.topbar button')].map((b) => b.textContent.trim()).filter((t) => t.includes('tabellone'))`,
@@ -722,8 +775,9 @@ async function runSmokeTest(outDir) {
 
     openDisplay()
     await wait(2500)
+    const reopened = [...displayWins.values()][0]
     report.displayWindow.reopened =
-      !!displayWin && displayWin.isFullScreen() === (displayMode === 'fullscreen')
+      !!reopened && reopened.win.isFullScreen() === (reopened.mode === 'fullscreen')
 
     openSetup()
     await wait(2000)

@@ -2,7 +2,13 @@ import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
-const { defaultChoice, describeScreens, isChoiceValid } = require('./screens.cjs')
+const {
+  defaultChoice,
+  describeScreens,
+  displayPlan,
+  isChoiceValid,
+  normalizeChoice,
+} = require('./screens.cjs')
 
 const laptop = {
   id: 1,
@@ -25,11 +31,11 @@ const small = {
 
 describe('scelta degli schermi', () => {
   it('console sul principale, tabellone sul più grande degli altri', () => {
-    expect(defaultChoice([small, laptop, maxi])).toEqual({ consoleId: 1, displayId: 7 })
+    expect(defaultChoice([small, laptop, maxi])).toEqual({ consoleId: 1, displayIds: [7] })
   })
 
   it('con un solo schermo usa quello per entrambi', () => {
-    expect(defaultChoice([laptop])).toEqual({ consoleId: 1, displayId: 1 })
+    expect(defaultChoice([laptop])).toEqual({ consoleId: 1, displayIds: [1] })
     expect(defaultChoice([])).toBeNull()
   })
 
@@ -38,6 +44,50 @@ describe('scelta degli schermi', () => {
     expect(isChoiceValid({ consoleId: 1, displayId: 7 }, [laptop])).toBe(false)
     expect(isChoiceValid(null, [laptop])).toBe(false)
     expect(isChoiceValid({ consoleId: 1 }, [laptop])).toBe(false)
+    expect(isChoiceValid({ consoleId: 1, displayIds: [] }, [laptop])).toBe(false)
+  })
+
+  it('il tabellone può stare su più schermi: tutti devono essere collegati', () => {
+    expect(isChoiceValid({ consoleId: 1, displayIds: [7, 3] }, [laptop, maxi, small])).toBe(true)
+    expect(isChoiceValid({ consoleId: 1, displayIds: [7, 3] }, [laptop, maxi])).toBe(false)
+  })
+
+  it('le scelte salvate dalle versioni precedenti (un solo schermo) restano valide', () => {
+    expect(normalizeChoice({ consoleId: 1, displayId: 7 })).toEqual({
+      consoleId: 1,
+      displayIds: [7],
+    })
+    expect(normalizeChoice({ consoleId: 1, displayIds: [7, 7, 3] })).toEqual({
+      consoleId: 1,
+      displayIds: [7, 3],
+    })
+    expect(normalizeChoice({ consoleId: 1 })).toBeNull()
+    expect(normalizeChoice('x')).toBeNull()
+  })
+
+  it('tabellone su più schermi: a schermo intero su tutti tranne quello della console', () => {
+    const all = [laptop, maxi, small]
+    expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, all)).toEqual([
+      { id: 7, mode: 'fullscreen' },
+      { id: 3, mode: 'fullscreen' },
+    ])
+    expect(displayPlan({ consoleId: 1, displayIds: [7, 1] }, all)).toEqual([
+      { id: 7, mode: 'fullscreen' },
+      { id: 1, mode: 'window' },
+    ])
+  })
+
+  it('schermi scollegati: si saltano; se non ne resta nessuno, finestra sulla console', () => {
+    expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, [laptop, maxi])).toEqual([
+      { id: 7, mode: 'fullscreen' },
+    ])
+    expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, [laptop])).toEqual([
+      { id: 1, mode: 'window' },
+    ])
+    // Manca anche lo schermo della console: si usa il principale.
+    expect(displayPlan({ consoleId: 9, displayIds: [8] }, [laptop, maxi])).toEqual([
+      { id: 1, mode: 'fullscreen' },
+    ])
   })
 
   it('numera da sinistra a destra con la risoluzione reale', () => {

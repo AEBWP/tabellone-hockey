@@ -59,10 +59,11 @@ verifica dell'identità).
 2. Apri **Tabellone Hockey**: la prima volta compare la scelta degli schermi.
 3. Premi **Mostra il numero su ogni schermo** per vedere quale è quale.
 4. Scegli lo schermo della **Console** (quello del PC) e quello del **Tabellone** (il
-   maxischermo).
+   maxischermo). Per il tabellone si possono spuntare **anche più schermi**: il tabellone è
+   identico su tutti.
 5. Lascia la spunta **Ricorda la scelta** e premi **Avvia il tabellone**.
 
-Sul maxischermo il tabellone va **a schermo intero, senza barra del titolo** e sopra a tutto (anche
+Su ogni maxischermo scelto il tabellone va **a schermo intero, senza barra del titolo** e sopra a tutto (anche
 alla barra delle applicazioni di Windows). **Si chiude solo dalla console**: pulsante **Chiudi
 tabellone**, oppure chiudendo il programma. Alt+F4 sul maxischermo non ha effetto.
 

@@ -13,6 +13,7 @@
   import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../shared/messages'
   import { desktop } from '../shared/desktop'
   import { preloadImages } from '../shared/preload-images'
+  import { keepScreenAwake } from '../shared/wake-lock'
   import { now } from '../shared/time'
   import { DEMO_GOAL_KEYS, DEMO_SCENES, DEMO_TEAMS } from './demo'
   import Stage from './Stage.svelte'
@@ -145,9 +146,14 @@
     }
   }
 
+  // Versione da browser: il maxischermo non va in standby (il programma
+  // installato lo impedisce già da sé).
+  const releaseWakeLock = desktop ? () => {} : keepScreenAwake()
+
   onDestroy(() => {
     cancelAnimationFrame(frame)
     cleanup()
+    releaseWakeLock()
   })
 
   // Nella versione browser: doppio clic per lo schermo intero.

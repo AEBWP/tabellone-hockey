@@ -19,6 +19,7 @@
   import { loadGame, saveGame } from '../shared/persist'
   import { desktop } from '../shared/desktop'
   import { now } from '../shared/time'
+  import { keepScreenAwake } from '../shared/wake-lock'
   import ClockEditDialog from './ClockEditDialog.svelte'
   import ClockPanel from './ClockPanel.svelte'
   import BoardPreview from './BoardPreview.svelte'
@@ -124,7 +125,12 @@
     frame = requestAnimationFrame(tick)
   })
 
+  // Versione da browser: niente standby durante la partita (il programma
+  // installato lo impedisce già da sé).
+  const releaseWakeLock = desktop ? () => {} : keepScreenAwake()
+
   onDestroy(() => {
+    releaseWakeLock()
     cancelAnimationFrame(frame)
     clearInterval(heartbeat)
     clearInterval(soundTimer)

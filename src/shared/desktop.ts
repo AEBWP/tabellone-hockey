@@ -17,7 +17,8 @@ export interface ScreenItem {
 
 export interface ScreenChoice {
   consoleId: number
-  displayId: number
+  /** Uno o più schermi: il tabellone è uguale su tutti. */
+  displayIds: number[]
 }
 
 export interface DesktopApi {

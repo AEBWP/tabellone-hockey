@@ -4,6 +4,7 @@
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import Stage from '../display/Stage.svelte'
   import { preloadImages } from '../shared/preload-images'
+  import { keepScreenAwake } from '../shared/wake-lock'
   import { now } from '../shared/time'
   import { isValidLiveName, LIVE_STALE_MS, type LiveMessage } from '../shared/live'
   import { LANGUAGE_NAMES, t, ui } from '../i18n/ui.svelte'
@@ -158,6 +159,13 @@
     }
   }
   document.addEventListener('visibilitychange', onVisible)
+
+  // Mentre si guarda la partita il telefono o il PC non vanno in standby
+  // (non nell'anteprima della console, che ha già la sua finestra accesa).
+  $effect(() => {
+    if (phase !== 'live' || embed) return
+    return keepScreenAwake()
+  })
 
   onDestroy(() => {
     closed = true

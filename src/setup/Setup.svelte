@@ -6,18 +6,38 @@
 
   let screens = $state<ScreenItem[]>([])
   let consoleId = $state<number | null>(null)
-  let displayId = $state<number | null>(null)
+  /** Schermi del tabellone: uno o più, con lo stesso tabellone su tutti. */
+  let displayIds = $state<number[]>([])
   let remember = $state(true)
   let starting = $state(false)
   let error = $state<string | null>(null)
 
+  let loaded = false
+
+  /**
+   * Elenco degli schermi (si ricarica ogni pochi secondi). La scelta salvata si
+   * usa solo la prima volta: dopo resta quella dell'operatore, tolti gli schermi
+   * scollegati.
+   */
   async function load() {
     if (!desktop) return
     const data = await desktop.listScreens()
     screens = data.screens
-    remember = data.remember
-    consoleId = data.choice?.consoleId ?? screens[0]?.id ?? null
-    displayId = data.choice?.displayId ?? screens[0]?.id ?? null
+    const connected = new Set(screens.map((s) => s.id))
+    const first = !loaded
+    if (first) {
+      loaded = true
+      remember = data.remember
+      consoleId = data.choice?.consoleId ?? null
+      displayIds = data.choice?.displayIds ?? []
+    }
+    if (consoleId === null || !connected.has(consoleId)) consoleId = screens[0]?.id ?? null
+    const kept = displayIds.filter((id) => connected.has(id))
+    // Rimasti senza schermi per il tabellone perché scollegati: si propone il primo.
+    // Se invece l'operatore ha tolto tutte le spunte, si lascia così.
+    if (kept.length !== displayIds.length || (first && kept.length === 0)) {
+      displayIds = kept.length || !screens[0] ? kept : [screens[0].id]
+    }
   }
 
   onMount(() => {
@@ -46,10 +66,14 @@
       .join(' ') + (s.label ? ` – ${s.label}` : '')
 
   async function start() {
-    if (!desktop || consoleId === null || displayId === null) return
+    if (!desktop || consoleId === null || displayIds.length === 0) return
     starting = true
     error = null
-    const ok = await desktop.startWithScreens({ consoleId, displayId, remember })
+    const ok = await desktop.startWithScreens({
+      consoleId,
+      displayIds: $state.snapshot(displayIds),
+      remember,
+    })
     if (!ok) {
       error = t('Uno degli schermi scelti non è più collegato. Riprova.')
       starting = false
@@ -90,7 +114,7 @@
           <div
             class="screen"
             class:is-console={s.id === consoleId}
-            class:is-display={s.id === displayId}
+            class:is-display={displayIds.includes(s.id)}
             style:left="{((s.bounds.x - layout.minX) / layout.width) * 100}%"
             style:top="{((s.bounds.y - layout.minY) / layout.height) * 100}%"
             style:width="{(s.bounds.width / layout.width) * 100}%"
@@ -100,7 +124,7 @@
             <span class="res">{s.resolution}</span>
             <span class="roles">
               {#if s.id === consoleId}<span class="tag console">{t('Console')}</span>{/if}
-              {#if s.id === displayId}<span class="tag display">{t('Tabellone')}</span>{/if}
+              {#if displayIds.includes(s.id)}<span class="tag display">{t('Tabellone')}</span>{/if}
             </span>
           </div>
         {/each}
@@ -130,9 +154,14 @@
           <span class="tag display">{t('Tabellone')}</span>
           {t('per il pubblico (maxischermo)')}
         </legend>
+        {#if !single}
+          <p class="multi">
+            {t('Puoi sceglierne anche più di uno: il tabellone sarà identico su tutti.')}
+          </p>
+        {/if}
         {#each screens as s (s.id)}
-          <label class="option" class:selected={s.id === displayId}>
-            <input type="radio" name="display" value={s.id} bind:group={displayId} />
+          <label class="option" class:selected={displayIds.includes(s.id)}>
+            <input type="checkbox" name="display" value={s.id} bind:group={displayIds} />
             <span>
               <strong>{screenTitle(s)}</strong>
               <small>{s.resolution}</small>
@@ -148,10 +177,10 @@
           'È collegato un solo schermo: il tabellone si aprirà in una finestra normale, comoda per le prove. Collega il maxischermo per averlo a schermo intero.',
         )}
       </p>
-    {:else if consoleId === displayId}
+    {:else if consoleId !== null && displayIds.includes(consoleId)}
       <p class="note">
         {t(
-          'Console e tabellone sullo stesso schermo: il tabellone si aprirà in una finestra normale.',
+          'Console e tabellone sullo stesso schermo: lì il tabellone si aprirà in una finestra normale.',
         )}
       </p>
     {/if}
@@ -162,7 +191,15 @@
         {t('Ricorda la scelta e avvia direttamente la prossima volta')}
       </label>
       {#if error}<p class="error">{error}</p>{/if}
-      <button type="button" class="btn btn-primary start" disabled={starting} onclick={start}>
+      {#if displayIds.length === 0}
+        <p class="error">{t('Scegli almeno uno schermo per il tabellone.')}</p>
+      {/if}
+      <button
+        type="button"
+        class="btn btn-primary start"
+        disabled={starting || displayIds.length === 0}
+        onclick={start}
+      >
         {starting ? t('Avvio…') : t('Avvia il tabellone')}
       </button>
     </footer>
@@ -219,7 +256,7 @@
   /* Altezza fissa e compatta: la larghezza segue le proporzioni degli schermi. */
   .map {
     position: relative;
-    height: 150px;
+    height: 170px;
     max-width: 100%;
     margin: 0 auto;
   }
@@ -236,6 +273,9 @@
     border-radius: 8px;
     background: var(--ice-900);
     outline: 4px solid var(--ice-950);
+    overflow: hidden;
+    /* Gli schermi piccoli nel disegno mostrano meno cose (vedi @container sotto). */
+    container-type: size;
   }
 
   .screen.is-console {
@@ -259,7 +299,27 @@
 
   .roles {
     display: flex;
-    gap: 0.3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.2rem 0.3rem;
+    padding: 0 0.2rem;
+  }
+
+  /* Schermo piccolo nel disegno (es. portatile accanto a un maxischermo grande):
+     numero più piccolo, niente risoluzione, così le etichette ci stanno. */
+  @container (max-height: 110px) {
+    .num {
+      font-size: 1.6rem;
+    }
+
+    .res {
+      display: none;
+    }
+
+    .roles .tag {
+      padding: 0 0.35rem;
+      font-size: 0.65rem;
+    }
   }
 
   .tag {
@@ -302,6 +362,12 @@
   legend {
     padding: 0 0.4rem;
     font-weight: 600;
+  }
+
+  .multi {
+    margin: 0 0 0.4rem;
+    font-size: 0.85rem;
+    color: var(--ice-300, #9cc3ea);
   }
 
   .option {
