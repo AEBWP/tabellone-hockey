@@ -306,25 +306,126 @@ function openSetup() {
   void setupWin.loadURL(`${BASE_URL}setup.html`)
 }
 
+/** true mentre è il programma stesso a ingrandire la console (non il pulsante di Windows). */
+let maximizingConsole = false
+
+function maximizeConsole() {
+  if (!consoleWin || consoleWin.isDestroyed()) return
+  maximizingConsole = true
+  consoleWin.maximize()
+  maximizingConsole = false
+}
+
+let consoleFull = false
+
+/**
+ * Schermo intero vero della console, che copre anche la barra Start.
+ * Lo schermo intero di Windows/Electron qui lascia la barra Start visibile
+ * (c'è il tabellone "sempre in primo piano" sull'altro schermo), quindi la
+ * finestra si allarga a tutto lo schermo e sta in primo piano finché ha il fuoco.
+ */
+function setConsoleFullScreen(on) {
+  const win = consoleWin
+  if (!win || win.isDestroyed() || on === consoleFull) return
+  consoleFull = on
+  if (on) {
+    const d = screen.getDisplayMatching(win.getBounds())
+    const cover = () => {
+      if (win.isDestroyed() || !consoleFull) return
+      // Un punto in più in basso: con la misura esatta Windows lascia l'ultima
+      // riga di pixel alla barra Start.
+      win.setBounds({ ...d.bounds, height: d.bounds.height + 1 })
+      // Bloccata lì: non si sposta trascinando la barra.
+      win.setMovable(false)
+      keepConsoleOnTop()
+    }
+    // Da ingrandita prima si torna a finestra normale (Windows lo fa con calma),
+    // poi la si allarga: altrimenti il ripristino annullerebbe le misure.
+    if (win.isMaximized()) {
+      win.once('unmaximize', () => setTimeout(cover, 50))
+      win.unmaximize()
+    } else cover()
+  } else {
+    win.setMovable(true)
+    // Torna una finestra normale, un po' più piccola dello schermo.
+    const d = screen.getDisplayMatching(win.getBounds())
+    const restore = () => {
+      if (win.isDestroyed() || consoleFull) return
+      win.setBounds(consoleNormalBounds(d))
+    }
+    if (win.isMaximized()) {
+      win.once('unmaximize', () => setTimeout(restore, 50))
+      win.unmaximize()
+    } else restore()
+  }
+  keepConsoleOnTop()
+  win.webContents.send('console:fullscreen', on)
+}
+
+/** In primo piano (sopra la barra Start) solo a schermo intero e con il fuoco. */
+function keepConsoleOnTop() {
+  const win = consoleWin
+  if (!win || win.isDestroyed()) return
+  if (consoleFull && win.isFocused()) {
+    // Windows rimette la barra Start sopra: si spegne e riaccende il "primo
+    // piano" così la console torna in cima.
+    win.setAlwaysOnTop(false)
+    win.setAlwaysOnTop(true, 'screen-saver')
+    win.moveTop()
+  } else {
+    win.setAlwaysOnTop(false)
+  }
+}
+
+/** Grandezza della console quando non è ingrandita: un po' più piccola dello schermo, al centro. */
+function consoleNormalBounds(d) {
+  const { x, y, width, height } = d.workArea
+  const w = Math.round(width * 0.85)
+  const h = Math.round(height * 0.85)
+  return {
+    x: x + Math.round((width - w) / 2),
+    y: y + Math.round((height - h) / 2),
+    width: w,
+    height: h,
+  }
+}
+
 function placeConsole() {
   if (!choice) return
   const d = displayById(choice.consoleId)
   if (!consoleWin || consoleWin.isDestroyed()) {
     consoleWin = new BrowserWindow({
-      ...d.workArea,
+      ...consoleNormalBounds(d),
       minWidth: 900,
       minHeight: 600,
       title: windowTitle('console'),
       backgroundColor: '#050d18',
+      // Barra del titolo disegnata dalla console, compresi i pulsanti
+      // (riduci, schermo intero/finestra, chiudi): quelli di Windows non
+      // saprebbero mostrare lo schermo intero vero.
+      titleBarStyle: 'hidden',
       show: false,
       webPreferences: baseWebPreferences(),
     })
     lockDown(consoleWin)
     consoleWin.once('ready-to-show', () => {
       timing('console visibile')
-      consoleWin?.maximize()
+      maximizeConsole()
       consoleWin?.show()
+      // All'avvio la console va a schermo intero, tranne quando il tabellone è
+      // sullo stesso schermo (lo coprirebbe): lì resta una finestra.
+      if (choice && !choice.displayIds.includes(choice.consoleId) && screens().length > 1) {
+        setConsoleFullScreen(true)
+      }
       closeSplash()
+    })
+    consoleWin.on('focus', keepConsoleOnTop)
+    consoleWin.on('blur', keepConsoleOnTop)
+    // Il pulsante "Ingrandisci" di Windows porta allo schermo intero vero,
+    // senza la barra Start (come F11 e il pulsante della console).
+    consoleWin.on('maximize', () => {
+      // A schermo intero lo stesso pulsante ne esce.
+      if (!maximizingConsole) setTimeout(() => setConsoleFullScreen(!consoleFull), 0)
     })
     consoleWin.on('close', (event) => {
       if (quitting || SMOKE_TEST) return
@@ -335,15 +436,20 @@ function placeConsole() {
     })
     consoleWin.on('closed', () => {
       consoleWin = null
+      consoleFull = false
       quitting = true
       closeDisplay()
       app.quit()
     })
     void consoleWin.loadURL(`${BASE_URL}index.html`)
   } else {
+    // Cambio di schermo: si sposta la finestra e, se era a schermo intero, ci torna.
+    const wasFullScreen = consoleFull
+    if (wasFullScreen) setConsoleFullScreen(false)
     if (consoleWin.isMaximized()) consoleWin.unmaximize()
-    consoleWin.setBounds(d.workArea)
-    consoleWin.maximize()
+    consoleWin.setBounds(consoleNormalBounds(d))
+    maximizeConsole()
+    if (wasFullScreen) setConsoleFullScreen(true)
   }
 }
 
@@ -585,6 +691,15 @@ function registerIpc() {
   ipcMain.handle('display:open', () => openDisplay())
   ipcMain.handle('display:close', () => closeDisplay())
 
+  // Schermo intero della console (all'avvio è una finestra ingrandita normale).
+  ipcMain.handle('console:set-fullscreen', (_event, on) => {
+    setConsoleFullScreen(!!on)
+  })
+  ipcMain.handle('console:is-fullscreen', () => consoleFull)
+  ipcMain.on('console:minimize', () => consoleWin?.minimize())
+  // La X della console: chiude tutto, dopo la conferma.
+  ipcMain.on('app:request-close', () => requestClose())
+
   // La console ha ricevuto la richiesta di chiusura e mostra la sua finestra.
   ipcMain.on('app:close-ack', () => clearTimeout(closeAckTimer))
   ipcMain.on('app:language', (_event, language) => setUiLanguage(String(language)))
@@ -769,7 +884,7 @@ async function runSmokeTest(outDir) {
     report.displayWindow.closedFromConsole = displayWins.size === 0 && dw.isDestroyed()
     await wait(4000) // la console se ne accorge (nessun segnale dal tabellone)
     report.consoleButtonAfterClose = await consoleWin.webContents.executeJavaScript(
-      `[...document.querySelectorAll('.topbar button')].map((b) => b.textContent.trim()).filter((t) => t.includes('tabellone'))`,
+      `[...document.querySelectorAll('.display-control button')].map((b) => b.textContent.trim())`,
     )
     // Chiusura: la console deve mostrare la sua finestra di conferma.
     let nativeUsed = false

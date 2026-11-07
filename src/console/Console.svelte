@@ -31,6 +31,7 @@
   import QuitDialog from './QuitDialog.svelte'
   import UpdateDialog from './UpdateDialog.svelte'
   import { updates } from './updates.svelte'
+  import { fullscreen } from './fullscreen.svelte'
   import NewGameDialog from './NewGameDialog.svelte'
   import { actionForKey, isTypingTarget } from './shortcuts'
   import TeamControls from './TeamControls.svelte'
@@ -56,6 +57,19 @@
 
   const view = $derived(deriveView(game, clock))
   const displayConnected = $derived(clock - lastDisplaySeen < HEARTBEAT_TIMEOUT_MS)
+  /**
+   * Apertura o chiusura del tabellone in corso: la console mostra una rotellina
+   * finché non è fatto, così l'operatore sa che il comando è arrivato anche se
+   * il maxischermo non lo vede.
+   */
+  let displayBusy = $state<'opening' | 'closing' | null>(null)
+  let busyTimer: ReturnType<typeof setTimeout> | undefined
+  function setDisplayBusy(kind: 'opening' | 'closing' | null, maxMs = 0) {
+    clearTimeout(busyTimer)
+    displayBusy = kind
+    // Per sicurezza l'attesa non resta mai per sempre.
+    if (kind) busyTimer = setTimeout(() => (displayBusy = null), maxMs)
+  }
   const undoLabel = $derived(
     canUndo(history, advance(game, clock)) ? (history.at(-1)?.label ?? null) : null,
   )
@@ -72,6 +86,20 @@
     { id: 'backup', label: 'Backup' },
   ]
   let tab = $state<Tab>('game')
+  /** Schede che stanno nel menu Impostazioni invece che nella barra delle schede. */
+  const SETTINGS: Tab[] = ['rules', 'audio', 'backup', 'style']
+  const MAIN_TABS = TABS.filter((item) => !SETTINGS.includes(item.id))
+  const tabItem = (id: Tab) => TABS.find((item) => item.id === id)!
+  /** Nel menu: prima le impostazioni della partita, poi (sotto Schermi) lo stile. */
+  const SETTINGS_TABS = (['rules', 'audio', 'backup'] as Tab[]).map(tabItem)
+  const STYLE_TAB = tabItem('style')
+  const SETTINGS_ICONS: Partial<Record<Tab, string>> = { rules: '📋', audio: '🔊', backup: '💾' }
+  let settingsOpen = $state(false)
+  let settingsMenu = $state<HTMLElement>()
+  function openSettingsTab(id: Tab) {
+    tab = id
+    settingsOpen = false
+  }
 
   /** Il periodo in corso è già iniziato? (le nuove durate varranno dal prossimo) */
   const periodStarted = $derived(
@@ -101,6 +129,9 @@
   const unsubscribe = channel.subscribe((message) => {
     if (message.type === 'hello') channel.send({ type: 'state', state: game })
     if (message.type === 'hello' || message.type === 'displayHeartbeat') {
+      // Segnali rimasti in viaggio da un tabellone che si sta chiudendo.
+      if (displayBusy === 'closing') return
+      if (displayBusy === 'opening') setDisplayBusy(null)
       // Tabellone appena (ri)collegato: riceve subito la partita.
       if (now() - lastDisplaySeen >= HEARTBEAT_TIMEOUT_MS)
         channel.send({ type: 'state', state: game })
@@ -137,6 +168,7 @@
     clearInterval(heartbeat)
     clearInterval(soundTimer)
     clearTimeout(toastTimer)
+    clearTimeout(busyTimer)
     unsubscribe()
     channel.close()
   })
@@ -187,17 +219,28 @@
 
   /** Versione browser: la scheda del tabellone aperta dalla console. */
   let displayWindow: Window | null = null
+  const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
   function openDisplay() {
+    // Finita quando il tabellone dà il primo segnale.
+    setDisplayBusy('opening', 10_000)
     if (desktop) void desktop.openDisplay()
     else displayWindow = window.open('./display.html', 'tabellone-hockey-display')
   }
-  function closeDisplay() {
-    if (desktop) return void desktop.closeDisplay()
-    // Nel browser: chiude la scheda, o la spegne se il browser non la lascia chiudere.
-    channel.send({ type: 'closeDisplay' })
-    displayWindow?.close()
-    displayWindow = null
+  async function closeDisplay() {
+    setDisplayBusy('closing', 5000)
+    if (desktop) {
+      // Le finestre del tabellone sono chiuse quando la promessa si risolve.
+      // Un attimo minimo di attesa, perché la rotellina si veda.
+      await Promise.all([desktop.closeDisplay(), pause(400)])
+    } else {
+      // Nel browser: chiude la scheda, o la spegne se il browser non la lascia chiudere.
+      channel.send({ type: 'closeDisplay' })
+      displayWindow?.close()
+      displayWindow = null
+      await pause(600)
+    }
     lastDisplaySeen = 0
+    setDisplayBusy(null)
   }
 
   // Nel programma installato l'audio è permesso subito, senza aspettare un clic.
@@ -222,6 +265,11 @@
     if (action === 'help') {
       e.preventDefault()
       helpOpen = !helpOpen
+      return
+    }
+    if (action === 'fullscreen') {
+      e.preventDefault()
+      if (fullscreen.available) fullscreen.toggle()
       return
     }
     if (anyDialogOpen || isTypingTarget(e.target)) return
@@ -264,154 +312,293 @@
 <svelte:window
   onkeydown={(e) => {
     audio.unlock()
+    if (settingsOpen && e.key === 'Escape') {
+      settingsOpen = false
+      return
+    }
     onKeydown(e)
   }}
-  onpointerdown={() => audio.unlock()}
+  onpointerdown={(e) => {
+    audio.unlock()
+    // Clic fuori dal menu Impostazioni: si chiude.
+    if (settingsOpen && !settingsMenu?.contains(e.target as Node)) settingsOpen = false
+  }}
 />
 
-<div class="console">
-  <header class="topbar">
-    <div class="bar-main">
-      <h1>
-        Tabellone Hockey
-        {#if updates.supported}
-          <!-- Il numero di versione apre la finestra degli aggiornamenti. -->
+{#snippet appTools()}
+  <!-- Audio sì/no, sempre a portata (anche con il tasto M). -->
+  <button
+    type="button"
+    class="btn btn-ghost mute"
+    title={`${audio.settings.muted ? t('Audio disattivato') : t('Audio attivo')} (M)`}
+    aria-label={audio.settings.muted ? t('Attiva audio') : t('Disattiva audio')}
+    onclick={() => audio.toggleMute()}
+  >
+    {audio.settings.muted ? '🔇' : '🔊'}
+  </button>
+  <!-- Compatto nella barra ("🌐 IT"); al clic si apre l'elenco con i nomi completi. -->
+  <label class="btn btn-ghost lang" title={t('Lingua della console')}>
+    <span aria-hidden="true">🌐 {ui.lang.toUpperCase()}</span>
+    <select
+      aria-label={t('Lingua della console')}
+      value={ui.lang}
+      onchange={(e) => ui.set(e.currentTarget.value as Language)}
+    >
+      {#each LANGUAGES as l (l)}
+        <option value={l}>{LANGUAGE_NAMES[l]}</option>
+      {/each}
+    </select>
+  </label>
+  <!-- Impostazioni: le schede che non servono durante la partita, gli schermi e la guida. -->
+  <div class="settings" bind:this={settingsMenu}>
+    <button
+      type="button"
+      class="btn btn-ghost settings-btn"
+      class:current={SETTINGS.includes(tab)}
+      aria-haspopup="menu"
+      aria-expanded={settingsOpen}
+      onclick={() => (settingsOpen = !settingsOpen)}
+    >
+      ⚙ {t('Impostazioni')} <span class="caret" aria-hidden="true">▾</span>
+    </button>
+    {#if settingsOpen}
+      <div class="settings-menu" role="menu">
+        {#each SETTINGS_TABS as item (item.id)}
           <button
             type="button"
-            class="version as-link"
-            title={t('Aggiornamento del programma')}
-            onclick={() => (updateOpen = true)}>v{__APP_VERSION__}</button
+            role="menuitem"
+            class:current={tab === item.id}
+            onclick={() => openSettingsTab(item.id)}
           >
-        {:else}
-          <span class="version">v{__APP_VERSION__}</span>
-        {/if}
-        {#if updates.pending}
+            <span class="mi-icon" aria-hidden="true">{SETTINGS_ICONS[item.id]}</span>
+            {t(item.label)}
+          </button>
+        {/each}
+        {#if desktop}
           <button
             type="button"
-            class="update-pill"
-            class:busy={updates.state.status === 'downloading' ||
-              updates.state.status === 'installing'}
-            title={t('È disponibile la versione {version}', {
-              version: updates.state.version ?? '',
-            })}
-            onclick={() => (updateOpen = true)}
+            role="menuitem"
+            title={t('Scegli su quale schermo mostrare console e tabellone')}
+            onclick={() => {
+              settingsOpen = false
+              void desktop?.chooseScreens()
+            }}
           >
-            {#if updates.state.status === 'downloading'}
-              ⬇ {updates.state.percent ?? 0}%
-            {:else if updates.state.status === 'installing'}
-              {t('Installazione…')}
-            {:else}
-              ⬆ {t('Aggiorna alla {version}', { version: updates.state.version ?? '' })}
-            {/if}
+            <span class="mi-icon" aria-hidden="true">🖥</span>
+            {t('Schermi…')}
           </button>
         {/if}
-      </h1>
+        <button
+          type="button"
+          role="menuitem"
+          class:current={tab === STYLE_TAB.id}
+          onclick={() => openSettingsTab(STYLE_TAB.id)}
+        >
+          <span class="mi-icon" aria-hidden="true">🎨</span>
+          {t(STYLE_TAB.label)}
+        </button>
+        <hr />
+        <button
+          type="button"
+          role="menuitem"
+          onclick={() => {
+            settingsOpen = false
+            helpOpen = true
+          }}
+        >
+          <span class="mi-icon" aria-hidden="true">❓</span>
+          {t('Guida')}
+          <kbd class="mi-key">F1</kbd>
+        </button>
+      </div>
+    {/if}
+  </div>
+  <!-- Nel browser lo schermo intero sta qui; nel programma installato è nella barra del titolo. -->
+  {#if fullscreen.available && !desktop}
+    <button
+      type="button"
+      class="btn btn-ghost fs-btn"
+      title="{fullscreen.active ? t('Esci da schermo intero') : t('Schermo intero')} (F11)"
+      aria-label={fullscreen.active ? t('Esci da schermo intero') : t('Schermo intero')}
+      onclick={() => fullscreen.toggle()}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        {#if fullscreen.active}
+          <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+        {:else}
+          <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+        {/if}
+      </svg>
+    </button>
+  {/if}
+{/snippet}
 
-      <nav class="tabs" aria-label={t('Sezioni')}>
-        {#each TABS as item (item.id)}
-          {#if item.id === 'streaming'}
-            <!-- Lo stato dello streaming sta nella sua scheda: grigio se spento, verde se in corso. -->
-            <button
-              type="button"
-              class="stream"
-              class:active={tab === item.id}
-              class:live={streaming.status === 'live'}
-              class:warn={streaming.status === 'error' || streaming.status === 'connecting'}
-              title={streaming.status === 'live'
-                ? t('Streaming in corso')
-                : streaming.active
-                  ? t('Streaming: collegamento…')
-                  : t('Streaming disabilitato')}
-              onclick={() => (tab = item.id)}
-            >
-              <span class="dot"></span>
-              {streaming.status === 'live' ? t('Streaming in corso') : t(item.label)}
-            </button>
-          {:else}
-            <button type="button" class:active={tab === item.id} onclick={() => (tab = item.id)}>
-              {t(item.label)}
-            </button>
-          {/if}
-        {/each}
-      </nav>
+{#snippet versionInfo()}
+  {#if updates.supported}
+    <!-- Il numero di versione apre la finestra degli aggiornamenti. -->
+    <button
+      type="button"
+      class="version as-link"
+      title={t('Aggiornamento del programma')}
+      onclick={() => (updateOpen = true)}>v{__APP_VERSION__}</button
+    >
+  {:else}
+    <span class="version">v{__APP_VERSION__}</span>
+  {/if}
+  {#if updates.pending}
+    <button
+      type="button"
+      class="update-pill"
+      class:busy={updates.state.status === 'downloading' || updates.state.status === 'installing'}
+      title={t('È disponibile la versione {version}', {
+        version: updates.state.version ?? '',
+      })}
+      onclick={() => (updateOpen = true)}
+    >
+      {#if updates.state.status === 'downloading'}
+        ⬇ {updates.state.percent ?? 0}%
+      {:else if updates.state.status === 'installing'}
+        {t('Installazione…')}
+      {:else}
+        ⬆ {t('Aggiorna alla {version}', { version: updates.state.version ?? '' })}
+      {/if}
+    </button>
+  {/if}
+{/snippet}
 
-      <div class="spacer"></div>
-
+<div class="console">
+  {#if desktop}
+    <!-- Barra del titolo della finestra, disegnata qui con i suoi pulsanti
+         (come quelli di Windows): riduci a icona, schermo intero / finestra
+         e chiudi. Schermo intero vuol dire tutto lo schermo, barra Start compresa. -->
+    <div class="titlebar">
+      <span class="tb-title">Tabellone Hockey {@render versionInfo()}</span>
+      <div class="tb-tools">{@render appTools()}</div>
+      <div class="tb-buttons">
+        <button
+          type="button"
+          class="tb-btn"
+          title={t('Riduci a icona')}
+          aria-label={t('Riduci a icona')}
+          onclick={() => desktop?.minimizeConsole()}
+        >
+          <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" /></svg>
+        </button>
+        <button
+          type="button"
+          class="tb-btn"
+          title="{fullscreen.active ? t('Esci da schermo intero') : t('Schermo intero')} (F11)"
+          aria-label={fullscreen.active ? t('Esci da schermo intero') : t('Schermo intero')}
+          onclick={() => fullscreen.toggle()}
+        >
+          <svg viewBox="0 0 10 10" aria-hidden="true">
+            {#if fullscreen.active}
+              <path d="M0.5 2.5h7v7h-7zM2.5 2.5v-2h7v7h-2" />
+            {:else}
+              <path d="M0.5 0.5h9v9h-9z" />
+            {/if}
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="tb-btn tb-close"
+          title={t('Chiudi il programma')}
+          aria-label={t('Chiudi il programma')}
+          onclick={() => desktop?.requestClose()}
+        >
+          <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" /></svg>
+        </button>
+      </div>
+    </div>
+  {/if}
+  <header class="topbar">
+    <!-- In alto a sinistra: Nuova partita (nel browser anche titolo e impostazioni). -->
+    <div class="bar-left">
+      {#if !desktop}
+        <h1>Tabellone Hockey {@render versionInfo()}</h1>
+        {@render appTools()}
+      {/if}
+      <button type="button" class="btn" onclick={() => (newGameOpen = true)}
+        >{t('Nuova partita…')}</button
+      >
       {#if !audio.unlocked && !audio.settings.muted}
         <button type="button" class="btn btn-sm audio-locked" onclick={() => audio.unlock()}>
           🔈 {t('Clicca per attivare l’audio')}
         </button>
       {/if}
-      <button
-        type="button"
-        class="btn btn-ghost mute"
-        title={`${audio.settings.muted ? t('Audio disattivato') : t('Audio attivo')} (M)`}
-        aria-label={audio.settings.muted ? t('Attiva audio') : t('Disattiva audio')}
-        onclick={() => audio.toggleMute()}
-      >
-        {audio.settings.muted ? '🔇' : '🔊'}
-      </button>
-
-      {#if displayConnected}
-        <button
-          type="button"
-          class="btn"
-          title={t('Spegne il tabellone sul maxischermo (si riapre con Apri tabellone)')}
-          onclick={closeDisplay}
-        >
-          {t('Chiudi tabellone')}
-        </button>
-      {:else}
-        <button type="button" class="btn btn-primary" onclick={openDisplay}
-          >{t('Apri tabellone')}</button
-        >
-      {/if}
-      {#if desktop}
-        <button
-          type="button"
-          class="btn"
-          title={t('Scegli su quale schermo mostrare console e tabellone')}
-          onclick={() => desktop?.chooseScreens()}
-        >
-          {t('Schermi…')}
-        </button>
-      {/if}
-      <button type="button" class="btn" onclick={() => (newGameOpen = true)}
-        >{t('Nuova partita…')}</button
-      >
-      <!-- Compatto nella barra ("🌐 IT"); al clic si apre l'elenco con i nomi completi. -->
-      <label class="btn btn-ghost lang" title={t('Lingua della console')}>
-        <span aria-hidden="true">🌐 {ui.lang.toUpperCase()}</span>
-        <select
-          aria-label={t('Lingua della console')}
-          value={ui.lang}
-          onchange={(e) => ui.set(e.currentTarget.value as Language)}
-        >
-          {#each LANGUAGES as l (l)}
-            <option value={l}>{LANGUAGE_NAMES[l]}</option>
-          {/each}
-        </select>
-      </label>
-      <button type="button" class="btn btn-ghost" onclick={() => (helpOpen = true)}>
-        {t('Guida')} <kbd>F1</kbd>
-      </button>
     </div>
 
-    <!-- Colonna a destra, a sé: sotto la scritta il tabellone in piccolo, che
-         resta lì anche quando la barra va a capo. -->
-    <div class="display-status">
-      <span class="status" class:ok={displayConnected}>
-        <span class="dot"></span>
-        {displayConnected ? t('Tabellone collegato') : t('Tabellone non aperto')}
-        <HelpTip title={t('Tabellone')} align="right">
-          {@html t(
-            'Indica se la finestra del tabellone (quella per il maxischermo) è aperta. Se l’hai chiusa per sbaglio, premi <b>Apri tabellone</b>: riprende subito con il punteggio e il tempo giusti.',
-          )}
-        </HelpTip>
-      </span>
-      <div class="preview-slot">
-        <BoardPreview {game} connected={displayConnected} />
+    <!-- Al centro, appoggiate sul bordo in basso: le schede, subito sopra la console. -->
+    <nav class="tabs" aria-label={t('Sezioni')}>
+      {#each MAIN_TABS as item (item.id)}
+        {#if item.id === 'streaming'}
+          <!-- Lo stato dello streaming sta nella sua scheda: grigio se spento, verde se in corso. -->
+          <button
+            type="button"
+            class="stream"
+            class:active={tab === item.id}
+            class:live={streaming.status === 'live'}
+            class:warn={streaming.status === 'error' || streaming.status === 'connecting'}
+            title={streaming.status === 'live'
+              ? t('Streaming in corso')
+              : streaming.active
+                ? t('Streaming: collegamento…')
+                : t('Streaming disabilitato')}
+            onclick={() => (tab = item.id)}
+          >
+            <span class="dot"></span>
+            {streaming.status === 'live' ? t('Streaming in corso') : t(item.label)}
+          </button>
+        {:else}
+          <button type="button" class:active={tab === item.id} onclick={() => (tab = item.id)}>
+            {t(item.label)}
+          </button>
+        {/if}
+      {/each}
+    </nav>
+
+    <!-- In alto a destra: stato e Apri/Chiudi del tabellone, e il tabellone in piccolo. -->
+    <!-- Tutto il tabellone in un'unica pillola: in piccolo lo stato, sotto
+         l'anteprima e, attaccato a destra, il pulsante Apri/Chiudi. -->
+    <div
+      class="display-control"
+      class:ok={displayConnected && !displayBusy}
+      class:busy={!!displayBusy}
+      class:off={!displayConnected && !displayBusy}
+    >
+      <div class="dc-board">
+        <span class="status">
+          {#if displayBusy}
+            <span class="spinner" aria-hidden="true"></span>
+            {displayBusy === 'closing'
+              ? t('Chiusura del tabellone…')
+              : t('Apertura del tabellone…')}
+          {:else}
+            <span class="dot"></span>
+            {displayConnected ? t('Tabellone collegato') : t('Tabellone non aperto')}
+          {/if}
+        </span>
+        <BoardPreview {game} connected={displayConnected} busy={displayBusy} />
       </div>
+      {#if displayBusy}
+        <button type="button" class="dc-btn" disabled aria-busy="true">
+          {displayBusy === 'closing' ? t('Chiudi') : t('Apri')}
+        </button>
+      {:else if displayConnected}
+        <button
+          type="button"
+          class="dc-btn"
+          title={t('Spegne il tabellone sul maxischermo (si riapre con Apri tabellone)')}
+          onclick={() => void closeDisplay()}
+        >
+          {t('Chiudi')}
+        </button>
+      {:else}
+        <!-- Tabellone spento: il pulsante deve saltare all'occhio, è la prima cosa da premere. -->
+        <button type="button" class="dc-btn open" onclick={openDisplay}>
+          ▶ {t('Apri tabellone')}
+        </button>
+      {/if}
     </div>
   </header>
 
@@ -533,13 +720,16 @@
     height: 100%;
   }
 
+  /* Tre colonne: a sinistra Nuova partita e a destra il tabellone, in alto;
+     al centro le schede, appoggiate sul bordo in basso. */
   .topbar {
     position: relative;
     z-index: 2;
-    display: flex;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
     gap: 0.9rem;
-    padding: 0.7rem 1.25rem;
+    padding: 0.6rem 1.25rem 0;
     border-bottom: 1px solid var(--ice-800);
     background: var(--ice-900);
   }
@@ -597,18 +787,21 @@
     }
   }
 
+  /* Come linguette di un raccoglitore, sul bordo della console. */
   .tabs {
+    align-self: end;
+    justify-self: center;
     display: flex;
     gap: 0.25rem;
-    padding: 0.2rem;
-    border-radius: 10px;
+    padding: 0.25rem 0.25rem 0;
+    border-radius: 10px 10px 0 0;
     background: var(--ice-950);
   }
 
   .tabs button {
-    padding: 0.4rem 1rem;
+    padding: 0.4rem 0.7rem;
     border: 0;
-    border-radius: 8px;
+    border-radius: 8px 8px 0 0;
     background: none;
     color: var(--ice-300);
     font: inherit;
@@ -619,10 +812,6 @@
   .tabs button.active {
     background: var(--ice-600);
     color: #fff;
-  }
-
-  .spacer {
-    flex: 1;
   }
 
   .audio-locked {
@@ -649,22 +838,99 @@
     font-size: 1.15rem;
   }
 
-  .bar-main {
-    flex: 1;
-    min-width: 0;
+  .bar-left {
+    justify-self: start;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.6rem 0.9rem;
+    gap: 0.5rem;
+    padding-bottom: 0.6rem;
   }
 
-  .display-status {
-    flex: none;
+  /* Tutto quello che riguarda il tabellone in un'unica pillola, a destra:
+     a sinistra il pulsante, a destra stato (in piccolo) e anteprima. */
+  .display-control {
+    justify-self: end;
+    display: flex;
+    align-items: stretch;
+    margin-bottom: 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--warn) 8%, var(--ice-950));
+    overflow: hidden;
+  }
+
+  .display-control.ok {
+    border-color: color-mix(in srgb, var(--ok) 45%, transparent);
+    background: color-mix(in srgb, var(--ok) 6%, var(--ice-950));
+  }
+
+  .display-control.busy {
+    border-color: var(--ice-700, #2a4a6e);
+    background: var(--ice-950);
+  }
+
+  .dc-board {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    gap: 0.3rem;
+    padding: 0.35rem 0.5rem 0.5rem;
+  }
+
+  .display-control .status {
     gap: 0.35rem;
-    padding-top: 0.45rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .display-control .status .dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  /* Il pulsante sta sempre a sinistra, l'anteprima a destra. */
+  .dc-btn {
+    order: -1;
+    padding: 0 1rem;
+    border: none;
+    border-right: 1px solid var(--ice-800);
+    background: var(--ice-800);
+    color: var(--ice-50);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .dc-btn:hover:not(:disabled) {
+    background: var(--ice-700, #2a4a6e);
+  }
+
+  .dc-btn.open {
+    background: var(--warn);
+    color: #1a1000;
+    font-weight: 700;
+    animation: open-pulse 1.6s ease-in-out infinite;
+  }
+
+  .dc-btn.open:hover {
+    background: color-mix(in srgb, var(--warn) 80%, #fff);
+    animation: none;
+  }
+
+  .display-control.off {
+    border-color: var(--warn);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--warn) 45%, transparent);
+  }
+
+  @keyframes open-pulse {
+    50% {
+      background: color-mix(in srgb, var(--warn) 70%, #fff);
+    }
+  }
+
+  .dc-btn:disabled {
+    opacity: 0.5;
+    cursor: progress;
   }
 
   .status {
@@ -675,8 +941,219 @@
     color: var(--warn);
   }
 
-  .status.ok {
+  .display-control.ok .status {
     color: var(--ok);
+  }
+
+  .fs-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .fs-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Barra del titolo (solo nel programma installato). È alta come i pulsanti
+     di Windows (vedi titleBarOverlay in electron/main.cjs) e si trascina per
+     spostare la finestra. */
+  .titlebar {
+    position: relative;
+    z-index: 5;
+    flex: none;
+    display: flex;
+    align-items: center;
+    height: 32px;
+    padding-left: 0.9rem;
+    background: var(--ice-950);
+    color: var(--ice-300);
+    font-size: 0.8rem;
+    user-select: none;
+    -webkit-app-region: drag;
+  }
+
+  .tb-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tb-title :global(button) {
+    -webkit-app-region: no-drag;
+  }
+
+  .tb-title .version,
+  .tb-title :global(.version) {
+    font-size: 0.75rem;
+  }
+
+  .settings {
+    position: relative;
+  }
+
+  .settings-btn.current {
+    color: #fff;
+    background: var(--ice-600);
+  }
+
+  .caret {
+    font-size: 0.7em;
+    opacity: 0.7;
+  }
+
+  .settings-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    min-width: 190px;
+    padding: 0.35rem;
+    border: 1px solid var(--ice-800);
+    border-radius: 10px;
+    background: var(--ice-900);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+  }
+
+  .settings-menu button {
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: var(--ice-50);
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .settings-menu button:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .settings-menu button.current {
+    background: var(--ice-600);
+    color: #fff;
+  }
+
+  .settings-menu button {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .mi-icon {
+    width: 1.3em;
+    text-align: center;
+  }
+
+  .mi-key {
+    margin-left: auto;
+    font-size: 0.7rem;
+  }
+
+  .settings-menu hr {
+    width: 100%;
+    margin: 0.3rem 0;
+    border: none;
+    border-top: 1px solid var(--ice-800);
+  }
+
+  /* Lingua e guida nella barra del titolo: piccoli, come una barra dei menu. */
+  .tb-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    height: 100%;
+    margin-right: 0.4rem;
+    -webkit-app-region: no-drag;
+  }
+
+  .tb-tools :global(.btn) {
+    height: 26px;
+    padding: 0 0.6rem;
+    border: none;
+    background: transparent;
+    font-size: 0.8rem;
+  }
+
+  .tb-tools :global(.btn:hover) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .tb-tools :global(kbd) {
+    font-size: 0.65rem;
+  }
+
+  .tb-buttons {
+    display: flex;
+    height: 100%;
+    -webkit-app-region: no-drag;
+  }
+
+  /* Come i pulsanti di Windows: larghi 46 px, senza bordo, icone sottili. */
+  .tb-btn {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--ice-200, #c9dcf0);
+    cursor: default;
+  }
+
+  .tb-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .tb-btn svg {
+    width: 10px;
+    height: 10px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1;
+    overflow: visible;
+  }
+
+  .tb-close:hover {
+    background: #c42b1c;
+    color: #fff;
+  }
+
+  .display-control.busy .status {
+    color: var(--ice-200, #c9dcf0);
+  }
+
+  .spinner {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* Streaming: spento con un pallino grigio, discreto; in corso tutto verde, ben visibile. */

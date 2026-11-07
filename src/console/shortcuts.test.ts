@@ -32,6 +32,7 @@ describe('scorciatoie', () => {
   it('Ctrl+Z annulla, F1 apre la guida', () => {
     expect(actionForKey(key('KeyZ', { ctrlKey: true }))).toBe('undo')
     expect(actionForKey({ ...key('F1'), key: 'F1' })).toBe('help')
+    expect(actionForKey({ ...key('F11'), key: 'F11' })).toBe('fullscreen')
   })
 
   it('ignora la ripetizione automatica e le combinazioni con Ctrl/Alt', () => {

@@ -17,6 +17,15 @@ contextBridge.exposeInMainWorld('tabelloneApp', {
   openDisplay: () => ipcRenderer.invoke('display:open'),
   closeDisplay: () => ipcRenderer.invoke('display:close'),
 
+  // Schermo intero della console
+  setConsoleFullScreen: (on) => ipcRenderer.invoke('console:set-fullscreen', !!on),
+  isConsoleFullScreen: () => ipcRenderer.invoke('console:is-fullscreen'),
+  onConsoleFullScreen: (callback) => {
+    ipcRenderer.on('console:fullscreen', (_event, on) => callback(!!on))
+  },
+  requestClose: () => ipcRenderer.send('app:request-close'),
+  minimizeConsole: () => ipcRenderer.send('console:minimize'),
+
   // Chiusura del programma: la console mostra la sua finestra di conferma
   onCloseRequested: (callback) => {
     ipcRenderer.on('app:close-requested', () => {

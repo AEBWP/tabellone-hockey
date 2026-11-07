@@ -5,7 +5,15 @@
  * grandi o facili da ricordare (C = Casa, O = Ospiti).
  */
 export type ShortcutAction =
-  'toggleClock' | 'goalHome' | 'goalAway' | 'shotHome' | 'shotAway' | 'undo' | 'mute' | 'help'
+  | 'toggleClock'
+  | 'goalHome'
+  | 'goalAway'
+  | 'shotHome'
+  | 'shotAway'
+  | 'undo'
+  | 'mute'
+  | 'help'
+  | 'fullscreen'
 
 export interface Shortcut {
   action: ShortcutAction
@@ -23,6 +31,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: 'undo', keys: ['Ctrl', 'Z'], description: 'Annulla l’ultima azione' },
   { action: 'mute', keys: ['M'], description: 'Audio sì / no' },
   { action: 'help', keys: ['F1'], description: 'Apri / chiudi la guida' },
+  { action: 'fullscreen', keys: ['F11'], description: 'Console a schermo intero sì / no' },
 ]
 
 export interface KeyInput {
@@ -38,6 +47,7 @@ export interface KeyInput {
 /** Azione associata a un tasto premuto, oppure null. */
 export function actionForKey(e: KeyInput): ShortcutAction | null {
   if (e.key === 'F1') return 'help'
+  if (e.key === 'F11') return 'fullscreen'
   // Tenendo premuto un tasto non si devono segnare dieci gol.
   if (e.repeat) return null
 

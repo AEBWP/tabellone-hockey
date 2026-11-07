@@ -192,7 +192,7 @@ export const ROWS: readonly Row[] = [
     'Notez les tirs dans les panneaux des équipes',
   ],
   ['Partita terminata', 'Game over', 'Spiel beendet', 'Partido terminado', 'Match terminé'],
-  ['Tempo in moto', 'Clock running', 'Uhr läuft', 'Reloj en marcha', 'Chrono en marche'],
+  ['Gioco in corso', 'Game in progress', 'Spiel läuft', 'Juego en curso', 'Jeu en cours'],
   [
     'Partita non iniziata: avvia il tempo per cominciare',
     'Game not started: start the clock to begin',
@@ -472,11 +472,11 @@ export const ROWS: readonly Row[] = [
     'Enregistrés par vous',
   ],
   [
-    'Puoi modificare ogni regola nella scheda <b>Regolamento</b>.',
-    'You can change every rule in the <b>Rules</b> tab.',
-    'Jede Regel lässt sich im Bereich <b>Regeln</b> ändern.',
-    'Puedes modificar cada regla en la pestaña <b>Reglamento</b>.',
-    'Chaque règle peut être modifiée dans l’onglet <b>Règlement</b>.',
+    'Puoi modificare ogni regola in <b>Impostazioni → Regolamento</b>.',
+    'You can change every rule in <b>Settings → Rules</b>.',
+    'Jede Regel lässt sich unter <b>Einstellungen → Regeln</b> ändern.',
+    'Puedes modificar cada regla en <b>Ajustes → Reglamento</b>.',
+    'Chaque règle peut être modifiée dans <b>Réglages → Règlement</b>.',
   ],
   [
     'Inizia nuova partita',
@@ -1634,11 +1634,11 @@ export const ROWS: readonly Row[] = [
     'Lancer le tableau',
   ],
   [
-    'Potrai cambiare la scelta in qualsiasi momento dal pulsante <b>Schermi</b> nella console.',
-    'You can change the choice at any time with the <b>Screens</b> button in the console.',
-    'Die Auswahl lässt sich jederzeit über die Taste <b>Bildschirme</b> in der Konsole ändern.',
-    'Podrás cambiar la elección en cualquier momento con el botón <b>Pantallas</b> de la consola.',
-    'Vous pourrez modifier ce choix à tout moment avec le bouton <b>Écrans</b> de la console.',
+    'Potrai cambiare la scelta in qualsiasi momento dalla console, in <b>Impostazioni → Schermi</b>.',
+    'You can change the choice at any time from the console, in <b>Settings → Screens</b>.',
+    'Die Auswahl lässt sich jederzeit in der Konsole unter <b>Einstellungen → Bildschirme</b> ändern.',
+    'Podrás cambiar la elección en cualquier momento desde la consola, en <b>Ajustes → Pantallas</b>.',
+    'Vous pourrez modifier ce choix à tout moment depuis la console, dans <b>Réglages → Écrans</b>.',
   ],
 
   // ── Tabellone in attesa ────────────────────────────────────────────────
@@ -2024,6 +2024,7 @@ export const ROWS: readonly Row[] = [
   ],
   ['Lingua', 'Language', 'Sprache', 'Idioma', 'Langue'],
   ['Schermo intero', 'Full screen', 'Vollbild', 'Pantalla completa', 'Plein écran'],
+  ['Riduci a icona', 'Minimize', 'Minimieren', 'Minimizar', 'Réduire'],
   // ── Anteprima dello streaming nella console ────────────────────────────
   [
     'Anteprima dello streaming',
@@ -2153,6 +2154,41 @@ export const ROWS: readonly Row[] = [
     'Vorschau der Anzeigetafel',
     'Vista previa del marcador',
     'Aperçu du tableau',
+  ],
+  ['Impostazioni', 'Settings', 'Einstellungen', 'Ajustes', 'Réglages'],
+  ['Apri', 'Open', 'Öffnen', 'Abrir', 'Ouvrir'],
+  // ── Schermo intero della console ───────────────────────────────────────
+  [
+    'Esci da schermo intero',
+    'Exit full screen',
+    'Vollbild beenden',
+    'Salir de pantalla completa',
+    'Quitter le plein écran',
+  ],
+  ['F11', 'F11', 'F11', 'F11', 'F11'],
+  [
+    'Console a schermo intero sì / no',
+    'Console full screen on / off',
+    'Konsole im Vollbild an / aus',
+    'Consola a pantalla completa sí / no',
+    'Console en plein écran oui / non',
+  ],
+  // ── Apertura e chiusura del tabellone ───────────────────────────────────
+  ['Apertura…', 'Opening…', 'Wird geöffnet…', 'Abriendo…', 'Ouverture…'],
+  ['Chiusura…', 'Closing…', 'Wird geschlossen…', 'Cerrando…', 'Fermeture…'],
+  [
+    'Apertura del tabellone…',
+    'Opening the scoreboard…',
+    'Anzeigetafel wird geöffnet…',
+    'Abriendo el marcador…',
+    'Ouverture du tableau…',
+  ],
+  [
+    'Chiusura del tabellone…',
+    'Closing the scoreboard…',
+    'Anzeigetafel wird geschlossen…',
+    'Cerrando el marcador…',
+    'Fermeture du tableau…',
   ],
   // ── Aggiornamento del programma ────────────────────────────────────────
   [

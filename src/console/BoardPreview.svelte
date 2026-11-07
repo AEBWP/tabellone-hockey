@@ -13,7 +13,16 @@
    * Con il tabellone chiuso non si disegna nessun tabellone (nemmeno sbiadito,
    * per non far pensare che sia acceso): solo uno schermo spento barrato.
    */
-  let { game, connected }: { game: GameState; connected: boolean } = $props()
+  let {
+    game,
+    connected,
+    busy = null,
+  }: {
+    game: GameState
+    connected: boolean
+    /** Apertura o chiusura in corso: al posto dell'anteprima, l'attesa. */
+    busy?: 'opening' | 'closing' | null
+  } = $props()
 
   let clock = $state(now())
   const timer = setInterval(() => (clock = now()), 250)
@@ -22,7 +31,12 @@
   const view = $derived(deriveView(game, clock))
 </script>
 
-{#if connected}
+{#if busy}
+  <div class="board-preview wait" aria-busy="true">
+    <span class="spinner" aria-hidden="true"></span>
+    <span class="label">{busy === 'closing' ? t('Chiusura…') : t('Apertura…')}</span>
+  </div>
+{:else if connected}
   <div class="board-preview" title={t('Anteprima del tabellone')}>
     <Stage>
       <Scoreboard {view} style={game.boardStyle} animations={false} />
@@ -36,7 +50,7 @@
       <path d="M8.5 20h7M12 16.5V20" />
       <path class="slash" d="M3 3l18 18" />
     </svg>
-    <span class="label">{t('Tabellone non aperto')}</span>
+    <!-- La scritta "Tabellone non aperto" è già sopra, nello stato. -->
   </div>
 {/if}
 
@@ -63,6 +77,31 @@
     background:
       repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 6px, transparent 6px 12px),
       var(--ice-950);
+  }
+
+  .board-preview.wait {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--ice-200, #c9dcf0);
+    background: var(--ice-950);
+  }
+
+  .spinner {
+    width: 22px;
+    height: 22px;
+    border: 3px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   svg {

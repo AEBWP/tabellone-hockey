@@ -90,7 +90,7 @@
     </div>
     <div class="state" class:running={view.clockRunning}>
       {view.clockRunning
-        ? `● ${t('Tempo in moto')}`
+        ? `● ${t('Gioco in corso')}`
         : view.phase === 'ready'
           ? view.pregame
             ? t('Partita non iniziata: avvia il tempo per cominciare')

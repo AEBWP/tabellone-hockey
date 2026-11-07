@@ -60,7 +60,7 @@
   </label>
   <p class="muted desc">{describeRules(selected)}</p>
   <p class="muted small">
-    {@html t('Puoi modificare ogni regola nella scheda <b>Regolamento</b>.')}
+    {@html t('Puoi modificare ogni regola in <b>Impostazioni → Regolamento</b>.')}
   </p>
 
   {#snippet actions()}

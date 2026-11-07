@@ -205,7 +205,7 @@
     </footer>
     <p class="muted hint">
       {@html t(
-        'Potrai cambiare la scelta in qualsiasi momento dal pulsante <b>Schermi</b> nella console.',
+        'Potrai cambiare la scelta in qualsiasi momento dalla console, in <b>Impostazioni → Schermi</b>.',
       )}
     </p>
   {/if}
