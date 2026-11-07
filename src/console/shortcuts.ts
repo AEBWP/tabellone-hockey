@@ -12,7 +12,6 @@ export type ShortcutAction =
   | 'goalRight'
   | 'shotLeft'
   | 'shotRight'
-  | 'undo'
   | 'mute'
   | 'help'
   | 'fullscreen'
@@ -30,7 +29,6 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: 'goalRight', keys: ['→'], description: 'Gol della squadra a destra' },
   { action: 'shotLeft', keys: ['Maiusc', '←'], description: 'Tiro in porta squadra a sinistra' },
   { action: 'shotRight', keys: ['Maiusc', '→'], description: 'Tiro in porta squadra a destra' },
-  { action: 'undo', keys: ['Ctrl', 'Z'], description: 'Annulla l’ultima azione' },
   { action: 'mute', keys: ['M'], description: 'Audio sì / no' },
   { action: 'help', keys: ['F1'], description: 'Apri / chiudi la guida' },
   { action: 'fullscreen', keys: ['F11'], description: 'Console a schermo intero sì / no' },
@@ -53,9 +51,7 @@ export function actionForKey(e: KeyInput): ShortcutAction | null {
   // Tenendo premuto un tasto non si devono segnare dieci gol.
   if (e.repeat) return null
 
-  const ctrl = e.ctrlKey || e.metaKey
-  if (ctrl && !e.altKey && e.code === 'KeyZ' && !e.shiftKey) return 'undo'
-  if (ctrl || e.altKey) return null
+  if (e.ctrlKey || e.metaKey || e.altKey) return null
 
   switch (e.code) {
     case 'Space':

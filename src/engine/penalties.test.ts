@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { advance, apply, createGame, type Command } from './game'
-import { pushHistory, undo, type HistoryEntry } from './history'
 import { rulesFromPreset } from './rules'
 import { shootoutWinner } from './shootout'
 import type { GameState, PenaltyKind } from './types'
@@ -253,48 +252,5 @@ describe('rigori', () => {
     expect(shootoutWinner({ home: [...base, true], away: [...base] }, 3)).toBeNull()
     expect(shootoutWinner({ home: [...base, true], away: [...base, false] }, 3)).toBe('home')
     expect(shootoutWinner({ home: [...base, true], away: [...base, true] }, 3)).toBeNull()
-  })
-})
-
-describe('annulla ultima azione', () => {
-  it('annulla il gol senza toccare il cronometro', () => {
-    const g = game().do({ type: 'startClock' }).wait(MIN)
-    let history: HistoryEntry[] = []
-    history = pushHistory(history, 'Gol Casa', g.state)
-    g.do({ type: 'goal', team: 'home' }).wait(MIN)
-
-    const result = undo(history, g.state)!
-    g.state = result.state
-    const v = g.view()
-    expect(result.label).toBe('Gol Casa')
-    expect(v.teams.home.score).toBe(0)
-    expect(v.clockText).toBe('18:00')
-    expect(v.clockRunning).toBe(true)
-  })
-
-  it('annullare il gol decisivo del supplementare riapre la partita', () => {
-    const g = game().do(
-      ...KICKOFF,
-      { type: 'endPeriod' },
-      { type: 'endIntermission' },
-      { type: 'endPeriod' },
-      { type: 'endIntermission' },
-      { type: 'endPeriod' },
-      { type: 'startClock' },
-    )
-    const history = pushHistory([], 'Gol Ospiti', g.state)
-    g.do({ type: 'goal', team: 'away' })
-    expect(g.view().phase).toBe('final')
-
-    g.state = undo(history, g.state)!.state
-    expect(g.view().phase).toBe('play')
-    expect(g.view().teams.away.score).toBe(0)
-  })
-
-  it('non annulla azioni di un periodo precedente', () => {
-    const g = game().do(...KICKOFF)
-    const history = pushHistory([], 'Gol Casa', g.state)
-    g.do({ type: 'goal', team: 'home' }, { type: 'endPeriod' }, { type: 'endIntermission' })
-    expect(undo(history, g.state)).toBeNull()
   })
 })

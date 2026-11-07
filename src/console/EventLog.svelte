@@ -4,11 +4,7 @@
   import HelpTip from './HelpTip.svelte'
   import { t } from '../i18n/ui.svelte'
 
-  let {
-    game,
-    undoLabel,
-    onundo,
-  }: { game: GameState; undoLabel: string | null; onundo: () => void } = $props()
+  let { game }: { game: GameState } = $props()
 
   const lines = $derived(
     [...game.events].reverse().map((e) => ({
@@ -23,17 +19,12 @@
 <section class="panel log">
   <h2 class="panel-title">
     {t('Cronaca')}
-    <HelpTip title={t('Cronaca e annulla')}>
+    <HelpTip title={t('Cronaca')}>
       {@html t(
-        'Qui compaiono gol e penalità con il momento in cui sono avvenuti. Se hai sbagliato, usa <b>Annulla</b> (o <kbd>Ctrl</kbd> + <kbd>Z</kbd>): annulla l’ultima azione di gioco senza toccare il cronometro. Si può annullare solo all’interno del periodo in corso.',
+        'Qui compaiono gol e penalità con il momento in cui sono avvenuti. Se hai sbagliato, usa le correzioni nel pannello della squadra: <b>−1</b> toglie il gol (anche dalla cronaca), <b>✕</b> cancella la penalità, <b>↺</b> restituisce il timeout o toglie l’ultimo rigore.',
       )}
     </HelpTip>
   </h2>
-
-  <button type="button" class="btn undo" disabled={!undoLabel} onclick={onundo}>
-    ↶ {undoLabel ? t('Annulla: {label}', { label: undoLabel }) : t('Niente da annullare')}
-    {#if undoLabel}<kbd>Ctrl</kbd><kbd>Z</kbd>{/if}
-  </button>
 
   <ol>
     {#each lines as line (line.id)}
@@ -55,18 +46,10 @@
     min-height: 0;
   }
 
-  .undo {
-    justify-content: flex-start;
-    width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
   ol {
     flex: 1;
     min-height: 0;
-    margin: 0.75rem 0 0;
+    margin: 0;
     padding: 0;
     overflow: auto;
     list-style: none;

@@ -96,7 +96,23 @@ export interface GoalEvent {
   powerPlay: boolean
   /** Gol in inferiorità numerica. */
   shortHanded: boolean
+  /**
+   * Penalità cambiate dal gol in superiorità (minore chiusa, seconda parte
+   * della doppia minore, penalità in attesa partite al suo posto). Se il gol
+   * viene tolto con la correzione −1 tornano com'erano: per regolamento, con il
+   * gol annullato la penalità continua con il tempo che mancava.
+   */
+  penaltyChanges?: PenaltyChange[]
 }
+
+/** Una penalità prima e dopo un gol in superiorità. */
+export interface PenaltyChange {
+  id: number
+  before: PenaltySnapshot
+  after: PenaltySnapshot
+}
+
+export type PenaltySnapshot = Pick<Penalty, 'status' | 'startMs' | 'endMs' | 'endedBy'>
 
 export interface PenaltyEvent {
   id: number

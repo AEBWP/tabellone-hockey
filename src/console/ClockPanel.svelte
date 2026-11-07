@@ -25,13 +25,19 @@
   const words = $derived(BOARD_TEXT[ui.lang])
 
   function endPeriod() {
+    // Se il tempo arriva a zero mentre la conferma è aperta, il periodo è già
+    // finito: la conferma non deve chiudere anche quello successivo.
+    const period = view.period
     confirm({
       title: t('Terminare il periodo?'),
       message: t(
         'Il tempo va a zero e si passa all’intervallo (o al supplementare / fine partita). Usalo se il tempo è finito ma il cronometro non era sincronizzato.',
       ),
       confirmLabel: t('Termina periodo'),
-      action: () => run({ type: 'endPeriod' }),
+      action: () => {
+        if (view.period === period && (view.phase === 'play' || view.phase === 'ready'))
+          run({ type: 'endPeriod' })
+      },
     })
   }
 

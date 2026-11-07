@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { apply, createGame, type Command } from './game'
-import { undo, pushHistory } from './history'
 import { rulesFromPreset } from './rules'
 import { deriveView, orientView } from './view'
 import type { GameState } from './types'
@@ -56,16 +55,6 @@ describe('lati delle squadre', () => {
     const s = run(createGame(), ...KICKOFF, { type: 'endPeriod' }, { type: 'endIntermission' })
     expect(s.period).toBe(2)
     expect(swapped(s)).toBe(false)
-  })
-
-  it('annullare un gol non rigira le squadre', () => {
-    const before = run(createGame(), ...KICKOFF)
-    const scored = run(before, { type: 'goal', team: 'away' })
-    const history = pushHistory([], 'Gol', before)
-    const turned = run(scored, { type: 'swapSides' })
-    const undone = undo(history, turned)
-    expect(undone?.state.teams.away.goals).toBe(0)
-    expect(undone?.state.sidesSwapped).toBe(true)
   })
 })
 

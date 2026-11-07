@@ -14,8 +14,7 @@
     id: TeamId
     view: GameView
     rules: Rules
-    /** `label` = descrizione per "Annulla"; se assente il comando non è annullabile. */
-    run: (command: Command, label?: string) => void
+    run: (command: Command) => void
   } = $props()
 
   const team = $derived(view.teams[id])
@@ -29,6 +28,9 @@
   // Prima del via (presentazione A VS B) i comandi di gioco sono bloccati.
   const locked = $derived(view.pregame)
   const canPenalize = $derived(!locked && view.phase !== 'shootout' && view.phase !== 'final')
+  // Gol e timeout solo a gioco in corso: non negli intervalli, prima del via di un
+  // periodo o a partita finita. Le correzioni (±1, ↺) restano sempre disponibili.
+  const canScore = $derived(view.phase === 'play')
   const canTimeout = $derived(view.phase === 'play' && !view.timeout && team.timeoutsLeft > 0)
   const canRestoreTimeout = $derived(!locked && team.timeoutsLeft < rules.timeoutsPerTeam)
 
@@ -45,10 +47,7 @@
       playerInput?.focus()
       return
     }
-    run(
-      { type: 'penalty', team: id, player: number, kind },
-      `${penaltyName(kind)} #${number} ${team.name}`,
-    )
+    run({ type: 'penalty', team: id, player: number, kind })
     player = ''
     playerError = false
     // Esce dal campo: così le scorciatoie (Spazio, frecce) tornano subito attive.
@@ -82,11 +81,7 @@
       class="btn btn-sm"
       title={t('Correggi: togli un gol')}
       disabled={locked || team.goals === 0}
-      onclick={() =>
-        run(
-          { type: 'setScore', team: id, goals: team.goals - 1 },
-          t('Correzione punteggio {team}', { team: team.name }),
-        )}
+      onclick={() => run({ type: 'setScore', team: id, goals: team.goals - 1 })}
     >
       −1
     </button>
@@ -96,11 +91,7 @@
       class="btn btn-sm"
       title={t('Correggi: aggiungi un gol (senza animazione e senza effetti sulle penalità)')}
       disabled={locked}
-      onclick={() =>
-        run(
-          { type: 'setScore', team: id, goals: team.goals + 1 },
-          t('Correzione punteggio {team}', { team: team.name }),
-        )}
+      onclick={() => run({ type: 'setScore', team: id, goals: team.goals + 1 })}
     >
       +1
     </button>
@@ -110,8 +101,8 @@
     <button
       type="button"
       class="btn btn-lg goal"
-      disabled={locked || view.phase === 'final'}
-      onclick={() => run({ type: 'goal', team: id }, t('Gol {team}', { team: team.name }))}
+      disabled={!canScore}
+      onclick={() => run({ type: 'goal', team: id })}
     >
       {t('GOL')}
       {team.shortName}
@@ -150,8 +141,7 @@
             type="button"
             class="btn btn-sm"
             disabled={locked || team.shots === 0}
-            onclick={() =>
-              run({ type: 'shot', team: id, delta: -1 }, t('Tiro {team}', { team: team.name }))}
+            onclick={() => run({ type: 'shot', team: id, delta: -1 })}
           >
             −
           </button>
@@ -160,8 +150,7 @@
             type="button"
             class="btn btn-sm"
             disabled={locked}
-            onclick={() =>
-              run({ type: 'shot', team: id, delta: 1 }, t('Tiro {team}', { team: team.name }))}
+            onclick={() => run({ type: 'shot', team: id, delta: 1 })}
           >
             +
           </button>
@@ -174,7 +163,7 @@
         type="button"
         class="btn btn-sm"
         disabled={!canTimeout}
-        onclick={() => run({ type: 'timeout', team: id }, t('Timeout {team}', { team: team.name }))}
+        onclick={() => run({ type: 'timeout', team: id })}
       >
         {t('Chiama timeout ({n})', { n: team.timeoutsLeft })}
       </button>
@@ -184,11 +173,7 @@
         title={t('Ripristina un timeout chiamato per sbaglio')}
         aria-label={t('Ripristina un timeout chiamato per sbaglio')}
         disabled={!canRestoreTimeout}
-        onclick={() =>
-          run(
-            { type: 'restoreTimeout', team: id },
-            t('Timeout ripristinato {team}', { team: team.name }),
-          )}
+        onclick={() => run({ type: 'restoreTimeout', team: id })}
       >
         ↺
       </button>
@@ -219,11 +204,7 @@
           type="button"
           class="btn btn-go"
           disabled={view.phase !== 'shootout'}
-          onclick={() =>
-            run(
-              { type: 'shootoutAttempt', team: id, scored: true },
-              t('Rigore segnato {team}', { team: team.name }),
-            )}
+          onclick={() => run({ type: 'shootoutAttempt', team: id, scored: true })}
         >
           {t('Rigore: gol')}
         </button>
@@ -231,13 +212,20 @@
           type="button"
           class="btn btn-stop"
           disabled={view.phase !== 'shootout'}
-          onclick={() =>
-            run(
-              { type: 'shootoutAttempt', team: id, scored: false },
-              t('Rigore sbagliato {team}', { team: team.name }),
-            )}
+          onclick={() => run({ type: 'shootoutAttempt', team: id, scored: false })}
         >
           {t('Sbagliato')}
+        </button>
+        <!-- Correzione: toglie l'ultimo tiro, segnato o sbagliato (anche a rigori chiusi). -->
+        <button
+          type="button"
+          class="btn btn-sm restore"
+          title={t('Correggi: togli l’ultimo tiro')}
+          aria-label={t('Correggi: togli l’ultimo tiro')}
+          disabled={shots.length === 0}
+          onclick={() => run({ type: 'undoShootoutAttempt', team: id })}
+        >
+          ↺
         </button>
       </div>
     </div>
@@ -294,11 +282,7 @@
               type="button"
               class="btn btn-sm"
               title={t('Termina adesso')}
-              onclick={() =>
-                run(
-                  { type: 'endPenalty', id: p.id },
-                  t('Fine penalità #{player} {team}', { player: p.player, team: team.name }),
-                )}
+              onclick={() => run({ type: 'endPenalty', id: p.id })}
             >
               {t('Termina')}
             </button>
@@ -307,11 +291,7 @@
               class="btn btn-sm btn-danger"
               title={t('Cancella (inserita per errore)')}
               aria-label={t('Cancella penalità #{player}', { player: p.player })}
-              onclick={() =>
-                run(
-                  { type: 'removePenalty', id: p.id },
-                  t('Cancellata penalità #{player} {team}', { player: p.player, team: team.name }),
-                )}
+              onclick={() => run({ type: 'removePenalty', id: p.id })}
             >
               ✕
             </button>
@@ -573,7 +553,7 @@
 
   .so-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr auto;
     gap: 0.5rem;
   }
 </style>

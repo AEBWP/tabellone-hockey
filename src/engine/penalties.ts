@@ -1,5 +1,12 @@
 import type { Rules } from './rules'
-import type { Penalty, PenaltyEndReason, PenaltyKind, TeamId } from './types'
+import type {
+  Penalty,
+  PenaltyChange,
+  PenaltyEndReason,
+  PenaltyKind,
+  PenaltySnapshot,
+  TeamId,
+} from './types'
 
 /** Penalità che lasciano la squadra in inferiorità numerica. */
 export function countsForStrength(kind: PenaltyKind): boolean {
@@ -154,6 +161,51 @@ export function applyPowerPlayGoal(
 
   endPenalty(penalties, target.id, gameMs, 'goal', rules.maxPenalizedOnIce)
   return true
+}
+
+function snap(p: Penalty): PenaltySnapshot {
+  return { status: p.status, startMs: p.startMs, endMs: p.endMs, endedBy: p.endedBy }
+}
+
+const sameSnap = (a: PenaltySnapshot, b: PenaltySnapshot) =>
+  a.status === b.status && a.startMs === b.startMs && a.endMs === b.endMs && a.endedBy === b.endedBy
+
+/** Fotografia delle penalità, per vedere poi che cosa ha cambiato un'azione. */
+export function snapshotPenalties(penalties: readonly Penalty[]): Map<number, PenaltySnapshot> {
+  return new Map(penalties.map((p) => [p.id, snap(p)]))
+}
+
+/** Penalità cambiate rispetto alla fotografia presa prima. */
+export function penaltyChanges(
+  before: Map<number, PenaltySnapshot>,
+  penalties: readonly Penalty[],
+): PenaltyChange[] {
+  const changes: PenaltyChange[] = []
+  for (const p of penalties) {
+    const was = before.get(p.id)
+    if (was && !sameSnap(was, snap(p))) changes.push({ id: p.id, before: was, after: snap(p) })
+  }
+  return changes
+}
+
+/**
+ * Riporta le penalità a com'erano prima di un gol tolto con la correzione −1.
+ * Tocca solo quelle rimaste come le aveva lasciate il gol (non quelle cancellate
+ * o cambiate dopo). Restituisce gli id delle penalità ripristinate. Le scadenze
+ * passate nel frattempo si sistemano poi con settlePenalties.
+ */
+export function revertPenaltyChanges(
+  penalties: Penalty[],
+  changes: readonly PenaltyChange[],
+): number[] {
+  const restored: number[] = []
+  for (const c of changes) {
+    const p = penalties.find((x) => x.id === c.id)
+    if (!p || !sameSnap(snap(p), c.after)) continue
+    Object.assign(p, c.before)
+    restored.push(p.id)
+  }
+  return restored
 }
 
 /**

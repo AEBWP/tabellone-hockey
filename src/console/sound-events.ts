@@ -1,4 +1,4 @@
-import { periodLengthMs, type GameState, type GameView } from '../engine'
+import type { GameState, GameView } from '../engine'
 
 /** Suoni del tabellone. */
 export type SoundId =
@@ -59,7 +59,9 @@ function shiftCount(state: GameState, view: GameView): number {
   const every = state.rules.shiftHornMs ?? 0
   // Allo zero suona già la sirena di fine periodo.
   if (!(every > 0) || view.phase !== 'play' || !view.clockRunning || view.clockMs <= 0) return -1
-  const elapsed = periodLengthMs(state.rules, view.period) - view.clockMs
+  // Durata vera del periodo in corso (le regole cambiate a metà periodo valgono dal prossimo).
+  const length = state.clock.periodEndMs - state.clock.periodStartMs
+  const elapsed = length - view.clockMs
   return Math.floor(elapsed / every)
 }
 

@@ -22,11 +22,20 @@
   let seconds = $state(0)
   let tenths = $state(0)
 
-  // All'apertura si parte dal tempo attuale (letto una volta sola: se il
-  // tempo scorre, i campi non devono cambiare mentre l'operatore scrive).
+  /**
+   * Il tempo non si ferma mentre si corregge. Finché l'operatore non tocca un
+   * campo, i campi seguono il tempo che scorre; appena ne modifica uno restano
+   * fermi su quello che scrive. Un OK senza modifiche non cambia nulla, così il
+   * tempo non torna indietro per un clic distratto.
+   */
+  let edited = $state(false)
   $effect(() => {
-    if (!open) return
-    const ms = Math.max(0, Math.round(untrack(() => currentMs) / 100) * 100)
+    if (!open) {
+      edited = false
+      return
+    }
+    if (untrack(() => edited)) return
+    const ms = Math.max(0, Math.round(currentMs / 100) * 100)
     minutes = Math.floor(ms / 60_000)
     seconds = Math.floor((ms % 60_000) / 1000)
     tenths = Math.floor((ms % 1000) / 100)
@@ -39,7 +48,7 @@
 
   function save() {
     if (!valid) return
-    onsave(totalMs)
+    if (edited) onsave(totalMs)
     onclose()
   }
 </script>
@@ -58,17 +67,38 @@
   >
     <label class="field">
       {t('Minuti')}
-      <input class="input" type="number" min="0" max="99" bind:value={minutes} />
+      <input
+        class="input"
+        type="number"
+        min="0"
+        max="99"
+        bind:value={minutes}
+        oninput={() => (edited = true)}
+      />
     </label>
     <span class="sep">:</span>
     <label class="field">
       {t('Secondi')}
-      <input class="input" type="number" min="0" max="59" bind:value={seconds} />
+      <input
+        class="input"
+        type="number"
+        min="0"
+        max="59"
+        bind:value={seconds}
+        oninput={() => (edited = true)}
+      />
     </label>
     <span class="sep">.</span>
     <label class="field">
       {t('Decimi')}
-      <input class="input" type="number" min="0" max="9" bind:value={tenths} />
+      <input
+        class="input"
+        type="number"
+        min="0"
+        max="9"
+        bind:value={tenths}
+        oninput={() => (edited = true)}
+      />
     </label>
     <button type="submit" hidden>{t('Salva')}</button>
   </form>

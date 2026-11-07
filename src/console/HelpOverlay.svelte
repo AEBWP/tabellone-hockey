@@ -13,7 +13,7 @@
     'Gol: <kbd>←</kbd> per la squadra a sinistra, <kbd>→</kbd> per quella a destra (come le vedi in console). Se la squadra era in superiorità, la penalità minore dell’avversario si chiude da sola.',
     'Penalità: numero di maglia + durata. Il tabellone le conta da solo.',
     'A fine periodo il tempo si ferma da solo e parte l’intervallo; poi il periodo successivo è pronto.',
-    'Errore? <kbd>Ctrl</kbd> + <kbd>Z</kbd> annulla l’ultima azione.',
+    'Errore? Usa le correzioni: <b>−1</b> sul punteggio, <b>✕</b> sulle penalità, <b>↺</b> su timeout e rigori.',
   ]
 </script>
 

@@ -3,11 +3,14 @@ import {
   addPenalty,
   applyPowerPlayGoal,
   endPenalty,
+  penaltyChanges,
   penaltyDurationMs,
   removePenalty,
+  revertPenaltyChanges,
   settlePenalties,
   shiftActivePenalties,
   skatersOnIce,
+  snapshotPenalties,
 } from './penalties'
 import { DEFAULT_RULES, periodLengthMs, type Rules } from './rules'
 import { shootoutWinner } from './shootout'
@@ -31,8 +34,16 @@ export type Command =
   | { type: 'toggleClock' }
   /** Correzione del tempo rimanente nel periodo. Le penalità non cambiano. */
   | { type: 'setClock'; remainingMs: number }
+  /**
+   * Gol segnato: solo a gioco in corso (fase `play`, anche a tempo fermo). Negli
+   * intervalli, prima del via di un periodo e a fine partita si usano le correzioni.
+   */
   | { type: 'goal'; team: TeamId; player?: string }
-  /** Correzione manuale del punteggio (nessun effetto su penalità o eventi). */
+  /**
+   * Correzione manuale del punteggio: nessun effetto su penalità e animazioni. Se
+   * il punteggio scende sotto i gol della cronaca, gli ultimi gol di quella
+   * squadra spariscono dalla cronaca (es. GOL premuto per sbaglio).
+   */
   | { type: 'setScore'; team: TeamId; goals: number }
   | { type: 'shot'; team: TeamId; delta: number }
   | { type: 'penalty'; team: TeamId; player: string; kind: PenaltyKind }
@@ -332,15 +343,21 @@ export function apply(state: GameState, command: Command, now: number): GameStat
       shiftActivePenalties(s.penalties, newGameMs - gameMs)
       s.clock.baseMs = newGameMs
       if (isClockRunning(s)) s.clock.runningSince = now
+      // Tempo corretto a zero prima del via: il periodo è finito (senza questo il
+      // tempo resterebbe bloccato a 0.0, con "Avvia" disattivato).
+      if (remaining === 0) s.phase = 'play'
       break
     }
 
     case 'goal': {
-      if (s.phase === 'shootout') break
-      const inPlay = s.phase === 'play'
+      // Solo a gioco in corso: un gol arrivato dopo la sirena non finisce nel
+      // periodo successivo (si corregge il punteggio con +1).
+      if (s.phase !== 'play') break
       const skaters = skatersOnIce(s.penalties, baseSkaters(s))
-      const powerPlay = inPlay && applyPowerPlayGoal(s.penalties, command.team, gameMs, s.rules)
-      const shortHanded = inPlay && skaters[command.team] < skaters[opponent(command.team)]
+      const beforeGoal = snapshotPenalties(s.penalties)
+      const powerPlay = applyPowerPlayGoal(s.penalties, command.team, gameMs, s.rules)
+      const shortHanded = skaters[command.team] < skaters[opponent(command.team)]
+      const changes = penaltyChanges(beforeGoal, s.penalties)
 
       s.teams[command.team].goals += 1
       s.events.push({
@@ -352,19 +369,40 @@ export function apply(state: GameState, command: Command, now: number): GameStat
         periodElapsedMs: elapsed,
         powerPlay,
         shortHanded,
+        ...(changes.length > 0 ? { penaltyChanges: changes } : {}),
       })
 
       // Gol nel supplementare: vince chi segna.
-      if (inPlay && isOvertime(s)) {
+      if (isOvertime(s)) {
         stopClockAt(s, now)
         s.phase = 'final'
       }
       break
     }
 
-    case 'setScore':
-      s.teams[command.team].goals = Math.max(0, Math.floor(command.goals))
+    case 'setScore': {
+      const goals = Math.max(0, Math.floor(command.goals))
+      s.teams[command.team].goals = goals
+      // Gol tolti con la correzione (gol annullato): spariscono anche dalla
+      // cronaca, gli ultimi di quella squadra.
+      let extra =
+        s.events.filter((e) => e.type === 'goal' && e.team === command.team).length - goals
+      let restored = false
+      for (let i = s.events.length - 1; i >= 0 && extra > 0; i--) {
+        const e = s.events[i]
+        if (e.type !== 'goal' || e.team !== command.team) continue
+        s.events.splice(i, 1)
+        extra--
+        // Gol in superiorità annullato: per regolamento la penalità che aveva
+        // chiuso continua con il tempo che mancava.
+        if (e.penaltyChanges && revertPenaltyChanges(s.penalties, e.penaltyChanges).length > 0) {
+          restored = true
+        }
+      }
+      if (restored) settle(s, gameMs)
+      reconcileResult(s)
       break
+    }
 
     case 'shot': {
       const t = s.teams[command.team]
@@ -520,6 +558,50 @@ export function apply(state: GameState, command: Command, now: number): GameStat
   }
 
   return advanceInPlace(s, now)
+}
+
+/**
+ * Dopo una correzione del punteggio, il risultato decide di nuovo come per
+ * regolamento (es. gol annullato dopo la verifica video, o gol sulla sirena
+ * convalidato):
+ * - partita finita (non ai rigori) che ora è in parità: si riapre. Ferma a fine
+ *   periodo si decide di nuovo (supplementare, rigori o pareggio); altrimenti,
+ *   come dopo un gol del supplementare annullato, si riprende a giocare;
+ * - supplementare o rigori non ancora iniziati con un risultato che ora non è
+ *   più in parità: la partita è finita al periodo precedente.
+ */
+function reconcileResult(s: GameState): void {
+  const tied = s.teams.home.goals === s.teams.away.goals
+  if (tied && s.phase === 'final' && !s.shootout) {
+    s.phase = 'play'
+    return
+  }
+  if (tied) return
+
+  if (s.phase === 'shootout' && s.shootout?.home.length === 0 && s.shootout.away.length === 0) {
+    s.shootout = null
+    s.phase = 'final'
+    return
+  }
+
+  const overtimeNotStarted =
+    (s.phase === 'ready' || s.phase === 'intermission') &&
+    isOvertime(s) &&
+    s.clock.baseMs === s.clock.periodStartMs
+  if (overtimeNotStarted) {
+    // Si torna all'ultimo periodo giocato, finito: tabellone e lati come a fine partita.
+    const end = s.clock.periodStartMs
+    s.period -= 1
+    s.clock = {
+      baseMs: end,
+      runningSince: null,
+      periodStartMs: end - periodLengthMs(s.rules, s.period),
+      periodEndMs: end,
+    }
+    s.intermission = null
+    s.timeout = null
+    s.phase = 'final'
+  }
 }
 
 function pickSetup({ name, shortName, color, logo }: TeamState): TeamSetup {

@@ -53,6 +53,8 @@ const toThirdPeriod: Command[] = [
   { type: 'endIntermission' },
   { type: 'endPeriod' },
   { type: 'endIntermission' },
+  // I gol si segnano solo a gioco iniziato.
+  ...KICKOFF,
 ]
 
 export interface DemoScene {
@@ -78,6 +80,7 @@ export const DEMO_SCENES: DemoScene[] = [
         [
           { type: 'endPeriod' },
           { type: 'endIntermission' },
+          ...KICKOFF,
           { type: 'goal', team: 'home' },
           { type: 'goal', team: 'home' },
           { type: 'goal', team: 'away' },

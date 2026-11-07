@@ -3,15 +3,11 @@
   import {
     advance,
     apply,
-    canUndo,
     createGame,
     deriveView,
     isAllowed,
-    pushHistory,
-    undo,
     type Command,
     type GameState,
-    type HistoryEntry,
     type Rules,
   } from '../engine'
   import { createChannel } from '../shared/channel'
@@ -51,7 +47,6 @@
   // `$state.raw`: lo stato viene sempre sostituito per intero, mai modificato,
   // così si può salvare e inviare al tabellone tale e quale.
   let game = $state.raw<GameState>(loadGame() ?? createGame())
-  let history = $state.raw<HistoryEntry[]>([])
   let clock = $state(now())
   let lastDisplaySeen = $state(0)
 
@@ -70,9 +65,6 @@
     // Per sicurezza l'attesa non resta mai per sempre.
     if (kind) busyTimer = setTimeout(() => (displayBusy = null), maxMs)
   }
-  const undoLabel = $derived(
-    canUndo(history, advance(game, clock)) ? (history.at(-1)?.label ?? null) : null,
-  )
 
   type Tab = 'game' | 'teams' | 'style' | 'rules' | 'audio' | 'streaming' | 'backup'
   // Etichette in italiano: tradotte al momento di mostrarle.
@@ -176,10 +168,10 @@
   // ── Azioni ────────────────────────────────────────────────────────────
 
   /**
-   * Applica un comando. Se ha un'etichetta è un'azione di gioco annullabile
-   * (gol, penalità, tiri…); i comandi del cronometro non lo sono.
+   * Applica un comando. Non c'è "Annulla": ogni azione di gioco ha la sua
+   * correzione (±1 sui gol e sui tiri, ↺ sul timeout e sui rigori, ✕ sulle penalità).
    */
-  function run(command: Command, label?: string): boolean {
+  function run(command: Command): boolean {
     const before = game
     if (!isAllowed(advance(before, now()), command.type)) {
       // Es. una scorciatoia (frecce…) premuta prima del via.
@@ -190,23 +182,41 @@
     // Comando senza effetto (es. timeout già usato): niente da registrare.
     if (JSON.stringify(after) === JSON.stringify(advance(before, now()))) return false
     game = after
-    if (label) history = pushHistory(history, label, before)
     publish()
+    if (command.type === 'setScore') noteRestoredPenalties(before, after)
     return true
   }
 
-  function doUndo() {
-    const result = undo(history, advance(game, now()))
-    if (!result) return
-    game = result.state
-    history = result.history
-    publish()
-    showToast(t('Annullato: {label}', { label: result.label }))
+  /**
+   * Gol in superiorità tolto con −1: la penalità che aveva chiuso riprende. Un
+   * avviso leggero dice all'operatore che è andato tutto a posto.
+   */
+  function noteRestoredPenalties(before: GameState, after: GameState) {
+    const kept = new Set(after.events.map((e) => e.id))
+    // La penalità chiusa (o accorciata, per la doppia minore) da un gol tolto adesso.
+    const touched = before.events.flatMap((e) =>
+      e.type === 'goal' && !kept.has(e.id) && e.penaltyChanges
+        ? e.penaltyChanges.filter((c) => c.after.status === 'ended' || c.before.status === 'active')
+        : [],
+    )
+    const beforeById = new Map(before.penalties.map((p) => [p.id, p]))
+    const back = after.penalties.find((p) =>
+      touched.some((c) => {
+        const was = beforeById.get(p.id)
+        return c.id === p.id && !!was && (was.status !== p.status || was.endMs !== p.endMs)
+      }),
+    )
+    if (back) {
+      showToast(
+        t('Gol annullato: la penalità #{player} riprende con il tempo che mancava', {
+          player: back.player,
+        }),
+      )
+    }
   }
 
   function startNewGame(rules: Rules) {
     run({ type: 'newGame', rules })
-    history = []
     tab = 'game'
     showToast(t('Nuova partita pronta'))
   }
@@ -291,8 +301,12 @@
       case 'goalRight': {
         const team = action === 'goalLeft' ? left : right
         if (view.phase === 'shootout') break
-        const label = t('Gol {team}', { team: teamName(team) })
-        if (run({ type: 'goal', team }, label)) showToast(label)
+        // Come il pulsante GOL: solo a gioco in corso.
+        if (view.phase !== 'play') {
+          if (!view.pregame) showToast(t('Gol solo a gioco in corso: per correggere usa +1'))
+          break
+        }
+        if (run({ type: 'goal', team })) showToast(t('Gol {team}', { team: teamName(team) }))
         break
       }
       case 'shotLeft':
@@ -300,15 +314,12 @@
         const team = action === 'shotLeft' ? left : right
         // Tiri nascosti dal regolamento: la scorciatoia non fa nulla.
         if (!game.rules.showShots) break
-        run({ type: 'shot', team, delta: 1 }, t('Tiro {team}', { team: teamName(team) }))
+        run({ type: 'shot', team, delta: 1 })
         break
       }
       case 'mute':
         audio.toggleMute()
         showToast(audio.settings.muted ? t('Audio disattivato') : t('Audio attivo'))
-        break
-      case 'undo':
-        doUndo()
         break
     }
   }
@@ -622,7 +633,7 @@
           onNewGame={() => (newGameOpen = true)}
         />
 
-        <EventLog {game} {undoLabel} onundo={doUndo} />
+        <EventLog {game} />
       </div>
 
       {#key view.sidesSwapped}

@@ -32,8 +32,8 @@ describe('scorciatoie', () => {
     expect(actionForKey(key('KeyM'))).toBe('mute')
   })
 
-  it('Ctrl+Z annulla, F1 apre la guida', () => {
-    expect(actionForKey(key('KeyZ', { ctrlKey: true }))).toBe('undo')
+  it('F1 apre la guida, Ctrl+Z non fa nulla (niente "Annulla")', () => {
+    expect(actionForKey(key('KeyZ', { ctrlKey: true }))).toBeNull()
     expect(actionForKey({ ...key('F1'), key: 'F1' })).toBe('help')
     expect(actionForKey({ ...key('F11'), key: 'F11' })).toBe('fullscreen')
   })
