@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { apply, createGame } from '../engine'
+import { apply, createGame, type GameState } from '../engine'
 import { migrate } from './persist'
 
 describe('ripristino partita salvata', () => {
@@ -44,5 +44,17 @@ describe('sirena del cambio nelle partite salvate prima', () => {
     const old = createGame() as unknown as Record<string, unknown>
     const { shiftHornMs: _, ...rules } = old.rules as Record<string, unknown>
     expect(migrate({ ...old, rules })?.rules.shiftHornMs).toBe(0)
+  })
+})
+
+describe('lati delle squadre nelle partite salvate prima', () => {
+  it('le partite salvate dalle versioni precedenti partono con i lati normali', () => {
+    const old = createGame() as Partial<GameState>
+    delete old.sidesSwapped
+    const rules = { ...old.rules } as Partial<GameState['rules']>
+    delete rules.switchSides
+    const restored = migrate({ ...old, rules })!
+    expect(restored.sidesSwapped).toBe(false)
+    expect(restored.rules.switchSides).toBe(false)
   })
 })

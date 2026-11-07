@@ -1,7 +1,7 @@
 # Tabellone Hockey
 
 ![Versione](https://img.shields.io/github/v/release/AEBWP/tabellone-hockey?label=versione&color=1f6feb)
-![Stato: beta](https://img.shields.io/badge/stato-beta-orange)
+![Stato: stabile](https://img.shields.io/badge/stato-stabile-2ea043)
 ![Windows 10 e 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)
 ![Offline](https://img.shields.io/badge/funziona-offline-2ea043)
 
@@ -12,21 +12,18 @@ anche seguire **in streaming** dal telefono, con un link e un QR code fissi per 
 
 ![Il tabellone sul maxischermo (stile Arena)](https://raw.githubusercontent.com/wiki/AEBWP/tabellone-hockey/images/tabellone-arena.png)
 
-> 🧪 **Il progetto è in beta** (versioni 0.9.x): funziona ed è usabile, ma non è ancora arrivato
-> alla **versione 1.0**, prevista dopo le prove sul campo al palaghiaccio.
-
 ## ⬇️ Scarica
 
 ### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest)
 
-| Versione                  | Data       | Download                                                                                                                                                      |
-| ------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **0.9.11** (ultima, beta) | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.11-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.11/Tabellone-Hockey-0.9.11-installazione.exe) |
-| 0.9.10 (beta)             | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.10-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.10/Tabellone-Hockey-0.9.10-installazione.exe) |
-| 0.9.9 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.9-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.9/Tabellone-Hockey-0.9.9-installazione.exe)    |
-| 0.9.8 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.8-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.8/Tabellone-Hockey-0.9.8-installazione.exe)    |
-| 0.9.7 (beta)              | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.7-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.7/Tabellone-Hockey-0.9.7-installazione.exe)    |
-| Versioni precedenti       |            | [Tutte le versioni](https://github.com/AEBWP/tabellone-hockey/wiki/Download)                                                                                  |
+| Versione            | Data       | Download                                                                                                                                                      |
+| ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1.0.0** (ultima)  | 7 nov 2026 | [⬇️ Tabellone-Hockey-1.0.0-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.0/Tabellone-Hockey-1.0.0-installazione.exe)    |
+| 0.9.11 (beta)       | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.11-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.11/Tabellone-Hockey-0.9.11-installazione.exe) |
+| 0.9.10 (beta)       | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.10-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.10/Tabellone-Hockey-0.9.10-installazione.exe) |
+| 0.9.9 (beta)        | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.9-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.9/Tabellone-Hockey-0.9.9-installazione.exe)    |
+| 0.9.8 (beta)        | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.8-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.8/Tabellone-Hockey-0.9.8-installazione.exe)    |
+| Versioni precedenti |            | [Tutte le versioni](https://github.com/AEBWP/tabellone-hockey/wiki/Download)                                                                                  |
 
 Dalla 0.9.11 il programma **si aggiorna da solo**: quando esce una versione nuova compare il
 pulsante **⬆ Aggiorna** nella console

@@ -19,7 +19,9 @@
   } = $props()
 
   const team = $derived(view.teams[id])
-  const goalKey = $derived(id === 'home' ? 'C' : 'O')
+  // La freccia dal lato in cui l'operatore vede la squadra (segue "Inverti squadre").
+  const onLeft = $derived((id === 'home') !== view.sidesSwapped)
+  const goalKey = $derived(onLeft ? '←' : '→')
   const side = $derived(id === 'home' ? t('Casa') : t('Ospiti'))
   const inShootout = $derived(
     view.phase === 'shootout' || (view.phase === 'final' && !!view.shootout),
@@ -28,6 +30,7 @@
   const locked = $derived(view.pregame)
   const canPenalize = $derived(!locked && view.phase !== 'shootout' && view.phase !== 'final')
   const canTimeout = $derived(view.phase === 'play' && !view.timeout && team.timeoutsLeft > 0)
+  const canRestoreTimeout = $derived(!locked && team.timeoutsLeft < rules.timeoutsPerTeam)
 
   const KINDS: PenaltyKind[] = ['minor', 'double-minor', 'major', 'misconduct']
 
@@ -48,7 +51,7 @@
     )
     player = ''
     playerError = false
-    // Esce dal campo: così le scorciatoie (Spazio, C, O) tornano subito attive.
+    // Esce dal campo: così le scorciatoie (Spazio, frecce) tornano subito attive.
     playerInput?.blur()
   }
 
@@ -123,7 +126,7 @@
     {:else}
       <p class="hint">
         {t(
-          'Il pulsante GOL fa partire l’animazione e chiude la penalità minore se era in superiorità. I tasti ±1 servono solo per correggere.',
+          'Il pulsante GOL fa partire l’animazione e chiude la penalità minore se era in superiorità.',
         )}
       </p>
     {/if}
@@ -166,16 +169,7 @@
       </div>
     {/if}
 
-    <div class="stat">
-      <span class="label">
-        {t('Timeout')}
-        <HelpTip title={t('Timeout')} align={id === 'away' ? 'right' : 'left'}>
-          {t(
-            'Ferma il tempo e mostra sul tabellone il conto alla rovescia di {seconds} secondi. Si può chiamare solo a partita in corso; ogni squadra ne ha {count}.',
-            { seconds: Math.round(rules.timeoutMs / 1000), count: rules.timeoutsPerTeam },
-          )}
-        </HelpTip>
-      </span>
+    <div class="stat timeout">
       <button
         type="button"
         class="btn btn-sm"
@@ -184,6 +178,26 @@
       >
         {t('Chiama timeout ({n})', { n: team.timeoutsLeft })}
       </button>
+      <button
+        type="button"
+        class="btn btn-sm restore"
+        title={t('Ripristina un timeout chiamato per sbaglio')}
+        aria-label={t('Ripristina un timeout chiamato per sbaglio')}
+        disabled={!canRestoreTimeout}
+        onclick={() =>
+          run(
+            { type: 'restoreTimeout', team: id },
+            t('Timeout ripristinato {team}', { team: team.name }),
+          )}
+      >
+        ↺
+      </button>
+      <HelpTip title={t('Timeout')} align={onLeft ? 'left' : 'right'}>
+        {@html t(
+          'Ferma il tempo e mostra sul tabellone il conto alla rovescia di {seconds} secondi. Si può chiamare solo a partita in corso; ogni squadra ne ha {count}. <b>↺</b> restituisce un timeout chiamato per sbaglio.',
+          { seconds: Math.round(rules.timeoutMs / 1000), count: rules.timeoutsPerTeam },
+        )}
+      </HelpTip>
     </div>
   </div>
 
@@ -431,6 +445,24 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ice-300);
+  }
+
+  /* Timeout: niente titolo, solo il pulsante con accanto ripristina e la spiegazione. */
+  .stat.timeout {
+    flex-direction: row;
+    align-items: center;
+    align-self: end;
+    gap: 0.35rem;
+  }
+
+  .stat.timeout > .btn:first-child {
+    white-space: nowrap;
+  }
+
+  .restore {
+    padding-inline: 0.55rem;
+    font-size: 1rem;
+    line-height: 1;
   }
 
   .counter {

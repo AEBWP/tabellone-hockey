@@ -2,8 +2,8 @@
 
 ### [👉 Scarica il Tabellone Hockey per Windows (ultima versione)](https://github.com/AEBWP/tabellone-hockey/releases/latest)
 
-> 🧪 Il progetto è in **beta** (versioni 0.9.x). Guida completa con immagini e tutte le versioni
-> scaricabili: [wiki del progetto](https://github.com/AEBWP/tabellone-hockey/wiki).
+> Guida completa con immagini e tutte le versioni scaricabili:
+> [wiki del progetto](https://github.com/AEBWP/tabellone-hockey/wiki).
 
 ## Cosa serve
 

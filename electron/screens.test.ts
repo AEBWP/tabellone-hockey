@@ -31,11 +31,15 @@ const small = {
 
 describe('scelta degli schermi', () => {
   it('console sul principale, tabellone sul più grande degli altri', () => {
-    expect(defaultChoice([small, laptop, maxi])).toEqual({ consoleId: 1, displayIds: [7] })
+    expect(defaultChoice([small, laptop, maxi])).toEqual({
+      consoleId: 1,
+      displayIds: [7],
+      mirrorIds: [],
+    })
   })
 
   it('con un solo schermo usa quello per entrambi', () => {
-    expect(defaultChoice([laptop])).toEqual({ consoleId: 1, displayIds: [1] })
+    expect(defaultChoice([laptop])).toEqual({ consoleId: 1, displayIds: [1], mirrorIds: [] })
     expect(defaultChoice([])).toBeNull()
   })
 
@@ -56,10 +60,12 @@ describe('scelta degli schermi', () => {
     expect(normalizeChoice({ consoleId: 1, displayId: 7 })).toEqual({
       consoleId: 1,
       displayIds: [7],
+      mirrorIds: [],
     })
     expect(normalizeChoice({ consoleId: 1, displayIds: [7, 7, 3] })).toEqual({
       consoleId: 1,
       displayIds: [7, 3],
+      mirrorIds: [],
     })
     expect(normalizeChoice({ consoleId: 1 })).toBeNull()
     expect(normalizeChoice('x')).toBeNull()
@@ -68,25 +74,39 @@ describe('scelta degli schermi', () => {
   it('tabellone su più schermi: a schermo intero su tutti tranne quello della console', () => {
     const all = [laptop, maxi, small]
     expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, all)).toEqual([
-      { id: 7, mode: 'fullscreen' },
-      { id: 3, mode: 'fullscreen' },
+      { id: 7, mode: 'fullscreen', mirror: false },
+      { id: 3, mode: 'fullscreen', mirror: false },
     ])
     expect(displayPlan({ consoleId: 1, displayIds: [7, 1] }, all)).toEqual([
-      { id: 7, mode: 'fullscreen' },
-      { id: 1, mode: 'window' },
+      { id: 7, mode: 'fullscreen', mirror: false },
+      { id: 1, mode: 'window', mirror: false },
     ])
   })
 
   it('schermi scollegati: si saltano; se non ne resta nessuno, finestra sulla console', () => {
     expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, [laptop, maxi])).toEqual([
-      { id: 7, mode: 'fullscreen' },
+      { id: 7, mode: 'fullscreen', mirror: false },
     ])
     expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, [laptop])).toEqual([
-      { id: 1, mode: 'window' },
+      { id: 1, mode: 'window', mirror: false },
     ])
     // Manca anche lo schermo della console: si usa il principale.
     expect(displayPlan({ consoleId: 9, displayIds: [8] }, [laptop, maxi])).toEqual([
-      { id: 1, mode: 'fullscreen' },
+      { id: 1, mode: 'fullscreen', mirror: false },
+    ])
+  })
+
+  it('schermi girati verso la console: solo tra quelli del tabellone', () => {
+    expect(normalizeChoice({ consoleId: 1, displayIds: [7, 3], mirrorIds: [3, 3, 9] })).toEqual({
+      consoleId: 1,
+      displayIds: [7, 3],
+      mirrorIds: [3],
+    })
+    expect(
+      displayPlan({ consoleId: 1, displayIds: [7, 3], mirrorIds: [3] }, [laptop, maxi, small]),
+    ).toEqual([
+      { id: 7, mode: 'fullscreen', mirror: false },
+      { id: 3, mode: 'fullscreen', mirror: true },
     ])
   })
 

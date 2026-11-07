@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
-  import { deriveView, type GameState } from '../engine'
+  import { deriveView, orientView, type GameState } from '../engine'
   import Scoreboard from '../scoreboard/Scoreboard.svelte'
   import Stage from '../display/Stage.svelte'
   import { now } from '../shared/time'
@@ -28,7 +28,11 @@
   const timer = setInterval(() => (clock = now()), 250)
   onDestroy(() => clearInterval(timer))
 
-  const view = $derived(deriveView(game, clock))
+  // Come la console: squadre dallo stesso lato dell'operatore.
+  const view = $derived.by(() => {
+    const v = deriveView(game, clock)
+    return orientView(v, v.sidesSwapped)
+  })
 </script>
 
 {#if busy}

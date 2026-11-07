@@ -4,6 +4,7 @@
     apply,
     BOARD_STYLES,
     deriveView,
+    orientView,
     LANGUAGES,
     type GameState,
     type Language,
@@ -23,7 +24,13 @@
   /** Attesa prima della prova generale: le animazioni di apertura finiscono indisturbate. */
   const WARMUP_DELAY_MS = 1_500
 
-  const demo = new URLSearchParams(location.search).has('demo')
+  const params = new URLSearchParams(location.search)
+  const demo = params.has('demo')
+  /**
+   * Schermo girato verso la console (es. sopra la testa dell'operatore, rivolto
+   * al pubblico di fronte): destra e sinistra sono rovesciate rispetto alla console.
+   */
+  const mirror = params.get('mirror') === '1'
 
   let game = $state.raw<GameState | null>(null)
   let t = $state(now())
@@ -35,7 +42,12 @@
   const connected = $derived(t - lastHeartbeat < HEARTBEAT_TIMEOUT_MS)
   // Il tempo è calcolato qui dai timestamp: il tabellone continua a scorrere
   // anche se la console si blocca per un attimo.
-  const view = $derived(game ? deriveView(game, t) : null)
+  // Squadre dallo stesso lato in cui le vede il pubblico davanti a questo schermo.
+  const view = $derived.by(() => {
+    if (!game) return null
+    const v = deriveView(game, t)
+    return orientView(v, v.sidesSwapped !== mirror)
+  })
 
   // Loghi già decodificati prima del gol: l'animazione parte senza intoppi.
   const logos = $derived([game?.teams.home.logo, game?.teams.away.logo])

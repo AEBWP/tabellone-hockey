@@ -39,9 +39,17 @@ export interface GameView {
   /** Squadra in superiorità numerica, se c'è. */
   powerPlay: TeamId | null
   shootout: ShootoutView | null
+  /**
+   * Casa a destra, come la vede l'operatore in console: lati invertiti a mano
+   * e/o cambio campo automatico a ogni periodo. I tabelloni lo seguono (o lo
+   * rovesciano, se sono girati verso la console): vedi `orientView`.
+   */
+  sidesSwapped: boolean
 }
 
 export interface TeamView {
+  /** Squadra vera: dopo `orientView` a sinistra ("home") può esserci quella ospite. */
+  id: TeamId
   name: string
   shortName: string
   color: string
@@ -50,6 +58,11 @@ export interface TeamView {
   /** Punteggio da mostrare (include il gol del vincitore ai rigori). */
   score: number
   goals: number
+  /**
+   * Gol segnati con il pulsante GOL (non le correzioni ±1): quando cresce, il
+   * tabellone fa partire l'animazione del gol.
+   */
+  goalEvents: number
   shots: number
   timeoutsLeft: number
   /** Giocatori di movimento in pista. */
@@ -107,12 +120,14 @@ export function deriveView(state: GameState, now: number): GameView {
       .sort((a, b) => Number(a.queued) - Number(b.queued) || a.remainingMs - b.remainingMs)
 
     teams[id] = {
+      id,
       name: t.name,
       shortName: t.shortName,
       color: t.color,
       logo: s.showLogos ? t.logo : null,
       score: t.goals + (winner === id ? 1 : 0),
       goals: t.goals,
+      goalEvents: s.events.filter((e) => e.type === 'goal' && e.team === id).length,
       shots: t.shots,
       timeoutsLeft: Math.max(0, s.rules.timeoutsPerTeam - t.timeoutsUsed),
       skaters: skaters[id],
@@ -156,6 +171,45 @@ export function deriveView(state: GameState, now: number): GameView {
           home: [...s.shootout.home],
           away: [...s.shootout.away],
           winner,
+        }
+      : null,
+    sidesSwapped: consoleSidesSwapped(s),
+  }
+}
+
+/**
+ * Lati invertiti in console. Con il cambio campo automatico si inverte a ogni
+ * periodo pari. Il cambio avviene a fine periodo, all'inizio dell'intervallo
+ * (il periodo è già il successivo): l'operatore ha tutta la pausa per abituarsi
+ * e non si gira niente quando riparte il gioco. A fine partita il periodo resta
+ * l'ultimo giocato, quindi i lati non cambiano.
+ */
+export function consoleSidesSwapped(s: GameState): boolean {
+  const manual = s.sidesSwapped === true
+  if (!s.rules.switchSides) return manual
+  return manual !== (Math.max(1, s.period) % 2 === 0)
+}
+
+const other = (team: TeamId): TeamId => (team === 'home' ? 'away' : 'home')
+
+/**
+ * Vista con le squadre scambiate di lato, per i tabelloni: quello che il
+ * disegno mette a sinistra ("home") diventa l'altra squadra. Ogni squadra si
+ * porta dietro punti, tiri, penalità, timeout e rigori.
+ */
+export function orientView(view: GameView, flip: boolean): GameView {
+  if (!flip) return view
+  return {
+    ...view,
+    teams: { home: view.teams.away, away: view.teams.home },
+    timeout: view.timeout ? { ...view.timeout, team: other(view.timeout.team) } : null,
+    powerPlay: view.powerPlay ? other(view.powerPlay) : null,
+    shootout: view.shootout
+      ? {
+          ...view.shootout,
+          home: view.shootout.away,
+          away: view.shootout.home,
+          winner: view.shootout.winner ? other(view.shootout.winner) : null,
         }
       : null,
   }

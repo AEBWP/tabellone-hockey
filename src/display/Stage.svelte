@@ -35,7 +35,9 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #000;
+    /* Se lo schermo non è 16:9 le bande attorno non restano nere "da formato
+       sbagliato": un fondo scuro come quello dei tabelloni, più chiaro al centro. */
+    background: radial-gradient(ellipse at center, #0d1a2b 0%, #060c16 60%, #020509 100%), #03060b;
   }
 
   .stage {

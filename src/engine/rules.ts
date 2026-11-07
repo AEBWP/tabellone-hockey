@@ -57,6 +57,11 @@ export interface Rules {
   shiftHornMs: number
   /** Conteggio dei tiri in porta, in console e sui tabelloni. */
   showShots: boolean
+  /**
+   * Cambio campo automatico: a ogni nuovo periodo (supplementari compresi) le
+   * squadre si scambiano i lati, in console e sui tabelloni.
+   */
+  switchSides: boolean
 }
 
 export interface RulesPreset {
@@ -78,6 +83,7 @@ const COMMON = {
   tenthsBelowMs: MIN,
   shiftHornMs: 0,
   showShots: false,
+  switchSides: false,
 } satisfies Partial<Rules>
 
 export const PRESETS: readonly RulesPreset[] = [

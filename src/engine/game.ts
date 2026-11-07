@@ -41,6 +41,11 @@ export type Command =
   /** Elimina una penalità inserita per errore. */
   | { type: 'removePenalty'; id: number }
   | { type: 'timeout'; team: TeamId }
+  /**
+   * Restituisce un timeout chiamato per sbaglio: se è ancora in corso si chiude
+   * (il tempo resta fermo).
+   */
+  | { type: 'restoreTimeout'; team: TeamId }
   | { type: 'endTimeout' }
   /** Termina subito l'intervallo: il periodo successivo è pronto. */
   | { type: 'endIntermission' }
@@ -52,6 +57,8 @@ export type Command =
   | { type: 'setTeam'; team: TeamId; setup: Partial<TeamSetup> }
   /** Mostra o nasconde i loghi di tutte e due le squadre sul tabellone. */
   | { type: 'setShowLogos'; show: boolean }
+  /** Scambia i lati delle squadre (casa a destra o a sinistra): punti e penalità restano a ognuna. */
+  | { type: 'swapSides' }
   /** Cambia lo stile grafico del tabellone. */
   | { type: 'setBoardStyle'; style: BoardStyle }
   /** Cambia la lingua delle scritte del tabellone. */
@@ -94,6 +101,7 @@ export function createGame(
     events: [],
     shootout: null,
     showLogos: true,
+    sidesSwapped: false,
     boardStyle,
     boardLanguage,
     nextId: 1,
@@ -420,6 +428,14 @@ export function apply(state: GameState, command: Command, now: number): GameStat
       break
     }
 
+    case 'restoreTimeout': {
+      const t = s.teams[command.team]
+      if (t.timeoutsUsed === 0) break
+      t.timeoutsUsed -= 1
+      if (s.timeout?.team === command.team) s.timeout = null
+      break
+    }
+
     case 'endTimeout':
       s.timeout = null
       break
@@ -467,6 +483,10 @@ export function apply(state: GameState, command: Command, now: number): GameStat
 
     case 'setBoardLanguage':
       if (LANGUAGES.includes(command.language)) s.boardLanguage = command.language
+      break
+
+    case 'swapSides':
+      s.sidesSwapped = !s.sidesSwapped
       break
 
     case 'setShowLogos':

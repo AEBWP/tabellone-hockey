@@ -54,6 +54,8 @@ export function undo(
       nextId: Math.max(previous.nextId, current.nextId),
       // La lingua del tabellone è un'impostazione: non torna indietro con l'annulla.
       boardLanguage: current.boardLanguage,
+      // Nemmeno i lati: annullare un gol non rigira le squadre.
+      sidesSwapped: current.sidesSwapped,
     },
     history: history.slice(0, -1),
     label: last.label,

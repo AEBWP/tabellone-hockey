@@ -19,6 +19,11 @@ export interface ScreenChoice {
   consoleId: number
   /** Uno o più schermi: il tabellone è uguale su tutti. */
   displayIds: number[]
+  /**
+   * Schermi del tabellone girati verso la console (es. sopra l'operatore, verso
+   * il pubblico di fronte): lì destra e sinistra sono rovesciate.
+   */
+  mirrorIds: number[]
 }
 
 export type UpdateStatus =

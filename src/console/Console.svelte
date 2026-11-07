@@ -182,7 +182,7 @@
   function run(command: Command, label?: string): boolean {
     const before = game
     if (!isAllowed(advance(before, now()), command.type)) {
-      // Es. una scorciatoia (C, O…) premuta prima del via.
+      // Es. una scorciatoia (frecce…) premuta prima del via.
       showToast(t('Partita non ancora iniziata: premi ▶ Avvia partita'))
       return false
     }
@@ -272,26 +272,32 @@
       if (fullscreen.available) fullscreen.toggle()
       return
     }
-    if (anyDialogOpen || isTypingTarget(e.target)) return
+    if (anyDialogOpen || isTypingTarget(e.target, e.key)) return
     // Lo spazio su un pulsante lo "cliccherebbe": lo usiamo solo per il tempo.
     e.preventDefault()
 
     const teamName = (id: 'home' | 'away') => game.teams[id].name
+    // Le frecce seguono i lati della console: con le squadre invertite, ← è gli ospiti.
+    const left = view.sidesSwapped ? 'away' : 'home'
+    const right = view.sidesSwapped ? 'home' : 'away'
     switch (action) {
+      // La barra spaziatrice fa sempre quello che fa il pulsante grande del tempo.
       case 'toggleClock':
-        run({ type: 'toggleClock' })
+        if (view.phase === 'intermission') run({ type: 'endIntermission' })
+        else if (view.phase === 'final') newGameOpen = true
+        else run({ type: 'toggleClock' })
         break
-      case 'goalHome':
-      case 'goalAway': {
-        const team = action === 'goalHome' ? 'home' : 'away'
+      case 'goalLeft':
+      case 'goalRight': {
+        const team = action === 'goalLeft' ? left : right
         if (view.phase === 'shootout') break
         const label = t('Gol {team}', { team: teamName(team) })
         if (run({ type: 'goal', team }, label)) showToast(label)
         break
       }
-      case 'shotHome':
-      case 'shotAway': {
-        const team = action === 'shotHome' ? 'home' : 'away'
+      case 'shotLeft':
+      case 'shotRight': {
+        const team = action === 'shotLeft' ? left : right
         // Tiri nascosti dal regolamento: la scorciatoia non fa nulla.
         if (!game.rules.showShots) break
         run({ type: 'shot', team, delta: 1 }, t('Tiro {team}', { team: teamName(team) }))
@@ -519,7 +525,7 @@
         {@render appTools()}
       {/if}
       <button type="button" class="btn" onclick={() => (newGameOpen = true)}
-        >{t('Nuova partita…')}</button
+        >{t('Nuova partita')}</button
       >
       {#if !audio.unlocked && !audio.settings.muted}
         <button type="button" class="btn btn-sm audio-locked" onclick={() => audio.unlock()}>
@@ -557,27 +563,24 @@
       {/each}
     </nav>
 
-    <!-- In alto a destra: stato e Apri/Chiudi del tabellone, e il tabellone in piccolo. -->
-    <!-- Tutto il tabellone in un'unica pillola: in piccolo lo stato, sotto
-         l'anteprima e, attaccato a destra, il pulsante Apri/Chiudi. -->
+    <!-- In alto a destra, tutto il tabellone in un'unica pillola: a sinistra il pulsante
+         Apri/Chiudi, a destra l'anteprima; lo stato in piccolo sul bordo in basso. -->
     <div
       class="display-control"
       class:ok={displayConnected && !displayBusy}
       class:busy={!!displayBusy}
       class:off={!displayConnected && !displayBusy}
     >
+      <span class="status">
+        {#if displayBusy}
+          <span class="spinner" aria-hidden="true"></span>
+          {displayBusy === 'closing' ? t('Chiusura del tabellone…') : t('Apertura del tabellone…')}
+        {:else}
+          <span class="dot"></span>
+          {displayConnected ? t('Tabellone collegato') : t('Tabellone non aperto')}
+        {/if}
+      </span>
       <div class="dc-board">
-        <span class="status">
-          {#if displayBusy}
-            <span class="spinner" aria-hidden="true"></span>
-            {displayBusy === 'closing'
-              ? t('Chiusura del tabellone…')
-              : t('Apertura del tabellone…')}
-          {:else}
-            <span class="dot"></span>
-            {displayConnected ? t('Tabellone collegato') : t('Tabellone non aperto')}
-          {/if}
-        </span>
         <BoardPreview {game} connected={displayConnected} busy={displayBusy} />
       </div>
       {#if displayBusy}
@@ -603,8 +606,12 @@
   </header>
 
   {#if tab === 'game'}
+    <!-- Le squadre dal lato in cui le vede l'operatore (Inverti squadre / cambio campo). -->
     <main class="game">
-      <TeamControls id="home" {view} rules={game.rules} {run} />
+      <!-- Rimontati al cambio lato: un numero di giocatore a metà non passa all'altra squadra. -->
+      {#key view.sidesSwapped}
+        <TeamControls id={view.sidesSwapped ? 'away' : 'home'} {view} rules={game.rules} {run} />
+      {/key}
 
       <div class="center">
         <ClockPanel
@@ -618,7 +625,9 @@
         <EventLog {game} {undoLabel} onundo={doUndo} />
       </div>
 
-      <TeamControls id="away" {view} rules={game.rules} {run} />
+      {#key view.sidesSwapped}
+        <TeamControls id={view.sidesSwapped ? 'home' : 'away'} {view} rules={game.rules} {run} />
+      {/key}
     </main>
   {:else if tab === 'teams'}
     <main class="page">
@@ -850,14 +859,15 @@
   /* Tutto quello che riguarda il tabellone in un'unica pillola, a destra:
      a sinistra il pulsante, a destra stato (in piccolo) e anteprima. */
   .display-control {
+    position: relative;
     justify-self: end;
     display: flex;
     align-items: stretch;
-    margin-bottom: 0.6rem;
+    /* Spazio per la scritta di stato appoggiata sul bordo in basso. */
+    margin-bottom: 0.95rem;
     border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent);
     border-radius: 12px;
     background: color-mix(in srgb, var(--warn) 8%, var(--ice-950));
-    overflow: hidden;
   }
 
   .display-control.ok {
@@ -870,17 +880,33 @@
     background: var(--ice-950);
   }
 
+  /* L'anteprima riempie la sua metà della pillola, senza margini. */
   .dc-board {
     display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    padding: 0.35rem 0.5rem 0.5rem;
+    border-radius: 0 11px 11px 0;
+    overflow: hidden;
   }
 
+  .dc-board :global(.board-preview) {
+    border: none;
+    border-radius: 0;
+  }
+
+  /* Lo stato sta sul bordo in basso, come la legenda di un riquadro: non ruba altezza
+     e lascia libera la parte alta dell'anteprima (punteggio e tempo). */
   .display-control .status {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 55%);
+    z-index: 1;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
     gap: 0.35rem;
     font-size: 0.72rem;
+    line-height: 1;
     white-space: nowrap;
+    background: var(--ice-900);
   }
 
   .display-control .status .dot {
@@ -893,6 +919,7 @@
     order: -1;
     padding: 0 1rem;
     border: none;
+    border-radius: 11px 0 0 11px;
     border-right: 1px solid var(--ice-800);
     background: var(--ice-800);
     color: var(--ice-50);

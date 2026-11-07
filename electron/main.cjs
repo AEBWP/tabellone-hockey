@@ -56,9 +56,10 @@ const userFile = (name) => path.join(app.getPath('userData'), name)
 
 /** @type {BrowserWindow | null} */ let consoleWin = null
 /**
- * Finestre del tabellone, una per ogni schermo scelto (tutte uguali).
+ * Finestre del tabellone, una per ogni schermo scelto (stessa partita su tutte).
  * Modo: 'fullscreen' sul maxischermo, 'window' se lo schermo è quello della console.
- * @type {Map<number, { win: BrowserWindow, mode: 'fullscreen' | 'window' }>}
+ * `mirror`: schermo girato verso la console, con destra e sinistra rovesciate.
+ * @type {Map<number, { win: BrowserWindow, mode: 'fullscreen' | 'window', mirror: boolean }>}
  */
 const displayWins = new Map()
 /** Il tabellone è aperto (si riapre da solo se si ricollega uno schermo). */
@@ -66,7 +67,8 @@ let displayOpen = false
 /** @type {BrowserWindow | null} */ let setupWin = null
 /** @type {BrowserWindow | null} */ let splashWin = null
 /** @type {BrowserWindow[]} */ let identifyWins = []
-/** @type {{ consoleId: number, displayIds: number[] } | null} */ let choice = null
+/** @type {{ consoleId: number, displayIds: number[], mirrorIds: number[] } | null} */ let choice =
+  null
 let quitting = false
 /** Blocco dello standby, attivo per tutta la durata del programma. */
 let sleepBlocker = -1
@@ -464,9 +466,10 @@ function displayTargets() {
   if (!choice) return []
   // Solo per i collaudi: forza lo schermo intero anche con un solo monitor.
   const forced = process.env.TABELLONE_DISPLAY_FULLSCREEN === '1'
-  return displayPlan(choice, screens(), forced).map(({ id, mode }) => ({
+  return displayPlan(choice, screens(), forced).map(({ id, mode, mirror }) => ({
     display: displayById(id),
     mode,
+    mirror,
   }))
 }
 
@@ -539,8 +542,15 @@ function syncDisplays() {
   const wanted = new Map(targets.map((t) => [t.display.id, t]))
   for (const [id, entry] of [...displayWins]) {
     const target = wanted.get(id)
-    // Il tipo di finestra (con o senza barra) si decide alla creazione: si ricrea.
-    if (!target || target.mode !== entry.mode || entry.win.isDestroyed()) destroyDisplay(id)
+    // Il tipo di finestra (con o senza barra) e il verso si decidono alla creazione: si ricrea.
+    if (
+      !target ||
+      target.mode !== entry.mode ||
+      target.mirror !== entry.mirror ||
+      entry.win.isDestroyed()
+    ) {
+      destroyDisplay(id)
+    }
   }
   for (const target of targets) {
     const entry = displayWins.get(target.display.id)
@@ -550,7 +560,7 @@ function syncDisplays() {
   }
 }
 
-function createDisplay({ display: d, mode }) {
+function createDisplay({ display: d, mode, mirror }) {
   const fullscreen = mode === 'fullscreen'
   const id = d.id
   const win = new BrowserWindow({
@@ -571,7 +581,7 @@ function createDisplay({ display: d, mode }) {
     show: false,
     webPreferences: baseWebPreferences(),
   })
-  displayWins.set(id, { win, mode })
+  displayWins.set(id, { win, mode, mirror })
   lockDown(win)
   win.once('ready-to-show', () => {
     // Senza rubare il focus alla console: l'operatore continua a usare la tastiera.
@@ -589,7 +599,7 @@ function createDisplay({ display: d, mode }) {
     displayWins.delete(id)
     if (displayWins.size === 0) displayOpen = false
   })
-  void win.loadURL(`${BASE_URL}display.html`)
+  void win.loadURL(`${BASE_URL}display.html${mirror ? '?mirror=1' : ''}`)
 }
 
 function destroyDisplay(id) {
@@ -676,9 +686,9 @@ function registerIpc() {
 
   ipcMain.handle('screens:identify', () => identifyScreens())
 
-  ipcMain.handle('screens:start', (_event, { consoleId, displayIds, remember }) => {
+  ipcMain.handle('screens:start', (_event, { consoleId, displayIds, mirrorIds, remember }) => {
     const list = screens()
-    const next = normalizeChoice({ consoleId, displayIds })
+    const next = normalizeChoice({ consoleId, displayIds, mirrorIds })
     if (!next || !isChoiceValid(next, list)) return false
     writeConfig({ ...readConfig(), screens: next, rememberScreens: !!remember })
     startMain(next)

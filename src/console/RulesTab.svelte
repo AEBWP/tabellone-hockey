@@ -132,6 +132,10 @@
         <input type="checkbox" bind:checked={draft.showShots} />
         {t('Tiri in porta (in console e sul tabellone)')}
       </label>
+      <label class="check">
+        <input type="checkbox" bind:checked={draft.switchSides} />
+        {t('Cambio campo a ogni periodo (le squadre si scambiano i lati)')}
+      </label>
       <DurationInput label={t('Sirena del cambio ogni (0 = mai)')} bind:value={draft.shiftHornMs} />
       <p class="muted hint">
         {t(

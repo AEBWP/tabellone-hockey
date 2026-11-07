@@ -139,6 +139,12 @@ export interface GameState {
    * resta senza. Torna true a ogni nuova partita.
    */
   showLogos: boolean
+  /**
+   * Lati invertiti a mano ("Inverti squadre"): la squadra di casa è a destra
+   * in console e sui tabelloni. Con il cambio campo automatico del regolamento
+   * si inverte anche a ogni periodo (vedi `sidesSwapped` nella vista).
+   */
+  sidesSwapped: boolean
   /** Stile del tabellone: è un'impostazione, resta uguale nelle nuove partite. */
   boardStyle: BoardStyle
   /** Lingua delle scritte del tabellone: è un'impostazione, come lo stile. */

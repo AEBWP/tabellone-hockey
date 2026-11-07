@@ -10,7 +10,7 @@
     '<b>Apri tabellone</b> e spostalo sul maxischermo (doppio clic = schermo intero).',
     'Nella scheda <b>Squadre</b> imposta nomi, sigle, colori e loghi.',
     'All’ingaggio premi <kbd>Spazio</kbd>; a ogni fischio premi di nuovo <kbd>Spazio</kbd>.',
-    'Gol: <kbd>C</kbd> (casa) o <kbd>O</kbd> (ospiti). Se la squadra era in superiorità, la penalità minore dell’avversario si chiude da sola.',
+    'Gol: <kbd>←</kbd> per la squadra a sinistra, <kbd>→</kbd> per quella a destra (come le vedi in console). Se la squadra era in superiorità, la penalità minore dell’avversario si chiude da sola.',
     'Penalità: numero di maglia + durata. Il tabellone le conta da solo.',
     'A fine periodo il tempo si ferma da solo e parte l’intervallo; poi il periodo successivo è pronto.',
     'Errore? <kbd>Ctrl</kbd> + <kbd>Z</kbd> annulla l’ultima azione.',

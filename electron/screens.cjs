@@ -4,7 +4,9 @@
 /**
  * @typedef {{ x: number, y: number, width: number, height: number }} Rect
  * @typedef {{ id: number, bounds: Rect, primary: boolean, scaleFactor: number, label?: string }} ScreenInfo
- * @typedef {{ consoleId: number, displayIds: number[] }} ScreenChoice
+ * @typedef {{ consoleId: number, displayIds: number[], mirrorIds: number[] }} ScreenChoice
+ * `mirrorIds`: schermi del tabellone girati verso la console (di fronte all'operatore),
+ * dove destra e sinistra vanno rovesciate rispetto alla console.
  */
 
 /**
@@ -19,7 +21,7 @@ function defaultChoice(screens) {
   const others = screens
     .filter((s) => s.id !== primary.id)
     .sort((a, b) => b.bounds.width * b.bounds.height - a.bounds.width * a.bounds.height)
-  return { consoleId: primary.id, displayIds: [(others[0] ?? primary).id] }
+  return { consoleId: primary.id, displayIds: [(others[0] ?? primary).id], mirrorIds: [] }
 }
 
 /**
@@ -30,9 +32,10 @@ function defaultChoice(screens) {
  */
 function normalizeChoice(saved) {
   if (!saved || typeof saved !== 'object') return null
-  const s = /** @type {{ consoleId?: unknown, displayId?: unknown, displayIds?: unknown }} */ (
-    saved
-  )
+  const s =
+    /** @type {{ consoleId?: unknown, displayId?: unknown, displayIds?: unknown, mirrorIds?: unknown }} */ (
+      saved
+    )
   if (typeof s.consoleId !== 'number') return null
   const ids = Array.isArray(s.displayIds)
     ? s.displayIds.filter((id) => typeof id === 'number')
@@ -40,7 +43,12 @@ function normalizeChoice(saved) {
       ? [s.displayId]
       : []
   if (ids.length === 0) return null
-  return { consoleId: s.consoleId, displayIds: [...new Set(ids)] }
+  const displayIds = [...new Set(ids)]
+  // Fino alla 0.9.11 non c'era: nessuno schermo specchiato.
+  const mirrorIds = Array.isArray(s.mirrorIds)
+    ? [...new Set(s.mirrorIds)].filter((id) => displayIds.includes(id))
+    : []
+  return { consoleId: s.consoleId, displayIds, mirrorIds }
 }
 
 /**
@@ -66,11 +74,12 @@ function isChoiceValid(choice, screens) {
  * @param {ScreenChoice} choice
  * @param {ScreenInfo[]} screens
  * @param {boolean} [forceFullscreen] solo per i collaudi con un monitor
- * @returns {{ id: number, mode: 'fullscreen' | 'window' }[]}
+ * @returns {{ id: number, mode: 'fullscreen' | 'window', mirror: boolean }[]}
  */
 function displayPlan(choice, screens, forceFullscreen = false) {
   const connected = new Set(screens.map((s) => s.id))
   const primary = (screens.find((s) => s.primary) ?? screens[0])?.id
+  const mirrored = new Set(choice.mirrorIds ?? [])
   let ids = choice.displayIds.filter((id) => connected.has(id))
   if (ids.length === 0) ids = [connected.has(choice.consoleId) ? choice.consoleId : primary]
   return [...new Set(ids)]
@@ -78,6 +87,7 @@ function displayPlan(choice, screens, forceFullscreen = false) {
     .map((id) => ({
       id,
       mode: forceFullscreen || id !== choice.consoleId ? 'fullscreen' : 'window',
+      mirror: mirrored.has(id),
     }))
 }
 

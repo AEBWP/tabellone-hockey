@@ -22,6 +22,11 @@ export function keepScreenAwake(): () => void {
     }
     try {
       sentinel = await wakeLock!.request('screen')
+      // Il sistema può toglierlo da sé (es. risparmio energetico): lo si richiede.
+      sentinel.addEventListener('release', () => {
+        sentinel = null
+        setTimeout(() => void request(), 1000)
+      })
       // Tolto nel frattempo (es. pagina chiusa mentre si aspettava la risposta).
       if (!active) void sentinel.release()
     } catch {
@@ -33,11 +38,14 @@ export function keepScreenAwake(): () => void {
 
   const onVisible = () => void request()
   document.addEventListener('visibilitychange', onVisible)
+  // Alcuni browser (es. Safari su iPhone/iPad) lo concedono solo dopo un tocco.
+  document.addEventListener('pointerdown', onVisible)
   void request()
 
   return () => {
     active = false
     document.removeEventListener('visibilitychange', onVisible)
+    document.removeEventListener('pointerdown', onVisible)
     void sentinel?.release().catch(() => {})
     sentinel = null
   }

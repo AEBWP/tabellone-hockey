@@ -18,11 +18,14 @@ describe('scorciatoie', () => {
     expect(actionForKey(key('Space'))).toBe('toggleClock')
   })
 
-  it('C e O segnano i gol, con Maiusc i tiri', () => {
-    expect(actionForKey(key('KeyC'))).toBe('goalHome')
-    expect(actionForKey(key('KeyO'))).toBe('goalAway')
-    expect(actionForKey(key('KeyC', { shiftKey: true }))).toBe('shotHome')
-    expect(actionForKey(key('KeyO', { shiftKey: true }))).toBe('shotAway')
+  it('le frecce segnano i gol della squadra a sinistra o a destra, con Maiusc i tiri', () => {
+    expect(actionForKey(key('ArrowLeft'))).toBe('goalLeft')
+    expect(actionForKey(key('ArrowRight'))).toBe('goalRight')
+    expect(actionForKey(key('ArrowLeft', { shiftKey: true }))).toBe('shotLeft')
+    expect(actionForKey(key('ArrowRight', { shiftKey: true }))).toBe('shotRight')
+    // C e O non segnano più.
+    expect(actionForKey(key('KeyC'))).toBeNull()
+    expect(actionForKey(key('KeyO'))).toBeNull()
   })
 
   it('M attiva e disattiva l’audio', () => {
@@ -36,9 +39,9 @@ describe('scorciatoie', () => {
   })
 
   it('ignora la ripetizione automatica e le combinazioni con Ctrl/Alt', () => {
-    expect(actionForKey(key('KeyC', { repeat: true }))).toBeNull()
-    expect(actionForKey(key('KeyC', { ctrlKey: true }))).toBeNull()
-    expect(actionForKey(key('KeyO', { altKey: true }))).toBeNull()
+    expect(actionForKey(key('ArrowLeft', { repeat: true }))).toBeNull()
+    expect(actionForKey(key('ArrowLeft', { ctrlKey: true }))).toBeNull()
+    expect(actionForKey(key('ArrowRight', { altKey: true }))).toBeNull()
     expect(actionForKey(key('KeyX'))).toBeNull()
   })
 })

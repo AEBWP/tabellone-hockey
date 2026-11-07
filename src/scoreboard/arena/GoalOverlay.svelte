@@ -1,6 +1,7 @@
 <script lang="ts">
   import { boardText } from '../../i18n/board'
-  import type { GameView, TeamId } from '../../engine'
+  import type { GameView } from '../../engine'
+  import { watchGoals } from '../goal-watch.svelte'
   import { textColorOn } from '../../shared/color'
 
   let { view }: { view: GameView } = $props()
@@ -8,32 +9,9 @@
 
   const DURATION_MS = 7_000
 
-  let goal = $state<{ team: TeamId; key: number } | null>(null)
-  // Non reattivi: servono solo per il confronto con il valore precedente.
-  let previous: Record<TeamId, number> | null = null
-  let hideTimer: ReturnType<typeof setTimeout> | undefined
-  let counter = 0
-
-  $effect(() => {
-    const current = { home: view.teams.home.goals, away: view.teams.away.goals }
-    const before = previous
-    previous = current
-    // Al primo stato ricevuto (es. tabellone aperto a partita in corso) non si festeggia.
-    if (!before) return
-
-    for (const team of ['home', 'away'] as const) {
-      if (current[team] > before[team]) {
-        goal = { team, key: ++counter }
-        clearTimeout(hideTimer)
-        hideTimer = setTimeout(() => (goal = null), DURATION_MS)
-      } else if (current[team] < before[team] && goal?.team === team) {
-        // Gol annullato: via l'animazione.
-        goal = null
-      }
-    }
-  })
-
-  $effect(() => () => clearTimeout(hideTimer))
+  // Per squadra vera: scambiare i lati non fa partire l'animazione.
+  const watch = watchGoals(() => view, DURATION_MS)
+  const goal = $derived(watch.goal)
 </script>
 
 {#if goal}

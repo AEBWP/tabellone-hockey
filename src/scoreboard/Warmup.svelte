@@ -45,6 +45,7 @@
             home: {
               ...base.teams.home,
               goals: base.teams.home.goals + 1,
+              goalEvents: base.teams.home.goalEvents + 1,
               score: base.teams.home.score + 1,
             },
           },

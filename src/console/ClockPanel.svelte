@@ -56,6 +56,17 @@
         'Avvia e ferma il cronometro con il pulsante grande o con la <kbd>barra spaziatrice</kbd>. Quando il tempo arriva a zero si passa da solo all’intervallo e poi al periodo successivo. Le penalità scorrono solo quando il tempo è in moto.',
       )}
     </HelpTip>
+    <!-- Azione rapida: scambia i lati delle squadre in console e su tutti i tabelloni. -->
+    <button
+      type="button"
+      class="btn btn-sm swap-sides"
+      title={t(
+        'Scambia i lati delle squadre in console e sui tabelloni (punti e penalità restano a ogni squadra)',
+      )}
+      onclick={() => run({ type: 'swapSides' })}
+    >
+      ⇄ {t('Inverti squadre')}
+    </button>
   </h2>
 
   <div class="phase">{phaseLabel({ ...view, language: ui.lang })}</div>
@@ -74,6 +85,7 @@
       onclick={() => run({ type: 'endIntermission' })}
     >
       {t('Termina intervallo')}
+      <kbd>{t('Spazio')}</kbd>
     </button>
   {:else if view.phase === 'shootout'}
     <div class="time word">{words.shootoutWord}</div>
@@ -82,7 +94,8 @@
     <div class="time word">{words.finalShort}</div>
     <div class="state">{t('Partita terminata')}</div>
     <button type="button" class="btn btn-primary btn-lg main-btn" onclick={onNewGame}>
-      {t('Nuova partita…')}
+      {t('Nuova partita')}
+      <kbd>{t('Spazio')}</kbd>
     </button>
   {:else}
     <div class="time" class:running={view.clockRunning} class:urgent={lastMinute}>
@@ -159,6 +172,12 @@
 
   .clock-panel .panel-title {
     align-self: stretch;
+  }
+
+  .swap-sides {
+    margin-left: auto;
+    letter-spacing: normal;
+    text-transform: none;
   }
 
   .phase {

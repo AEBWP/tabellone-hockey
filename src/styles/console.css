@@ -123,6 +123,8 @@ kbd {
   display: inline-block;
   min-width: 1.6em;
   padding: 0.05em 0.4em;
+  line-height: 1.25;
+  vertical-align: middle;
   border: 1px solid #4b6b90;
   border-bottom-width: 2px;
   border-radius: 5px;
@@ -160,4 +162,43 @@ kbd {
 
 .muted {
   color: var(--ice-300);
+}
+
+/* Tasto dentro un pulsante: centrato sulle lettere maiuscole del testo, non sulla
+   riga (che ha spazio in più sotto per le lettere come g e p). */
+.btn kbd {
+  position: relative;
+  top: 0.08em;
+}
+
+/* Barre di scorrimento nello stile della console: sottili, scure, con il cursore
+   arrotondato che si accende al passaggio. Niente frecce in cima e in fondo. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ice-800) 65%, var(--ice-600)) padding-box;
+  min-height: 40px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ice-600) padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--ice-300) padding-box;
+}
+
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-corner {
+  display: none;
+  background: transparent;
 }

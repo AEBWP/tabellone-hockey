@@ -2,14 +2,16 @@
  * Scorciatoie da tastiera della console.
  *
  * Pensate per l'operatore che guarda la pista: i tasti più usati sono
- * grandi o facili da ricordare (C = Casa, O = Ospiti).
+ * grandi o facili da ricordare. I gol si segnano con le frecce: ← per la
+ * squadra a sinistra, → per quella a destra, come le vede l'operatore in
+ * console (con "Inverti squadre" si scambiano anche i tasti).
  */
 export type ShortcutAction =
   | 'toggleClock'
-  | 'goalHome'
-  | 'goalAway'
-  | 'shotHome'
-  | 'shotAway'
+  | 'goalLeft'
+  | 'goalRight'
+  | 'shotLeft'
+  | 'shotRight'
   | 'undo'
   | 'mute'
   | 'help'
@@ -24,10 +26,10 @@ export interface Shortcut {
 
 export const SHORTCUTS: readonly Shortcut[] = [
   { action: 'toggleClock', keys: ['Spazio'], description: 'Avvia / ferma il tempo' },
-  { action: 'goalHome', keys: ['C'], description: 'Gol squadra di casa' },
-  { action: 'goalAway', keys: ['O'], description: 'Gol squadra ospite' },
-  { action: 'shotHome', keys: ['Maiusc', 'C'], description: 'Tiro in porta casa' },
-  { action: 'shotAway', keys: ['Maiusc', 'O'], description: 'Tiro in porta ospiti' },
+  { action: 'goalLeft', keys: ['←'], description: 'Gol della squadra a sinistra' },
+  { action: 'goalRight', keys: ['→'], description: 'Gol della squadra a destra' },
+  { action: 'shotLeft', keys: ['Maiusc', '←'], description: 'Tiro in porta squadra a sinistra' },
+  { action: 'shotRight', keys: ['Maiusc', '→'], description: 'Tiro in porta squadra a destra' },
   { action: 'undo', keys: ['Ctrl', 'Z'], description: 'Annulla l’ultima azione' },
   { action: 'mute', keys: ['M'], description: 'Audio sì / no' },
   { action: 'help', keys: ['F1'], description: 'Apri / chiudi la guida' },
@@ -58,10 +60,10 @@ export function actionForKey(e: KeyInput): ShortcutAction | null {
   switch (e.code) {
     case 'Space':
       return e.shiftKey ? null : 'toggleClock'
-    case 'KeyC':
-      return e.shiftKey ? 'shotHome' : 'goalHome'
-    case 'KeyO':
-      return e.shiftKey ? 'shotAway' : 'goalAway'
+    case 'ArrowLeft':
+      return e.shiftKey ? 'shotLeft' : 'goalLeft'
+    case 'ArrowRight':
+      return e.shiftKey ? 'shotRight' : 'goalRight'
     case 'KeyM':
       return e.shiftKey ? null : 'mute'
   }
@@ -69,8 +71,12 @@ export function actionForKey(e: KeyInput): ShortcutAction | null {
 }
 
 /** True se il tasto arriva mentre l'operatore sta scrivendo in un campo. */
-export function isTypingTarget(target: EventTarget | null): boolean {
+export function isTypingTarget(target: EventTarget | null, key = ''): boolean {
   if (!(target instanceof HTMLElement)) return false
+  // Le frecce su un cursore o su una scelta tra opzioni servono a quelli.
+  if (key.startsWith('Arrow') && target instanceof HTMLInputElement) {
+    if (target.type === 'range' || target.type === 'radio') return true
+  }
   if (target.isContentEditable) return true
   if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true
   if (target instanceof HTMLInputElement) {

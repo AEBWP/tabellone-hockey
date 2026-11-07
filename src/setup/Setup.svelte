@@ -8,6 +8,10 @@
   let consoleId = $state<number | null>(null)
   /** Schermi del tabellone: uno o più, con lo stesso tabellone su tutti. */
   let displayIds = $state<number[]>([])
+  /** Schermi del tabellone girati verso la console: destra e sinistra rovesciate. */
+  let mirrorIds = $state<number[]>([])
+  /** Prima gli schermi, poi il verso di ognuno rispetto al pubblico. */
+  let step = $state<'screens' | 'sides'>('screens')
   let remember = $state(true)
   let starting = $state(false)
   let error = $state<string | null>(null)
@@ -30,6 +34,7 @@
       remember = data.remember
       consoleId = data.choice?.consoleId ?? null
       displayIds = data.choice?.displayIds ?? []
+      mirrorIds = data.choice?.mirrorIds ?? []
     }
     if (consoleId === null || !connected.has(consoleId)) consoleId = screens[0]?.id ?? null
     const kept = displayIds.filter((id) => connected.has(id))
@@ -65,6 +70,13 @@
       .filter(Boolean)
       .join(' ') + (s.label ? ` – ${s.label}` : '')
 
+  /** Schermi del tabellone nell'ordine dell'elenco (da sinistra a destra). */
+  const displays = $derived(screens.filter((s) => displayIds.includes(s.id)))
+
+  function setMirror(id: number, on: boolean) {
+    mirrorIds = on ? [...new Set([...mirrorIds, id])] : mirrorIds.filter((m) => m !== id)
+  }
+
   async function start() {
     if (!desktop || consoleId === null || displayIds.length === 0) return
     starting = true
@@ -72,11 +84,13 @@
     const ok = await desktop.startWithScreens({
       consoleId,
       displayIds: $state.snapshot(displayIds),
+      mirrorIds: mirrorIds.filter((id) => displayIds.includes(id)),
       remember,
     })
     if (!ok) {
       error = t('Uno degli schermi scelti non è più collegato. Riprova.')
       starting = false
+      step = 'screens'
       await load()
     }
   }
@@ -107,6 +121,80 @@
     <p class="warn">{t('Questa schermata funziona solo nel programma installato.')}</p>
   {:else if !screens.length}
     <p class="muted">{t('Ricerca degli schermi…')}</p>
+  {:else if step === 'sides'}
+    <section class="sides">
+      <h2>{t('Posizione rispetto al pubblico')}</h2>
+      <p class="muted">
+        {t(
+          'Così la squadra che il pubblico vede giocare a sinistra è a sinistra anche sul tabellone. Per ogni schermo scegli come è girato rispetto a te, seduto alla console con la faccia verso il campo.',
+        )}
+      </p>
+      {#each displays as d (d.id)}
+        {@const mirror = mirrorIds.includes(d.id)}
+        <fieldset class="side-card">
+          <legend><span class="tag display">{t('Tabellone')}</span> {screenTitle(d)}</legend>
+          <div class="side-options">
+            <label class="option side" class:selected={!mirror}>
+              <input
+                type="radio"
+                name="side-{d.id}"
+                checked={!mirror}
+                onchange={() => setMirror(d.id, false)}
+              />
+              <span>
+                <strong>{t('Come la console')}</strong>
+                <small>
+                  {t(
+                    'Lo schermo è davanti a te, dall’altra parte del campo: il pubblico guarda nella tua stessa direzione.',
+                  )}
+                </small>
+                <span class="sides-demo" aria-hidden="true">
+                  <span class="home">{t('Casa')}</span><span class="away">{t('Ospiti')}</span>
+                </span>
+              </span>
+            </label>
+            <label class="option side" class:selected={mirror}>
+              <input
+                type="radio"
+                name="side-{d.id}"
+                checked={mirror}
+                onchange={() => setMirror(d.id, true)}
+              />
+              <span>
+                <strong>{t('Specchiato')}</strong>
+                <small>
+                  {t(
+                    'Lo schermo è alle tue spalle o sopra di te, girato verso il pubblico di fronte: destra e sinistra si scambiano.',
+                  )}
+                </small>
+                <span class="sides-demo" aria-hidden="true">
+                  <span class="away">{t('Ospiti')}</span><span class="home">{t('Casa')}</span>
+                </span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+      {/each}
+      <p class="muted hint">
+        {t(
+          'Con “Inverti squadre” (sopra il tempo, nella console) o con il cambio campo del regolamento, tutti i tabelloni si girano di conseguenza.',
+        )}
+      </p>
+    </section>
+
+    <footer>
+      <button type="button" class="btn" onclick={() => (step = 'screens')}>
+        ← {t('Indietro')}
+      </button>
+      <label class="remember">
+        <input type="checkbox" bind:checked={remember} />
+        {t('Ricorda la scelta e avvia direttamente la prossima volta')}
+      </label>
+      {#if error}<p class="error">{error}</p>{/if}
+      <button type="button" class="btn btn-primary start" disabled={starting} onclick={start}>
+        {starting ? t('Avvio…') : t('Avvia il tabellone')}
+      </button>
+    </footer>
   {:else}
     {#if layout}
       <div class="map" style:aspect-ratio="{layout.width} / {layout.height}">
@@ -186,21 +274,17 @@
     {/if}
 
     <footer>
-      <label class="remember">
-        <input type="checkbox" bind:checked={remember} />
-        {t('Ricorda la scelta e avvia direttamente la prossima volta')}
-      </label>
       {#if error}<p class="error">{error}</p>{/if}
       {#if displayIds.length === 0}
         <p class="error">{t('Scegli almeno uno schermo per il tabellone.')}</p>
       {/if}
       <button
         type="button"
-        class="btn btn-primary start"
-        disabled={starting || displayIds.length === 0}
-        onclick={start}
+        class="btn btn-primary start next"
+        disabled={displayIds.length === 0}
+        onclick={() => (step = 'sides')}
       >
-        {starting ? t('Avvio…') : t('Avvia il tabellone')}
+        {t('Avanti')} →
       </button>
     </footer>
     <p class="muted hint">
@@ -430,6 +514,65 @@
   .start {
     padding: 0.85rem 1.6rem;
     font-size: 1.15rem;
+  }
+
+  .next {
+    margin-left: auto;
+  }
+
+  .sides {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .sides h2 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .sides > p {
+    margin: 0;
+  }
+
+  .side-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .option.side {
+    align-items: flex-start;
+  }
+
+  .option.side > span {
+    gap: 0.3rem;
+  }
+
+  /* Disegnino: come si vedranno le squadre su quello schermo (casa a sinistra in console). */
+  .option .sides-demo {
+    display: flex;
+    flex-direction: row;
+    margin-top: 0.3rem;
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .sides-demo span {
+    flex: 1;
+    padding: 0.25rem 0.5rem;
+    text-align: center;
+    color: #fff;
+  }
+
+  .sides-demo .home {
+    background: #d62839;
+  }
+
+  .sides-demo .away {
+    background: #1f6feb;
   }
 
   .error,
