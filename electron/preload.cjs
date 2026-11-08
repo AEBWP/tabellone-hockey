@@ -1,7 +1,7 @@
 // Ponte sicuro tra le pagine (console, tabellone, scelta schermi) e il
 // processo principale. Le pagine non hanno accesso diretto a Node o al disco:
 // possono solo usare queste funzioni.
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer, webUtils } = require('electron')
 
 contextBridge.exposeInMainWorld('tabelloneApp', {
   isDesktop: true,
@@ -38,6 +38,10 @@ contextBridge.exposeInMainWorld('tabelloneApp', {
   // Salvataggio della partita su file (oltre che nel browser interno)
   saveGame: (json) => ipcRenderer.send('game:save', json),
   loadGame: () => ipcRenderer.sendSync('game:load'),
+
+  // Tracce audio: la playlist tiene i percorsi dei file, non una copia
+  filePath: (file) => webUtils.getPathForFile(file),
+  checkFiles: (paths) => ipcRenderer.invoke('music:check', paths),
 
   // Aggiornamento del programma dalle release su GitHub
   getUpdateState: () => ipcRenderer.invoke('update:state'),

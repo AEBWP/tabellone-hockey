@@ -71,6 +71,12 @@ class AudioEngine {
   /** Ultima riproduzione di ogni file: riprovando, la precedente si ferma. */
   private playing = new Map<SoundId, AudioBufferSourceNode>()
 
+  /** Quanto far passare prima della musica, per non coprire la sirena di fine periodo. */
+  get periodEndWaitMs(): number {
+    if (this.settings.muted || !this.settings.enabled.periodEnd) return 0
+    return ((this.buffers.get('periodEnd')?.duration ?? 2.6) + 0.4) * 1000
+  }
+
   /** Il browser permette di scegliere l'uscita audio? (Chrome/Edge recenti ed Electron sì) */
   get canChooseOutput(): boolean {
     return typeof AudioContext !== 'undefined' && 'setSinkId' in AudioContext.prototype

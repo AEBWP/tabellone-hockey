@@ -77,6 +77,10 @@ export interface DesktopApi {
   answerClose(confirmed: boolean): void
   saveGame(json: string): void
   loadGame(): string | null
+  /** Percorso sul disco di un file scelto o trascinato ('' se non ne ha uno). */
+  filePath(file: File): string
+  /** Per ogni percorso, se il file si può leggere in questo momento. */
+  checkFiles(paths: string[]): Promise<boolean[]>
   getUpdateState(): Promise<UpdateState>
   checkForUpdate(): Promise<UpdateState>
   /** Scarica la versione nuova, chiude il programma, la installa e lo riapre. */

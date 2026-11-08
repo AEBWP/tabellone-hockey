@@ -34,6 +34,8 @@
   import { audio } from './audio.svelte'
   import AudioTab from './AudioTab.svelte'
   import BackupTab from './BackupTab.svelte'
+  import { music } from './music.svelte'
+  import { musicEvent } from './music'
   import { snapshot, soundEvents } from './sound-events'
   import RulesTab from './RulesTab.svelte'
   import StyleTab from './StyleTab.svelte'
@@ -143,6 +145,8 @@
   const soundTimer = setInterval(() => {
     const cur = snapshot(game, deriveView(game, now()))
     for (const id of soundEvents(lastSound, cur)) audio.play(id)
+    const musicChange = musicEvent(lastSound, cur)
+    if (musicChange) music.handle(musicChange, audio.periodEndWaitMs)
     lastSound = cur
   }, 100)
 
@@ -569,6 +573,23 @@
           🔈 {t('Clicca per attivare l’audio')}
         </button>
       {/if}
+      {#if music.current}
+        <div class="now-playing" title={music.current.name}>
+          <span class="now-playing-name">🎵 {music.current.name}</span>
+          <button
+            type="button"
+            title={t('Traccia successiva')}
+            aria-label={t('Traccia successiva')}
+            onclick={() => music.skip()}>⏭</button
+          >
+          <button
+            type="button"
+            title={t('Ferma musica')}
+            aria-label={t('Ferma musica')}
+            onclick={() => music.stop()}>⏹</button
+          >
+        </div>
+      {/if}
     </div>
 
     <!-- Al centro, appoggiate sul bordo in basso: le schede, subito sopra la console. -->
@@ -709,7 +730,7 @@
     </main>
   {:else if tab === 'audio'}
     <main class="page">
-      <AudioTab />
+      <AudioTab confirm={(r) => (confirmRequest = r)} />
     </main>
   {:else if tab === 'streaming'}
     <main class="page">
@@ -872,6 +893,34 @@
   .audio-locked {
     border-color: var(--warn);
     color: var(--warn);
+  }
+
+  .now-playing {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    min-width: 0;
+    max-width: 260px;
+    padding: 0.15rem 0.3rem 0.15rem 0.6rem;
+    border-radius: 8px;
+    background: var(--ice-950);
+    font-size: 0.85rem;
+  }
+
+  .now-playing-name {
+    overflow: hidden;
+    min-width: 0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .now-playing button {
+    flex: none;
+    padding: 0.1rem 0.3rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
   }
 
   .lang {

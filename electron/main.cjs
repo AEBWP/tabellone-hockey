@@ -720,6 +720,20 @@ function registerIpc() {
     if (confirmed) quitApp()
   })
 
+  // Quali file della playlist ci sono ancora (chiavette e cartelle possono sparire).
+  ipcMain.handle('music:check', (_event, files) =>
+    Promise.all(
+      (Array.isArray(files) ? files : []).map((file) =>
+        isAudioPath(file)
+          ? fs.promises.access(file, fs.constants.R_OK).then(
+              () => true,
+              () => false,
+            )
+          : false,
+      ),
+    ),
+  )
+
   ipcMain.on('game:save', (_event, json) => {
     try {
       if (typeof json === 'string' && json.length < 20_000_000) {
@@ -746,9 +760,24 @@ protocol.registerSchemesAsPrivileged([
     scheme: 'app',
     privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
   },
+  {
+    scheme: 'tabellone-audio',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
+  },
 ])
 
+// Tracce audio: solo file audio con percorso completo, nient'altro del disco.
+const AUDIO_FILE = /\.(mp3|wav|ogg|oga|opus|m4a|aac|flac|webm)$/i
+const isAudioPath = (file) =>
+  typeof file === 'string' && path.isAbsolute(file) && AUDIO_FILE.test(file)
+
 function registerProtocol() {
+  protocol.handle('tabellone-audio', (request) => {
+    const file = decodeURIComponent(new URL(request.url).pathname.slice(1))
+    if (!isAudioPath(file)) return new Response('Non trovato', { status: 404 })
+    // L'intestazione Range serve a far avanzare il file poco alla volta.
+    return net.fetch(pathToFileURL(file).toString(), { headers: request.headers })
+  })
   protocol.handle('app', (request) => {
     const { pathname } = new URL(request.url)
     const file = path.normalize(path.join(DIST, decodeURIComponent(pathname)))
