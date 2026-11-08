@@ -65,6 +65,14 @@ describe('backup su file', () => {
     expect(parseBackup(exportLibrary(sample))).toEqual(sample)
   })
 
+  it('salva e rilegge la lingua; i backup vecchi o con lingue sconosciute non la cambiano', () => {
+    const withLanguage = { ...sample, settings: { language: 'de' as const } }
+    expect(parseBackup(exportLibrary(withLanguage)).settings).toEqual({ language: 'de' })
+    expect(parseBackup(exportLibrary(sample)).settings).toBeUndefined()
+    const unknown = JSON.stringify({ app: 'tabellone-hockey', settings: { language: 'xx' } })
+    expect(parseBackup(unknown).settings).toBeUndefined()
+  })
+
   it('rifiuta file che non sono backup', () => {
     expect(() => parseBackup('ciao')).toThrow(/non è un backup/)
     expect(() => parseBackup('{"teams": []}')).toThrow(/Tabellone Hockey/)

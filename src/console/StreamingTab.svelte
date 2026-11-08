@@ -2,7 +2,8 @@
   import appLogo from '../../build/icon.svg?url'
   import { isValidLiveName, liveLink, LIVE_DEFAULT_SERVICE, toLiveName } from '../shared/live'
   import { loadLogo, LOGO_ACCEPT } from '../shared/logo'
-  import { t } from '../i18n/ui.svelte'
+  import { LANGUAGES, type Language } from '../engine'
+  import { LANGUAGE_NAMES, t } from '../i18n/ui.svelte'
   import Modal from './Modal.svelte'
   import StreamPreview from './StreamPreview.svelte'
   import { downloadCanvas, drawQr } from './qr'
@@ -172,9 +173,49 @@
         {s.settings.name ? t('Cambia nome') : t('Genera link e QR code')}
       </button>
     </div>
+    {#if s.ownNames.length > 1}
+      <div class="own-names">
+        <span class="muted small">{t('Nomi di questa console:')}</span>
+        {#each s.ownNames as own (own)}
+          <button
+            type="button"
+            class="btn btn-sm"
+            class:btn-primary={own === s.settings.name}
+            disabled={own === s.settings.name || s.busy}
+            onclick={() => {
+              nameInput = own
+              askRegister()
+            }}
+          >
+            {own}
+          </button>
+        {/each}
+      </div>
+    {/if}
     {#if nameInput && !candidateValid}
       <p class="muted small">{t('Nome non valido: usa da 3 a 40 lettere, numeri o trattini.')}</p>
     {/if}
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">{t('Lingua per chi guarda')}</h2>
+    <p>
+      {t(
+        'Lingua in cui si apre il tabellone per chi segue lo streaming. Ognuno può poi cambiarla dalla pagina; chi l’ha già cambiata resta nella sua.',
+      )}
+    </p>
+    <div class="row">
+      <select
+        class="input lang-select"
+        aria-label={t('Lingua per chi guarda')}
+        value={s.settings.language}
+        onchange={(e) => s.setLanguage(e.currentTarget.value as Language)}
+      >
+        {#each LANGUAGES as l (l)}
+          <option value={l}>{LANGUAGE_NAMES[l]}</option>
+        {/each}
+      </select>
+    </div>
   </section>
 
   {#if s.link}
@@ -278,7 +319,7 @@
 <Modal open={confirmChange} onclose={() => (confirmChange = false)} title={t('Cambiare nome?')}>
   <p>
     {@html t(
-      'Il link diventerà <b>{link}</b>. Chi ha il link o il QR code vecchio non vedrà più lo streaming: dovrai condividere quelli nuovi.',
+      'Il link diventerà <b>{link}</b>. Chi ha il link o il QR code vecchio non vedrà più questa partita: dovrai condividere quelli nuovi. Il nome vecchio resta di questa console, con la sua chiave: puoi tornare a usarlo quando vuoi.',
       { link: liveLink(s.settings.service, candidate) },
     )}
   </p>
@@ -390,6 +431,20 @@
     flex-wrap: wrap;
     gap: 0.6rem;
     margin-bottom: 0.75rem;
+  }
+
+  .own-names {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+  }
+
+  .row .input.lang-select {
+    flex: 0 1 auto;
+    width: auto;
+    min-width: 180px;
   }
 
   .row .input {

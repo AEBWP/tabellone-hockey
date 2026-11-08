@@ -31,8 +31,53 @@ function loadLanguage(): Language {
   return 'it'
 }
 
+/**
+ * Lingua scelta nella prima schermata da usare anche sul tabellone: la scelta
+ * degli schermi la lascia qui, la console la applica alla partita e la toglie.
+ */
+const BOARD_REQUEST_KEY = 'tabellone-hockey:lingua-tabellone-richiesta'
+
+export function requestBoardLanguage(language: Language): void {
+  try {
+    globalThis.localStorage?.setItem(BOARD_REQUEST_KEY, language)
+  } catch {
+    // Non salvata: il tabellone resta nella sua lingua.
+  }
+}
+
+/** Lingua del tabellone chiesta dalla prima schermata (una volta sola), se c'è. */
+export function takeBoardLanguageRequest(): Language | null {
+  try {
+    const value = globalThis.localStorage?.getItem(BOARD_REQUEST_KEY)
+    if (value === null || value === undefined) return null
+    globalThis.localStorage?.removeItem(BOARD_REQUEST_KEY)
+    return isLanguage(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+/** La console lo richiama quando la prima schermata chiede una lingua per il tabellone. */
+export function onBoardLanguageRequest(callback: () => void): () => void {
+  const listener = (e: StorageEvent) => {
+    if (e.key === BOARD_REQUEST_KEY && e.newValue !== null) callback()
+  }
+  globalThis.addEventListener?.('storage', listener)
+  return () => globalThis.removeEventListener?.('storage', listener)
+}
+
+function hasSavedLanguage(): boolean {
+  try {
+    return isLanguage(globalThis.localStorage?.getItem(STORAGE_KEY))
+  } catch {
+    return false
+  }
+}
+
 class UiLanguage {
   lang = $state<Language>(loadLanguage())
+  /** Lingua mai scelta su questo PC (primo avvio). */
+  readonly firstTime = !hasSavedLanguage()
 
   constructor() {
     this.applyToPage()

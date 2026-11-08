@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { desktop, type ScreenItem } from '../shared/desktop'
   import { LANGUAGES, type Language } from '../engine/types'
-  import { LANGUAGE_NAMES, t, ui } from '../i18n/ui.svelte'
+  import { LANGUAGE_NAMES, requestBoardLanguage, t, ui } from '../i18n/ui.svelte'
 
   let screens = $state<ScreenItem[]>([])
   let consoleId = $state<number | null>(null)
@@ -10,9 +10,28 @@
   let displayIds = $state<number[]>([])
   /** Schermi del tabellone girati verso la console: destra e sinistra rovesciate. */
   let mirrorIds = $state<number[]>([])
-  /** Prima gli schermi, poi il verso di ognuno rispetto al pubblico. */
-  let step = $state<'screens' | 'sides'>('screens')
+
+  /** Passi del wizard: lingua, schermi, verso di ogni tabellone rispetto al pubblico. */
+  const STEPS = ['language', 'screens', 'sides'] as const
+  type Step = (typeof STEPS)[number]
+  const STEP_LABELS: Record<Step, string> = {
+    language: 'Lingua',
+    screens: 'Schermi',
+    sides: 'Posizione',
+  }
+  let step = $state<Step>('language')
+  const stepIndex = $derived(STEPS.indexOf(step))
+
+  /** Salva le preferenze: vale per tutto il wizard, di base acceso. */
   let remember = $state(true)
+
+  /**
+   * Lingua all'apertura: se l'operatore la cambia qui (o al primo avvio) diventa
+   * anche la lingua del tabellone. Riaprendo la scelta degli schermi senza
+   * cambiarla, il tabellone resta nella lingua scelta dalla console.
+   */
+  const initialLanguage = ui.lang
+  const firstTime = ui.firstTime
   let starting = $state(false)
   let error = $state<string | null>(null)
 
@@ -31,7 +50,6 @@
     const first = !loaded
     if (first) {
       loaded = true
-      remember = data.remember
       consoleId = data.choice?.consoleId ?? null
       displayIds = data.choice?.displayIds ?? []
       mirrorIds = data.choice?.mirrorIds ?? []
@@ -81,6 +99,9 @@
     if (!desktop || consoleId === null || displayIds.length === 0) return
     starting = true
     error = null
+    // Salvata anche la lingua (la console la tiene comunque): diventa quella iniziale del tabellone.
+    ui.set(ui.lang)
+    if (firstTime || ui.lang !== initialLanguage) requestBoardLanguage(ui.lang)
     const ok = await desktop.startWithScreens({
       consoleId,
       displayIds: $state.snapshot(displayIds),
@@ -98,26 +119,43 @@
 
 <main>
   <header>
-    <div class="title-row">
-      <h1>Tabellone Hockey <small class="version">v{__APP_VERSION__}</small></h1>
-      <select
-        class="lang"
-        aria-label={t('Lingua della console')}
-        title={t('Lingua della console')}
-        value={ui.lang}
-        onchange={(e) => ui.set(e.currentTarget.value as Language)}
-      >
-        {#each LANGUAGES as l (l)}
-          <option value={l}>{LANGUAGE_NAMES[l]}</option>
-        {/each}
-      </select>
-    </div>
-    <p>
-      {t('Scegli dove mostrare la console dell’operatore e dove il tabellone per il pubblico.')}
-    </p>
+    <h1>Tabellone Hockey <small class="version">v{__APP_VERSION__}</small></h1>
+    <ol class="steps">
+      {#each STEPS as s, i (s)}
+        <li class:current={s === step} class:done={i < stepIndex}>
+          <span class="step-num">{i < stepIndex ? '✓' : i + 1}</span>
+          {t(STEP_LABELS[s])}
+        </li>
+      {/each}
+    </ol>
   </header>
 
-  {#if !desktop}
+  {#if step === 'language'}
+    <section class="language">
+      <h2>{t('Scegli la lingua')}</h2>
+      <p class="muted">
+        {t(
+          'È la lingua della console e anche quella iniziale del tabellone. Potrai cambiarle in qualsiasi momento dalla console.',
+        )}
+      </p>
+      <div class="lang-grid" role="radiogroup" aria-label={t('Lingua della console')}>
+        {#each LANGUAGES as l (l)}
+          <label class="option lang-option" class:selected={ui.lang === l}>
+            <input
+              type="radio"
+              name="language"
+              value={l}
+              checked={ui.lang === l}
+              onchange={() => ui.set(l as Language)}
+            />
+            <span class="lang-code">{l.toUpperCase()}</span>
+            <strong>{LANGUAGE_NAMES[l]}</strong>
+            {#if ui.lang === l}<span class="check" aria-hidden="true">✓</span>{/if}
+          </label>
+        {/each}
+      </div>
+    </section>
+  {:else if !desktop}
     <p class="warn">{t('Questa schermata funziona solo nel programma installato.')}</p>
   {:else if !screens.length}
     <p class="muted">{t('Ricerca degli schermi…')}</p>
@@ -181,21 +219,10 @@
         )}
       </p>
     </section>
-
-    <footer>
-      <button type="button" class="btn" onclick={() => (step = 'screens')}>
-        ← {t('Indietro')}
-      </button>
-      <label class="remember">
-        <input type="checkbox" bind:checked={remember} />
-        {t('Ricorda la scelta e avvia direttamente la prossima volta')}
-      </label>
-      {#if error}<p class="error">{error}</p>{/if}
-      <button type="button" class="btn btn-primary start" disabled={starting} onclick={start}>
-        {starting ? t('Avvio…') : t('Avvia il tabellone')}
-      </button>
-    </footer>
   {:else}
+    <p class="muted">
+      {t('Scegli dove mostrare la console dell’operatore e dove il tabellone per il pubblico.')}
+    </p>
     {#if layout}
       <div class="map" style:aspect-ratio="{layout.width} / {layout.height}">
         {#each screens as s (s.id)}
@@ -272,44 +299,180 @@
         )}
       </p>
     {/if}
+  {/if}
 
-    <footer>
-      {#if error}<p class="error">{error}</p>{/if}
-      {#if displayIds.length === 0}
-        <p class="error">{t('Scegli almeno uno schermo per il tabellone.')}</p>
+  <!-- Piede comune a tutti i passi: "Salva preferenze" vale per l'intero wizard. -->
+  <footer>
+    {#if error}<p class="error">{error}</p>{/if}
+    {#if step === 'screens' && screens.length && displayIds.length === 0}
+      <p class="error">{t('Scegli almeno uno schermo per il tabellone.')}</p>
+    {/if}
+    <div class="footer-row">
+      {#if stepIndex > 0}
+        <button type="button" class="btn" onclick={() => (step = STEPS[stepIndex - 1])}>
+          ← {t('Indietro')}
+        </button>
       {/if}
-      <button
-        type="button"
-        class="btn btn-primary start next"
-        disabled={displayIds.length === 0}
-        onclick={() => (step = 'sides')}
-      >
-        {t('Avanti')} →
-      </button>
-    </footer>
+      <label class="remember">
+        <input type="checkbox" bind:checked={remember} />
+        <span>
+          <strong>{t('Salva preferenze')}</strong>
+          <small>
+            {t(
+              'Lingua, schermi e posizione restano salvati e la prossima volta il tabellone parte subito.',
+            )}
+          </small>
+        </span>
+      </label>
+      {#if step === 'sides'}
+        <button type="button" class="btn btn-primary start" disabled={starting} onclick={start}>
+          {starting ? t('Avvio…') : t('Avvia il tabellone')}
+        </button>
+      {:else}
+        <button
+          type="button"
+          class="btn btn-primary start"
+          disabled={step === 'screens' && (!desktop || !screens.length || displayIds.length === 0)}
+          onclick={() => (step = STEPS[stepIndex + 1])}
+        >
+          {t('Avanti')} →
+        </button>
+      {/if}
+    </div>
     <p class="muted hint">
       {@html t(
         'Potrai cambiare la scelta in qualsiasi momento dalla console, in <b>Impostazioni → Schermi</b>.',
       )}
     </p>
-  {/if}
+  </footer>
 </main>
 
 <style>
-  .title-row {
+  /* Passi del wizard: 1 Lingua · 2 Schermi · 3 Posizione. */
+  .steps {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ice-300);
   }
 
-  .lang {
-    padding: 0.3rem 0.5rem;
-    border: 1px solid var(--ice-700, #2a4a6e);
-    border-radius: 8px;
-    background: var(--ice-950, #06121f);
-    color: inherit;
-    font: inherit;
+  .steps li {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+  }
+
+  .step-num {
+    display: inline-grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: 2px solid var(--ice-700, #2a4a6e);
+    border-radius: 50%;
+    font-size: 0.85rem;
+  }
+
+  .steps li.current {
+    color: var(--ice-50, #fff);
+  }
+
+  .steps li.current .step-num {
+    border-color: var(--ice-400, #5aa0e6);
+    background: var(--ice-600, #2f6fb2);
+  }
+
+  .steps li.done .step-num {
+    border-color: #3ccf7a;
+    color: #3ccf7a;
+  }
+
+  .language {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .language h2 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .language > p {
+    margin: 0;
+  }
+
+  /* Elenco verticale, una lingua per riga, come nella prima configurazione di un sistema operativo. */
+  .lang-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 460px;
+    margin: 0.25rem auto 0;
+    border: 1px solid var(--ice-800);
+    border-radius: 12px;
+    background: var(--ice-900);
+    overflow: hidden;
+  }
+
+  .option.lang-option {
+    flex-direction: row;
+    gap: 0.85rem;
+    padding: 0.8rem 1.1rem;
+    border: none;
+    border-left: 4px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    font-size: 1.1rem;
+  }
+
+  .option.lang-option + .option.lang-option {
+    border-top: 1px solid var(--ice-800);
+  }
+
+  .option.lang-option:hover {
+    background: var(--ice-800);
+  }
+
+  .option.lang-option.selected {
+    border-left-color: var(--ice-400, #5aa0e6);
+    background: color-mix(in srgb, var(--ice-600, #2f6fb2) 35%, transparent);
+  }
+
+  /* Il pallino della scelta resta per la tastiera, ma non si vede: basta la riga evidenziata. */
+  .option.lang-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .option.lang-option:focus-within {
+    outline: 2px solid var(--ice-400, #5aa0e6);
+    outline-offset: -2px;
+  }
+
+  .check {
+    margin-left: auto;
+    color: #3ccf7a;
+    font-weight: 800;
+  }
+
+  .option .lang-code {
+    display: inline-block;
+    width: 2.3rem;
+    text-align: center;
+  }
+
+  .lang-code {
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    background: var(--ice-800);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
   }
 
   main {
@@ -328,13 +491,8 @@
   }
 
   header h1 {
-    margin: 0 0 0.25rem;
-    font-size: 1.6rem;
-  }
-
-  header p {
     margin: 0;
-    color: var(--ice-300);
+    font-size: 1.6rem;
   }
 
   /* Altezza fissa e compatta: la larghezza segue le proporzioni degli schermi. */
@@ -491,33 +649,59 @@
     color: #ffd166;
   }
 
+  /* Piede fisso in fondo a tutti i passi, separato dal contenuto. */
   footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.4rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--ice-800);
+  }
+
+  footer p {
+    margin: 0;
+  }
+
+  .footer-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
   }
 
   .remember {
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
+    min-width: 260px;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--ice-800);
+    border-radius: 10px;
+    background: var(--ice-900);
     cursor: pointer;
   }
 
+  .remember > span {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .remember small {
+    color: var(--ice-300);
+    font-size: 0.82rem;
+  }
+
   .remember input {
-    width: 18px;
-    height: 18px;
+    flex: none;
+    width: 20px;
+    height: 20px;
   }
 
   .start {
     padding: 0.85rem 1.6rem;
     font-size: 1.15rem;
-  }
-
-  .next {
-    margin-left: auto;
   }
 
   .sides {

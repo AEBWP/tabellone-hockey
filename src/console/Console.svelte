@@ -40,7 +40,13 @@
   import TeamsTab from './TeamsTab.svelte'
   import StreamingTab from './StreamingTab.svelte'
   import { streaming } from './streaming.svelte'
-  import { t, ui, LANGUAGE_NAMES } from '../i18n/ui.svelte'
+  import {
+    t,
+    ui,
+    LANGUAGE_NAMES,
+    onBoardLanguageRequest,
+    takeBoardLanguageRequest,
+  } from '../i18n/ui.svelte'
   import { LANGUAGES, type Language } from '../engine'
 
   // ── Stato ─────────────────────────────────────────────────────────────
@@ -162,6 +168,7 @@
     clearTimeout(toastTimer)
     clearTimeout(busyTimer)
     unsubscribe()
+    stopBoardLanguageRequests()
     channel.close()
   })
 
@@ -214,6 +221,25 @@
       )
     }
   }
+
+  /** Lingua del tabellone (pillola accanto all'anteprima). */
+  function setBoardLanguage(language: Language) {
+    if (run({ type: 'setBoardLanguage', language })) showToast(t('Lingua del tabellone cambiata'))
+  }
+
+  /**
+   * Lingua scelta nella prima schermata: diventa quella del tabellone e quella
+   * iniziale dello streaming. Arriva all'avvio, o mentre la console è aperta se
+   * si riapre la scelta degli schermi.
+   */
+  function applyBoardLanguageRequest() {
+    const language = takeBoardLanguageRequest()
+    if (!language) return
+    run({ type: 'setBoardLanguage', language })
+    streaming.setLanguage(language)
+  }
+  applyBoardLanguageRequest()
+  const stopBoardLanguageRequests = onBoardLanguageRequest(applyBoardLanguageRequest)
 
   function startNewGame(rules: Rules) {
     run({ type: 'newGame', rules })
@@ -594,6 +620,19 @@
       <div class="dc-board">
         <BoardPreview {game} connected={displayConnected} busy={displayBusy} />
       </div>
+      <!-- Lingua del tabellone, in piccolo in fondo alla pillola: al clic l'elenco completo. -->
+      <label class="dc-lang" title={t('Lingua del tabellone')}>
+        <span aria-hidden="true">{game.boardLanguage.toUpperCase()}</span>
+        <select
+          aria-label={t('Lingua del tabellone')}
+          value={game.boardLanguage}
+          onchange={(e) => setBoardLanguage(e.currentTarget.value as Language)}
+        >
+          {#each LANGUAGES as l (l)}
+            <option value={l}>{l.toUpperCase()} · {LANGUAGE_NAMES[l]}</option>
+          {/each}
+        </select>
+      </label>
       {#if displayBusy}
         <button type="button" class="dc-btn" disabled aria-busy="true">
           {displayBusy === 'closing' ? t('Chiudi') : t('Apri')}
@@ -657,10 +696,6 @@
         onchoose={(style) => {
           run({ type: 'setBoardStyle', style })
           showToast(t('Stile del tabellone cambiato'))
-        }}
-        onlanguage={(language) => {
-          run({ type: 'setBoardLanguage', language })
-          showToast(t('Lingua del tabellone cambiata'))
         }}
       />
     </main>
@@ -891,11 +926,43 @@
     background: var(--ice-950);
   }
 
-  /* L'anteprima riempie la sua metà della pillola, senza margini. */
+  /* L'anteprima riempie la sua parte della pillola, senza margini. */
   .dc-board {
     display: flex;
-    border-radius: 0 11px 11px 0;
     overflow: hidden;
+  }
+
+  /* In fondo a destra, stretta: la sigla della lingua del tabellone. */
+  .dc-lang {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0 0.45rem;
+    border-left: 1px solid var(--ice-800);
+    border-radius: 0 11px 11px 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--ice-200, #cfe3f7);
+    cursor: pointer;
+  }
+
+  .dc-lang:hover {
+    background: var(--ice-800);
+  }
+
+  .dc-lang:focus-within {
+    outline: 2px solid var(--ice-400, #5aa0e6);
+    outline-offset: -2px;
+  }
+
+  /* Il menu vero è invisibile sopra la sigla: il clic lo apre. */
+  .dc-lang select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
   }
 
   .dc-board :global(.board-preview) {

@@ -55,9 +55,60 @@ app.whenReady().then(async () => {
     await sleep(wait)
   }
 
+  async function finish() {
+    await server.close()
+    console.log(`\nImmagini in ${outDir}`)
+    app.quit()
+  }
+
+  // ── Prima schermata: lingua, schermi, posizione ─────────────────────
+  // Gli schermi sono finti (portatile + maxischermo): la pagina gira dentro un
+  // riquadro dove il programma installato è simulato prima che parta.
+  async function setupShots() {
+    win.setContentSize(1210, 806)
+    await win.loadURL(base + '/setup.html')
+    await js(`localStorage.clear()`)
+    await js(`(async () => {
+      const mock = '<base href="' + location.origin + '/"><script>window.tabelloneApp = {' +
+        'listScreens: async () => ({ screens: [' +
+        '{id:1,number:1,title:"",resolution:"1920×1080",primary:true,label:"Portatile",bounds:{x:0,y:0,width:1920,height:1080}},' +
+        '{id:2,number:2,title:"",resolution:"3840×2160",primary:false,label:"Maxischermo LED",bounds:{x:1920,y:0,width:3840,height:2160}}],' +
+        'choice: null, remember: true }),' +
+        'identifyScreens(){}, setLanguage(){}, startWithScreens: async () => true };<\/script>'
+      const html = await (await fetch('/setup.html')).text()
+      document.body.innerHTML = ''
+      const f = document.createElement('iframe')
+      f.id = 'w'
+      f.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;border:0'
+      document.body.appendChild(f)
+      f.contentDocument.open()
+      f.contentDocument.write(html.replace('<head>', '<head>' + mock))
+      f.contentDocument.close()
+    })()`)
+    await sleep(2000)
+    const inSetup = (code) =>
+      js(`(() => { const d = document.getElementById('w').contentDocument; ${code} })()`)
+    const next = `[...d.querySelectorAll('button')].find((b) => b.textContent.includes('Avanti')).click()`
+    await snap('scelta-lingua')
+    await inSetup(next)
+    await sleep(600)
+    // Tabellone sul maxischermo, console sul portatile
+    await inSetup(`const b = d.querySelectorAll('input[name=display]'); b[0].click(); b[1].click()`)
+    await sleep(400)
+    await snap('scelta-schermi')
+    await inSetup(next)
+    await sleep(600)
+    await snap('scelta-schermi-posizione')
+    await js(`localStorage.clear()`)
+  }
+
   // ── Tabellone (demo) ────────────────────────────────────────────────
-  // SOLO=console oppure SOLO=tabellone per rifare solo una parte
+  // SOLO=console, SOLO=tabellone o SOLO=setup per rifare solo una parte
   const only = process.env.SOLO
+  if (only === 'setup') {
+    await setupShots()
+    return finish()
+  }
   win.setContentSize(1920, 1080)
   // STILI=palette,essenziale per rifare solo alcuni stili (con tutte le scene)
   const pick = process.env.STILI?.split(',')
@@ -99,6 +150,8 @@ app.whenReady().then(async () => {
       }
     }
   }
+
+  if (only !== 'console') await setupShots()
 
   // ── Console ─────────────────────────────────────────────────────────
   if (only === 'tabellone') return finish()
@@ -208,7 +261,5 @@ app.whenReady().then(async () => {
     }
   }
 
-  await server.close()
-  console.log(`\nImmagini in ${outDir}`)
-  app.quit()
+  await finish()
 })

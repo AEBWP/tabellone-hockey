@@ -10,7 +10,7 @@
  * nuovo numero di protocollo, mantenendo anche il vecchio).
  */
 
-import type { GameState } from '../engine/types'
+import type { GameState, Language } from '../engine/types'
 
 /** Versione del protocollo console → servizio. */
 export const LIVE_PROTOCOL = 1
@@ -74,6 +74,11 @@ export interface LiveUpdate {
   sentAt: number
   /** Stato della partita senza loghi (`teams.*.logo` è un'impronta o null). */
   state: GameState
+  /**
+   * Lingua iniziale per chi apre il link, scelta nella console (dalla 1.0.2).
+   * Le console più vecchie non la mandano: la pagina usa allora la lingua del browser.
+   */
+  viewerLanguage?: Language
 }
 
 /** Messaggi dal servizio agli spettatori (WebSocket). */
@@ -123,4 +128,76 @@ export function joinLogos(state: GameState, logos: ReadonlyMap<string, string>):
     teams[id] = { ...state.teams[id], logo: ref ? (logos.get(ref) ?? null) : null }
   }
   return { ...state, teams }
+}
+
+// ── Chiavi dei nomi registrati ──────────────────────────────────────────
+
+/** Un nome registrato da questa console con la sua chiave segreta. */
+export interface StreamingKey {
+  /** Servizio online del nome (senza "/" finale). */
+  service: string
+  name: string
+  key: string
+  /** Quando è stato registrato (ms), 0 se non si sa. */
+  claimedAt: number
+}
+
+/** Nomi e chiavi dello streaming nel file di backup. */
+export interface StreamingBackup {
+  keys: StreamingKey[]
+  /** Nome in uso al momento del backup. */
+  current?: { service: string; name: string }
+}
+
+const normalizeService = (url: string) => url.trim().replace(/\/+$/, '')
+
+/** Chiavi lette dal salvataggio o da un file: si scartano quelle non valide. */
+export function cleanKeys(value: unknown): StreamingKey[] {
+  if (!Array.isArray(value)) return []
+  const keys: StreamingKey[] = []
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue
+    const v = item as Record<string, unknown>
+    if (typeof v.service !== 'string' || !/^https?:\/\/[^/\s]+/.test(v.service)) continue
+    if (typeof v.name !== 'string' || !isValidLiveName(v.name)) continue
+    if (typeof v.key !== 'string' || !v.key || v.key.length > 200) continue
+    keys.push({
+      service: normalizeService(v.service),
+      name: v.name,
+      key: v.key,
+      claimedAt: typeof v.claimedAt === 'number' && v.claimedAt > 0 ? v.claimedAt : 0,
+    })
+  }
+  return mergeKeys([], keys)
+}
+
+/**
+ * Unisce due elenchi di chiavi: un nome per servizio. Se lo stesso nome ha due
+ * chiavi diverse vale quella registrata dopo (l'altra non funziona più).
+ */
+export function mergeKeys(
+  current: readonly StreamingKey[],
+  incoming: readonly StreamingKey[],
+): StreamingKey[] {
+  const byName = new Map<string, StreamingKey>()
+  for (const k of [...current, ...incoming]) {
+    const id = `${k.service} ${k.name}`
+    const had = byName.get(id)
+    if (!had || k.claimedAt >= had.claimedAt) byName.set(id, k)
+  }
+  return [...byName.values()]
+}
+
+/** Parte "streaming" di un file di backup, se c'è e contiene almeno una chiave. */
+export function cleanStreamingBackup(value: unknown): StreamingBackup | null {
+  if (!value || typeof value !== 'object') return null
+  const v = value as { keys?: unknown; current?: unknown }
+  const keys = cleanKeys(v.keys)
+  if (keys.length === 0) return null
+  const c = v.current as { service?: unknown; name?: unknown } | undefined
+  const current =
+    c && typeof c.service === 'string' && typeof c.name === 'string'
+      ? { service: normalizeService(c.service), name: c.name }
+      : null
+  return { keys, ...(current ? { current } : {}) }
 }

@@ -39,9 +39,13 @@
   const consoleLanguage = $derived(
     (raw as { boardLanguage?: Language } | null)?.boardLanguage ?? null,
   )
+  /** Lingua iniziale scelta dal palaghiaccio nella scheda Streaming (console dalla 1.0.2). */
+  let viewerLanguage = $state<Language | null>(null)
+  // Prima la scelta di chi guarda, poi quella del palaghiaccio, poi la lingua del browser.
   const language = $derived<Language>(
     forcedLanguage ??
       chosen ??
+      viewerLanguage ??
       automatic ??
       (consoleLanguage && LANGUAGES.includes(consoleLanguage) ? consoleLanguage : 'it'),
   )
@@ -112,6 +116,8 @@
       lastSeen = message.lastSeen ?? 0
       clockOffset = message.clockOffset ?? 0
       raw = message.update?.state ?? null
+      const initial = message.update?.viewerLanguage
+      viewerLanguage = initial && LANGUAGES.includes(initial) ? initial : null
     } else if (message.type === 'logo' && message.hash && message.data) {
       logos = new Map(logos).set(message.hash, message.data)
     }

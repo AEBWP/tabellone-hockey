@@ -18,11 +18,11 @@ anche seguire **in streaming** dal telefono, con un link e un QR code fissi per 
 
 | Versione            | Data       | Download                                                                                                                                                      |
 | ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1.0.1** (ultima)  | 7 nov 2026 | [⬇️ Tabellone-Hockey-1.0.1-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.1/Tabellone-Hockey-1.0.1-installazione.exe)    |
+| **1.0.2** (ultima)  | 8 nov 2026 | [⬇️ Tabellone-Hockey-1.0.2-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.2/Tabellone-Hockey-1.0.2-installazione.exe)    |
+| 1.0.1               | 7 nov 2026 | [⬇️ Tabellone-Hockey-1.0.1-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.1/Tabellone-Hockey-1.0.1-installazione.exe)    |
 | 1.0.0               | 7 nov 2026 | [⬇️ Tabellone-Hockey-1.0.0-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.0/Tabellone-Hockey-1.0.0-installazione.exe)    |
 | 0.9.11 (beta)       | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.11-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.11/Tabellone-Hockey-0.9.11-installazione.exe) |
 | 0.9.10 (beta)       | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.10-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.10/Tabellone-Hockey-0.9.10-installazione.exe) |
-| 0.9.9 (beta)        | 6 nov 2026 | [⬇️ Tabellone-Hockey-0.9.9-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.9/Tabellone-Hockey-0.9.9-installazione.exe)    |
 | Versioni precedenti |            | [Tutte le versioni](https://github.com/AEBWP/tabellone-hockey/wiki/Download)                                                                                  |
 
 Dalla 0.9.11 il programma **si aggiorna da solo**: quando esce una versione nuova compare il

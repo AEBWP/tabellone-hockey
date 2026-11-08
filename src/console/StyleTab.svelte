@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { BOARD_STYLES, LANGUAGES, type BoardStyle, type Language } from '../engine'
-  import { LANGUAGE_NAMES, t } from '../i18n/ui.svelte'
+  import { BOARD_STYLES, type BoardStyle, type Language } from '../engine'
+  import { t } from '../i18n/ui.svelte'
   import { STYLE_INFO } from '../scoreboard/styles'
   import HelpTip from './HelpTip.svelte'
   import StyleDemo from './StyleDemo.svelte'
@@ -9,13 +9,11 @@
     current,
     language,
     onchoose,
-    onlanguage,
   }: {
     current: BoardStyle
-    /** Lingua delle scritte sul tabellone (indipendente da quella della console). */
+    /** Lingua delle scritte sul tabellone, per le demo (si cambia accanto all'anteprima). */
     language: Language
     onchoose: (style: BoardStyle) => void
-    onlanguage: (language: Language) => void
   } = $props()
 
   /** Demo in riproduzione: una sola alla volta. */
@@ -23,26 +21,6 @@
 </script>
 
 <div class="style-tab">
-  <section class="panel language">
-    <label class="field">
-      <span class="panel-title">{t('Lingua del tabellone')}</span>
-      <select
-        class="input"
-        value={language}
-        onchange={(e) => onlanguage(e.currentTarget.value as Language)}
-      >
-        {#each LANGUAGES as l (l)}
-          <option value={l}>{LANGUAGE_NAMES[l]}</option>
-        {/each}
-      </select>
-    </label>
-    <p class="muted">
-      {t(
-        'Lingua delle scritte sul maxischermo (gol, periodi, penalità…). È indipendente dalla lingua della console e resta salvata.',
-      )}
-    </p>
-  </section>
-
   <p class="muted intro">
     {t(
       'Scegli l’aspetto del tabellone sul maxischermo. Il cambio è immediato, anche a partita in corso, e resta per le partite successive.',
@@ -87,34 +65,6 @@
 </div>
 
 <style>
-  .language {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .language .field {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .language .panel-title {
-    margin: 0;
-  }
-
-  .language select {
-    width: auto;
-  }
-
-  .language p {
-    flex: 1;
-    min-width: 260px;
-    margin: 0;
-  }
-
   .style-tab {
     display: flex;
     flex-direction: column;

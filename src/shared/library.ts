@@ -1,4 +1,12 @@
-import { DEFAULT_RULES, validateRules, type Rules, type TeamSetup } from '../engine'
+import {
+  DEFAULT_RULES,
+  LANGUAGES,
+  validateRules,
+  type Language,
+  type Rules,
+  type TeamSetup,
+} from '../engine'
+import { cleanStreamingBackup, type StreamingBackup } from './live'
 
 /**
  * Archivio delle impostazioni riutilizzabili: squadre salvate (con logo) e
@@ -19,6 +27,18 @@ export interface SavedPreset {
 export interface LibraryData {
   teams: SavedTeam[]
   presets: SavedPreset[]
+  /** Preferenze del programma salvate nel backup (solo nel file, non nell'archivio). */
+  settings?: BackupSettings
+  /**
+   * Nomi dello streaming registrati da questa console, con le chiavi segrete:
+   * senza, su un altro PC il nome non si potrebbe più usare.
+   */
+  streaming?: StreamingBackup
+}
+
+export interface BackupSettings {
+  /** Lingua della console scelta all'avvio o dalla barra in alto. */
+  language?: Language
 }
 
 const TEAMS_KEY = 'tabellone-hockey:squadre:v1'
@@ -134,11 +154,27 @@ export function parseBackup(text: string): LibraryData {
   if (!parsed || typeof parsed !== 'object' || (parsed as { app?: unknown }).app !== BACKUP_APP) {
     throw new Error('Il file non è un backup del Tabellone Hockey.')
   }
-  const p = parsed as { teams?: unknown; presets?: unknown }
+  const p = parsed as {
+    teams?: unknown
+    presets?: unknown
+    settings?: unknown
+    streaming?: unknown
+  }
+  const settings = toSettings(p.settings)
+  const streaming = cleanStreamingBackup(p.streaming)
   return {
     teams: (Array.isArray(p.teams) ? p.teams : []).map(toTeam).filter((t) => t !== null),
     presets: (Array.isArray(p.presets) ? p.presets : []).map(toPreset).filter((x) => x !== null),
+    ...(settings ? { settings } : {}),
+    ...(streaming ? { streaming } : {}),
   }
+}
+
+/** Preferenze lette da un backup; i backup vecchi non le hanno. */
+function toSettings(value: unknown): BackupSettings | null {
+  if (!value || typeof value !== 'object') return null
+  const language = (value as { language?: unknown }).language
+  return LANGUAGES.includes(language as Language) ? { language: language as Language } : null
 }
 
 /** Unisce due elenchi: gli elementi con lo stesso id vengono sostituiti da quelli nuovi. */
