@@ -1,6 +1,6 @@
 // Aggiornamento automatico dalle release del progetto su GitHub.
 //
-// - Qualche secondo dopo l'avvio, e poi ogni poche ore, controlla se c'è una
+// - Appena il programma è partito, e poi ogni poche ore, controlla se c'è una
 //   versione più recente (file latest.yml pubblicato con ogni release).
 // - Non scarica niente da solo: quando l'operatore preme "Aggiorna" scarica
 //   l'installer (solo le parti cambiate, se possibile), ne verifica l'impronta
@@ -8,12 +8,12 @@
 // - Partita, squadre e impostazioni sono nella cartella dei dati dell'utente:
 //   l'installazione non le tocca.
 //
-// La libreria electron-updater si carica solo al primo controllo, per non
-// rallentare l'avvio.
+// La libreria electron-updater si carica solo al primo controllo, un attimo
+// dopo l'apertura delle finestre, per non rallentare l'avvio.
 
 const { app } = require('electron')
 
-const FIRST_CHECK_MS = 20_000
+const FIRST_CHECK_MS = 1_000
 const CHECK_EVERY_MS = 6 * 60 * 60 * 1000
 
 /**

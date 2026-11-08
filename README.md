@@ -18,7 +18,8 @@ anche seguire **in streaming** dal telefono, con un link e un QR code fissi per 
 
 | Versione            | Data       | Download                                                                                                                                                      |
 | ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1.0.3** (ultima)  | 8 nov 2026 | [⬇️ Tabellone-Hockey-1.0.3-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.3/Tabellone-Hockey-1.0.3-installazione.exe)    |
+| **1.0.4** (ultima)  | 8 nov 2026 | [⬇️ Tabellone-Hockey-1.0.4-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.4/Tabellone-Hockey-1.0.4-installazione.exe)    |
+| 1.0.3               | 8 nov 2026 | [⬇️ Tabellone-Hockey-1.0.3-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.3/Tabellone-Hockey-1.0.3-installazione.exe)    |
 | 1.0.2              | 8 nov 2026 | [⬇️ Tabellone-Hockey-1.0.2-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.2/Tabellone-Hockey-1.0.2-installazione.exe)    |
 | 1.0.1               | 7 nov 2026 | [⬇️ Tabellone-Hockey-1.0.1-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.1/Tabellone-Hockey-1.0.1-installazione.exe)    |
 | 1.0.0               | 7 nov 2026 | [⬇️ Tabellone-Hockey-1.0.0-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.0/Tabellone-Hockey-1.0.0-installazione.exe)    |

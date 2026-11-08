@@ -626,7 +626,6 @@ function startMain(newChoice) {
   choice = newChoice
   placeConsole()
   openDisplay()
-  updater.start()
 }
 
 // ── Identificazione schermi: un grande numero su ognuno ───────────────────
@@ -834,6 +833,9 @@ if (!app.requestSingleInstanceLock()) {
     } else {
       openSetup()
     }
+    // Subito, senza aspettare la scelta degli schermi: la console legge l'esito
+    // appena si apre.
+    updater.start()
   })
 
   app.on('before-quit', () => {
