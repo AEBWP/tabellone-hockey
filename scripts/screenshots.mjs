@@ -180,10 +180,17 @@ app.whenReady().then(async () => {
   await open('/')
   await snap('console-partita')
 
-  const clickTab = (label) =>
-    js(
-      `[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === ${JSON.stringify(label)})?.click()`,
-    )
+  const clickTab = async (label) => {
+    const find = `[...document.querySelectorAll('button')].find((b) => b.textContent.trim().split(/\\s+/).pop() === ${JSON.stringify(label)})`
+    // Stile, Regolamento, Audio e Backup stanno nel menu Impostazioni.
+    if (!(await js(`!!${find}`))) {
+      await js(
+        `[...document.querySelectorAll('button')].find((b) => b.textContent.includes('Impostazioni'))?.click()`,
+      )
+      await sleep(150)
+    }
+    await js(`${find}?.click()`)
+  }
   for (const [label, name] of [
     ['Squadre', 'squadre'],
     ['Stile', 'stile'],
