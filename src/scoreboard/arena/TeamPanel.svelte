@@ -28,7 +28,7 @@
     <div class="names">
       <span
         class="short"
-        style:font-size="{fitFontSize(team.shortName, 104, team.logo ? 350 : 500)}px"
+        style:font-size="{fitFontSize(team.shortName, 116, team.logo ? 350 : 500)}px"
         >{team.shortName}</span
       >
       <span class="full">{team.name}</span>
@@ -117,7 +117,7 @@
 
   .short {
     overflow: hidden;
-    font-size: 104px;
+    font-size: 116px;
     font-weight: 800;
     line-height: 0.95;
     letter-spacing: 0.04em;
@@ -127,9 +127,9 @@
 
   .full {
     overflow: hidden;
-    font-size: 30px;
+    font-size: 40px;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -179,7 +179,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    height: 34px;
+    height: 44px;
   }
 
   .away .timeouts {
@@ -187,9 +187,9 @@
   }
 
   .to-label {
-    font-size: 26px;
+    font-size: 38px;
     font-weight: 700;
-    letter-spacing: 0.24em;
+    letter-spacing: 0.1em;
     color: #8fa9c8;
   }
 

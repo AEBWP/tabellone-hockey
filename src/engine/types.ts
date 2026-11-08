@@ -4,7 +4,7 @@ export type TeamId = 'home' | 'away'
 
 /** Stile grafico del tabellone spettatori. */
 export type BoardStyle =
-  'arena' | 'broadcast' | 'ghiaccio' | 'retro' | 'classico' | 'palette' | 'essenziale'
+  'arena' | 'broadcast' | 'ghiaccio' | 'retro' | 'classico' | 'palette' | 'essenziale' | 'led'
 export const BOARD_STYLES: readonly BoardStyle[] = [
   'arena',
   'broadcast',
@@ -13,6 +13,7 @@ export const BOARD_STYLES: readonly BoardStyle[] = [
   'classico',
   'palette',
   'essenziale',
+  'led',
 ]
 /** Lingue disponibili (tabellone e console, scelte separatamente). */
 export type Language = 'it' | 'en' | 'de' | 'es' | 'fr'

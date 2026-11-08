@@ -1,9 +1,13 @@
-import type { Rules, TeamSetup } from '../engine'
+import { PRESETS, type Rules, type TeamSetup } from '../engine'
 import {
+  loadKnownBuiltins,
   loadLibrary,
   mergeById,
   newId,
+  removedBuiltins,
+  saveKnownBuiltins,
   saveLibrary,
+  seedBuiltins,
   type LibraryData,
   type SavedPreset,
   type SavedTeam,
@@ -19,7 +23,11 @@ class Library {
   constructor() {
     const data = loadLibrary()
     this.teams = data.teams
-    this.presets = data.presets
+    const known = loadKnownBuiltins()
+    const seeded = seedBuiltins(data.presets, known)
+    this.presets = seeded.presets
+    if (seeded.presets.length !== data.presets.length) this.persist()
+    if (seeded.known.length !== known.length) saveKnownBuiltins(seeded.known)
   }
 
   private persist() {
@@ -44,21 +52,37 @@ class Library {
     this.persist()
   }
 
-  /** Salva un regolamento; se ne esiste già uno con lo stesso nome lo aggiorna. */
+  /** Crea un nuovo regolamento. */
   savePreset(name: string, rules: Rules): SavedPreset {
-    const existing = this.presets.find(
-      (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase(),
-    )
     const preset: SavedPreset = {
-      id: existing?.id ?? newId(),
+      id: newId(),
       name: name.trim(),
       rules: structuredClone(rules),
     }
-    this.presets = existing
-      ? this.presets.map((p) => (p.id === preset.id ? preset : p))
-      : [...this.presets, preset]
+    this.presets = [...this.presets, preset]
     this.persist()
     return preset
+  }
+
+  /** Modifica un regolamento esistente (anche uno di quelli già pronti). */
+  updatePreset(id: string, name: string, rules: Rules) {
+    this.presets = this.presets.map((p) =>
+      p.id === id ? { id, name: name.trim(), rules: structuredClone(rules) } : p,
+    )
+    this.persist()
+  }
+
+  /** Quanti regolamenti già pronti sono stati cancellati. */
+  get removedBuiltins(): number {
+    return removedBuiltins(this.presets).length
+  }
+
+  /** Rimette i regolamenti già pronti cancellati; quelli modificati restano come sono. */
+  restoreBuiltins() {
+    const missing = removedBuiltins(this.presets)
+    const known = PRESETS.map((p) => p.id).filter((id) => !missing.includes(id))
+    this.presets = seedBuiltins(this.presets, known).presets
+    this.persist()
   }
 
   deletePreset(id: string) {

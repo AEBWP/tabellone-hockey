@@ -10,7 +10,15 @@
     color = '#ff3b2f',
     /** Tutto spento (es. riga di penalità vuota): si vedono solo i segmenti in ombra. */
     ghost = false,
-  }: { value: string; height?: number; color?: string; ghost?: boolean } = $props()
+    /** Leggera inclinazione tipica dei vecchi display. */
+    slanted = true,
+  }: {
+    value: string
+    height?: number
+    color?: string
+    ghost?: boolean
+    slanted?: boolean
+  } = $props()
 
   // Segmenti a-g in un riquadro 60×100 (a in alto, poi in senso orario, g al centro).
   const SEGMENTS: Record<string, string> = {
@@ -41,7 +49,13 @@
   const chars = $derived([...value])
 </script>
 
-<span class="seg" style:--c={color} style:height="{height}px" aria-label={ghost ? '' : value}>
+<span
+  class="seg"
+  class:slanted
+  style:--c={color}
+  style:height="{height}px"
+  aria-label={ghost ? '' : value}
+>
   {#each chars as ch, i (i)}
     {#if ch === ':'}
       <svg viewBox="0 0 22 100" aria-hidden="true">
@@ -68,18 +82,17 @@
     display: inline-flex;
     align-items: stretch;
     gap: 0.07em;
-    /* Leggera inclinazione, tipica dei display a segmenti. */
-    transform: skewX(-6deg);
     font-size: 0;
+  }
+
+  .slanted {
+    transform: skewX(-6deg);
   }
 
   svg {
     height: 100%;
     width: auto;
     overflow: visible;
-    /* Ogni cifra è un livello a sé: i bagliori sfocati sono costosi da
-       disegnare, così quando cambia una cifra si ridisegna solo quella. */
-    will-change: transform;
   }
 
   polygon,
@@ -90,6 +103,5 @@
 
   .on {
     opacity: 1;
-    filter: drop-shadow(0 0 6px var(--c)) drop-shadow(0 0 18px var(--c));
   }
 </style>

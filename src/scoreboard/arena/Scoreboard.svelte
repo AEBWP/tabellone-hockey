@@ -212,7 +212,7 @@
     border-top-color: rgba(255, 255, 255, 0.22);
     clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 100%, 0 100%);
     background: var(--panel);
-    font-size: 58px;
+    font-size: 66px;
     font-weight: 700;
     line-height: 1;
     letter-spacing: 0.14em;
@@ -251,7 +251,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 18px 24px 40px;
+    padding: 18px 16px 40px;
     border: 2px solid var(--panel-border);
     border-radius: 6px;
     background:
@@ -289,17 +289,17 @@
   }
 
   .caption {
-    font-size: 34px;
+    font-size: 44px;
     font-weight: 700;
-    letter-spacing: 0.32em;
+    letter-spacing: 0.1em;
     color: var(--label);
   }
 
   .clock {
-    font-size: 252px;
+    font-size: 262px;
     font-weight: 800;
     line-height: 0.95;
-    letter-spacing: 0.02em;
+    letter-spacing: 0;
     white-space: nowrap;
     color: var(--led-white);
     text-shadow: 0 0 28px rgba(200, 225, 255, 0.35);
@@ -316,7 +316,7 @@
   }
 
   .intermission .clock {
-    font-size: 220px;
+    font-size: 240px;
     color: #9cc3ea;
     text-shadow: 0 0 28px rgba(156, 195, 234, 0.35);
   }
@@ -341,7 +341,7 @@
     overflow: hidden;
     border: 2px solid var(--team);
     border-radius: 4px;
-    font-size: 40px;
+    font-size: 46px;
     font-weight: 800;
     line-height: 1;
     white-space: nowrap;
@@ -352,11 +352,11 @@
     display: flex;
     flex: none;
     align-items: center;
-    padding: 12px 18px 10px;
+    padding: 10px 12px 8px;
   }
 
   .pp-label {
-    letter-spacing: 0.1em;
+    letter-spacing: 0.04em;
     color: var(--label);
     background: #0a101a;
   }
@@ -378,7 +378,7 @@
   }
 
   .pp-strength i {
-    font-size: 30px;
+    font-size: 36px;
     font-style: normal;
     color: var(--label);
   }
@@ -406,9 +406,9 @@
   .stats-head,
   .timeout-head {
     padding: 10px 0 8px;
-    font-size: 30px;
+    font-size: 42px;
     font-weight: 700;
-    letter-spacing: 0.28em;
+    letter-spacing: 0.14em;
     text-align: center;
     color: var(--label);
     border-bottom: 2px solid var(--panel-border);
@@ -443,13 +443,13 @@
   }
 
   .stat-value {
-    font-size: 132px;
+    font-size: 140px;
     font-weight: 800;
     line-height: 1;
   }
 
   .stat-team {
-    font-size: 30px;
+    font-size: 40px;
     font-weight: 700;
     letter-spacing: 0.12em;
     color: var(--label);
@@ -475,7 +475,7 @@
     flex: 1;
     display: grid;
     place-items: center;
-    font-size: 150px;
+    font-size: 170px;
     font-weight: 800;
     color: var(--led-amber);
     text-shadow: 0 0 28px rgba(255, 182, 39, 0.35);

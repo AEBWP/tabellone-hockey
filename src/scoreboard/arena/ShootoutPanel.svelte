@@ -61,14 +61,14 @@
     padding: 10px 22px 8px;
     border-bottom: 2px solid rgba(150, 180, 220, 0.22);
     box-shadow: inset 6px 0 0 var(--team);
-    font-size: 30px;
+    font-size: 42px;
     font-weight: 700;
-    letter-spacing: 0.24em;
+    letter-spacing: 0.12em;
     color: #8fa9c8;
   }
 
   .goals {
-    font-size: 48px;
+    font-size: 56px;
     font-weight: 800;
     letter-spacing: 0;
     line-height: 1;

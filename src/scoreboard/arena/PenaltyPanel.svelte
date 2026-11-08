@@ -52,14 +52,14 @@
     padding: 10px 22px 8px;
     border-bottom: 2px solid rgba(150, 180, 220, 0.22);
     box-shadow: inset 6px 0 0 var(--team);
-    font-size: 30px;
+    font-size: 42px;
     font-weight: 700;
-    letter-spacing: 0.28em;
+    letter-spacing: 0.14em;
     color: #8fa9c8;
   }
 
   .waiting {
-    font-size: 26px;
+    font-size: 36px;
     letter-spacing: 0.08em;
     color: #ffb627;
   }
@@ -85,7 +85,7 @@
   }
 
   .num {
-    font-size: 70px;
+    font-size: 76px;
     color: #f4f7fb;
   }
 
@@ -98,7 +98,7 @@
   }
 
   .time {
-    font-size: 78px;
+    font-size: 86px;
     text-align: right;
     color: #ffb627;
     text-shadow: 0 0 22px rgba(255, 182, 39, 0.35);
@@ -106,7 +106,7 @@
 
   .row.misconduct .num,
   .row.misconduct .time {
-    font-size: 54px;
+    font-size: 60px;
     opacity: 0.75;
   }
 

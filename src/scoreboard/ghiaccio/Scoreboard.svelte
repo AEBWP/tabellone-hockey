@@ -96,7 +96,7 @@
           <div class="names">
             <span
               class="short"
-              style:font-size="{fitFontSize(t.shortName, 84, t.logo ? 330 : 470)}px"
+              style:font-size="{fitFontSize(t.shortName, 100, t.logo ? 340 : 490)}px"
               >{t.shortName}</span
             >
             <span class="full">{t.name}</span>
@@ -224,7 +224,7 @@
   .pill {
     padding: 10px 60px 6px;
     border-radius: 999px;
-    font-size: 54px;
+    font-size: 62px;
     font-weight: 700;
     letter-spacing: 0.16em;
     line-height: 1;
@@ -325,9 +325,9 @@
 
   .full {
     overflow: hidden;
-    font-size: 28px;
+    font-size: 38px;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -347,15 +347,15 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 24px;
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.1em;
     color: var(--slate);
   }
 
   .tos i {
-    width: 34px;
-    height: 10px;
+    width: 40px;
+    height: 14px;
     border-radius: 5px;
     background: var(--line);
   }
@@ -384,14 +384,14 @@
   }
 
   .caption {
-    font-size: 34px;
+    font-size: 44px;
     font-weight: 700;
-    letter-spacing: 0.3em;
+    letter-spacing: 0.12em;
     color: var(--slate);
   }
 
   .clock {
-    font-size: 250px;
+    font-size: 265px;
     font-weight: 800;
     line-height: 0.95;
     white-space: nowrap;
@@ -406,7 +406,7 @@
   }
 
   .clock.pause {
-    font-size: 220px;
+    font-size: 240px;
     color: #2c6aa3;
   }
 
@@ -425,11 +425,11 @@
     align-items: center;
     gap: 18px;
     margin-top: 14px;
-    padding: 8px 26px 6px;
+    padding: 8px 20px 6px;
     border-radius: 999px;
-    font-size: 40px;
+    font-size: 44px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.02em;
     white-space: nowrap;
     color: var(--on-team);
     background: var(--team);
@@ -440,7 +440,7 @@
     display: grid;
     grid-template-columns: 560px minmax(0, 1fr) 560px;
     gap: 32px;
-    height: 300px;
+    height: 360px;
     padding: 30px 40px 40px;
   }
 
@@ -453,10 +453,10 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 16px 26px 10px;
-    font-size: 32px;
+    padding: 12px 26px 8px;
+    font-size: 42px;
     font-weight: 700;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.1em;
     color: var(--slate);
     border-bottom: 2px solid var(--line);
   }
@@ -468,7 +468,7 @@
   }
 
   .waiting {
-    font-size: 26px;
+    font-size: 36px;
     color: #c77a12 !important;
   }
 
@@ -496,11 +496,11 @@
   }
 
   .num {
-    font-size: 64px;
+    font-size: 80px;
   }
 
   .time {
-    font-size: 72px;
+    font-size: 88px;
     color: #c77a12;
   }
 
@@ -510,12 +510,12 @@
 
   .row.misconduct .num,
   .row.misconduct .time {
-    font-size: 50px;
+    font-size: 60px;
   }
 
   .none {
     margin: auto;
-    font-size: 32px;
+    font-size: 42px;
     font-weight: 600;
     letter-spacing: 0.1em;
     color: #a9bacd;
@@ -537,14 +537,14 @@
   }
 
   .shot b {
-    font-size: 120px;
+    font-size: 130px;
     line-height: 1;
   }
 
   .shot span {
-    font-size: 28px;
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.08em;
     color: var(--slate);
   }
 
@@ -562,7 +562,7 @@
     display: grid;
     flex: 1;
     place-items: center;
-    font-size: 140px;
+    font-size: 170px;
     font-weight: 800;
     color: #c77a12;
   }

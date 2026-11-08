@@ -37,7 +37,7 @@
   <div class="team" class:dimmed={winner !== null && winner !== side} style:--team={t.color}>
     <div class="name-card">
       {#if t.logo}<img class="logo" src={t.logo} alt="" />{/if}
-      <span class="short" style:font-size="{fitFontSize(t.shortName, 100, t.logo ? 380 : 480)}px">
+      <span class="short" style:font-size="{fitFontSize(t.shortName, 112, t.logo ? 366 : 480)}px">
         {t.shortName}
       </span>
     </div>
@@ -98,7 +98,7 @@
         <div class="caption">{text.next(view)}</div>
       {:else if view.phase === 'shootout' || view.phase === 'final'}
         {@const word = view.phase === 'final' ? text.finalShort : text.shootoutWord}
-        <div class="word-card" style:font-size="{fitFontSize(word, 170, 640)}px">{word}</div>
+        <div class="word-card" style:font-size="{fitFontSize(word, 180, 620)}px">{word}</div>
       {:else}
         <div class="clock" class:stopped={!view.clockRunning} class:urgent={lastMinute}>
           <Flaps value={view.clockText} width={150} height={250} size={230} flip={animations} />
@@ -184,7 +184,7 @@
   .plate {
     padding: 4px 44px;
     border-radius: 12px;
-    font-size: 66px;
+    font-size: 74px;
     line-height: 1.15;
     letter-spacing: 0.08em;
     background: #2c2f34;
@@ -255,14 +255,14 @@
   .timeouts {
     display: flex;
     gap: 14px;
-    height: 48px;
+    height: 56px;
   }
 
   .to {
     padding: 0 14px;
     border-radius: 8px;
-    font-size: 38px;
-    line-height: 48px;
+    font-size: 46px;
+    line-height: 56px;
     color: #c9c1aa;
     background: #2c2f34;
   }
@@ -288,7 +288,7 @@
   }
 
   .caption {
-    font-size: 50px;
+    font-size: 56px;
     letter-spacing: 0.06em;
     color: #c9c1aa;
     white-space: nowrap;
@@ -306,17 +306,17 @@
   }
 
   .powerplay {
-    padding: 6px 30px;
+    padding: 6px 20px;
     border-left: 16px solid var(--team);
     border-radius: 10px;
-    font-size: 58px;
-    letter-spacing: 0.04em;
+    font-size: 62px;
+    letter-spacing: 0.01em;
     white-space: nowrap;
     background: #2c2f34;
   }
 
   .bottom {
-    height: 300px;
+    height: 320px;
   }
 
   .penalties {
@@ -330,18 +330,18 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 88px;
+    height: 94px;
     padding: 0 24px;
     border-left: 12px solid var(--team);
     border-radius: 10px;
-    font-size: 78px;
+    font-size: 84px;
     line-height: 1;
     background: #2c2f34;
   }
 
   .pen.misconduct {
-    height: 66px;
-    font-size: 54px;
+    height: 70px;
+    font-size: 60px;
     opacity: 0.7;
   }
 
@@ -351,7 +351,7 @@
 
   .waiting {
     padding-left: 24px;
-    font-size: 40px;
+    font-size: 46px;
     color: #c9c1aa;
   }
 
@@ -364,7 +364,7 @@
   }
 
   .label {
-    font-size: 46px;
+    font-size: 52px;
     letter-spacing: 0.08em;
     color: #c9c1aa;
     white-space: nowrap;
@@ -384,7 +384,7 @@
   }
 
   .so-title {
-    font-size: 54px;
+    font-size: 58px;
     letter-spacing: 0.08em;
     color: #c9c1aa;
   }

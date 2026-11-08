@@ -28,6 +28,8 @@ export interface GameView {
   regularPeriods: number
   /** Mostrare i tiri in porta (si attiva nel regolamento). */
   showShots: boolean
+  /** Solo il cronometro: niente squadre né punti (tornei a più campi). */
+  clockOnly: boolean
   /** Lingua delle scritte del tabellone. */
   language: Language
   clockMs: number
@@ -153,6 +155,7 @@ export function deriveView(state: GameState, now: number): GameView {
     overtimeNumber: overtime ? s.period - s.rules.periods : 0,
     regularPeriods: s.rules.periods,
     showShots: s.rules.showShots === true,
+    clockOnly: s.rules.clockOnly === true,
     language: s.boardLanguage,
     clockMs,
     clockText: formatClock(clockMs, tenths),

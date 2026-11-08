@@ -37,4 +37,9 @@ export const STYLE_INFO: Record<BoardStyle, { name: string; description: string 
     description:
       'Fondo nero e cifre bianche enormi, il colore delle squadre solo come fascia: si legge bene da lontano ed è leggero anche sui PC meno potenti. Gol con il colore della squadra che copre lo schermo.',
   },
+  led: {
+    name: 'LED',
+    description:
+      'Tabellone a LED: cifre e scritte interamente a segmenti luminosi su fondo nero, colori pieni e nessuna sfocatura. Gol con la scritta che lampeggia a tutto schermo.',
+  },
 }

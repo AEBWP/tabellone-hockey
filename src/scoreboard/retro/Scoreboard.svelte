@@ -50,12 +50,12 @@
         <div class="center">
           {#if view.phase === 'intermission' && view.intermission}
             <div class="label green">{text.intermission}</div>
-            <SevenSegment value={pad(view.intermission.text, 5)} height={210} color={GREEN} />
+            <SevenSegment value={pad(view.intermission.text, 5)} height={230} color={GREEN} />
           {:else if view.phase === 'shootout' && view.shootout}
             <div class="label">{text.shootout}</div>
             <SevenSegment
               value={`${view.shootout.home.filter(Boolean).length}-${view.shootout.away.filter(Boolean).length}`}
-              height={210}
+              height={230}
               color={AMBER}
             />
           {:else if view.phase === 'final'}
@@ -65,7 +65,7 @@
             <div class="label">{text.time}</div>
             <SevenSegment
               value={pad(view.clockText, 5)}
-              height={210}
+              height={230}
               color={lastMinute ? RED : AMBER}
             />
           {/if}
@@ -83,11 +83,11 @@
       <div class="team {id}" class:dimmed={winner !== null && winner !== id}>
         <div class="name" style:color={lamp(t)}>
           {#if t.logo}<PixelLogo src={t.logo} size={84} pixels={20} />{/if}
-          <span style:font-size="{fitFontSize(t.shortName, 92, t.logo ? 440 : 540)}px"
+          <span style:font-size="{fitFontSize(t.shortName, 100, t.logo ? 440 : 540)}px"
             >{t.shortName}</span
           >
         </div>
-        <SevenSegment value={pad(t.score, 2)} height={300} color={RED} />
+        <SevenSegment value={pad(t.score, 2)} height={320} color={RED} />
         <div class="tos">
           <span class="label small">{text.timeout}</span>
           {#each { length: Math.max(1, t.timeoutsLeft) }, k (k)}
@@ -199,19 +199,17 @@
   }
 
   .label {
-    font-size: 42px;
-    letter-spacing: 0.12em;
+    font-size: 50px;
+    letter-spacing: 0.06em;
     color: #ffb000;
-    text-shadow: 0 0 12px rgba(255, 176, 0, 0.6);
   }
 
   .label.small {
-    font-size: 30px;
+    font-size: 40px;
   }
 
   .label.green {
     color: #3dff7a;
-    text-shadow: 0 0 12px rgba(61, 255, 122, 0.6);
   }
 
   .dimmed {
@@ -254,7 +252,6 @@
     align-items: center;
     gap: 22px;
     height: 110px;
-    text-shadow: 0 0 16px currentColor;
     white-space: nowrap;
   }
 
@@ -273,9 +270,6 @@
 
   .bulb.on {
     background: #ffb000;
-    box-shadow:
-      0 0 10px #ffb000,
-      0 0 24px rgba(255, 176, 0, 0.6);
   }
 
   .center {
@@ -289,7 +283,6 @@
     font-size: 190px;
     line-height: 1.1;
     color: #ffb000;
-    text-shadow: 0 0 20px rgba(255, 176, 0, 0.7);
   }
 
   .period {
@@ -303,7 +296,6 @@
     font-size: 96px;
     line-height: 1;
     color: #ffb000;
-    text-shadow: 0 0 16px rgba(255, 176, 0, 0.7);
   }
 
   .pp {
@@ -311,10 +303,9 @@
     left: 0;
     right: 0;
     top: 662px;
-    font-size: 46px;
+    font-size: 52px;
     letter-spacing: 0.1em;
     text-align: center;
-    text-shadow: 0 0 14px currentColor;
     animation: blink 1.6s steps(2, start) infinite;
   }
 
@@ -324,7 +315,7 @@
     left: 50px;
     right: 50px;
     top: 735px;
-    height: 290px;
+    height: 305px;
     display: grid;
     grid-template-columns: 560px minmax(0, 1fr) 560px;
     gap: 30px;
@@ -375,12 +366,10 @@
 
   .bulb.goal {
     background: #3dff7a;
-    box-shadow: 0 0 22px #3dff7a;
   }
 
   .bulb.miss {
     background: #ff3b2f;
-    box-shadow: 0 0 22px #ff3b2f;
   }
 
   .caption {
@@ -388,10 +377,9 @@
     left: 0;
     right: 0;
     top: 662px;
-    font-size: 40px;
+    font-size: 48px;
     letter-spacing: 0.12em;
     text-align: center;
     color: #3dff7a;
-    text-shadow: 0 0 12px rgba(61, 255, 122, 0.6);
   }
 </style>

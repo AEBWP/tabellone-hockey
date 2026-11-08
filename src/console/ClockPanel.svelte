@@ -43,11 +43,13 @@
 
   function endGame() {
     confirm({
-      title: t('Terminare la partita?'),
-      message: t('Il tabellone mostrerà “{final}” con il punteggio attuale.', {
-        final: BOARD_TEXT[view.language].final,
-      }),
-      confirmLabel: t('Termina partita'),
+      title: view.clockOnly ? t('Terminare il cronometro?') : t('Terminare la partita?'),
+      message: view.clockOnly
+        ? t('Il cronometro si ferma e il tabellone mostra la fine.')
+        : t('Il tabellone mostrerà “{final}” con il punteggio attuale.', {
+            final: BOARD_TEXT[view.language].final,
+          }),
+      confirmLabel: view.clockOnly ? t('Termina') : t('Termina partita'),
       danger: true,
       action: () => run({ type: 'endGame' }),
     })
@@ -58,24 +60,32 @@
   <h2 class="panel-title">
     {t('Tempo di gioco')}
     <HelpTip title={t('Tempo di gioco')}>
-      {@html t(
-        'Avvia e ferma il cronometro con il pulsante grande o con la <kbd>barra spaziatrice</kbd>. Quando il tempo arriva a zero si passa da solo all’intervallo e poi al periodo successivo. Le penalità scorrono solo quando il tempo è in moto.',
-      )}
+      {@html view.clockOnly
+        ? t(
+            'Un solo cronometro per tutti i campi. Si avvia e si ferma con il pulsante grande o con la <kbd>barra spaziatrice</kbd>: a zero suona la sirena e il tempo finisce.',
+          )
+        : t(
+            'Avvia e ferma il cronometro con il pulsante grande o con la <kbd>barra spaziatrice</kbd>. Quando il tempo arriva a zero si passa da solo all’intervallo e poi al periodo successivo. Le penalità scorrono solo quando il tempo è in moto.',
+          )}
     </HelpTip>
-    <!-- Azione rapida: scambia i lati delle squadre in console e su tutti i tabelloni. -->
-    <button
-      type="button"
-      class="btn btn-sm swap-sides"
-      title={t(
-        'Scambia i lati delle squadre in console e sui tabelloni (punti e penalità restano a ogni squadra)',
-      )}
-      onclick={() => run({ type: 'swapSides' })}
-    >
-      ⇄ {t('Inverti squadre')}
-    </button>
+    {#if !view.clockOnly}
+      <!-- Azione rapida: scambia i lati delle squadre in console e su tutti i tabelloni. -->
+      <button
+        type="button"
+        class="btn btn-sm swap-sides"
+        title={t(
+          'Scambia i lati delle squadre in console e sui tabelloni (punti e penalità restano a ogni squadra)',
+        )}
+        onclick={() => run({ type: 'swapSides' })}
+      >
+        ⇄ {t('Inverti squadre')}
+      </button>
+    {/if}
   </h2>
 
-  <div class="phase">{phaseLabel({ ...view, language: ui.lang })}</div>
+  {#if !view.clockOnly}
+    <div class="phase">{phaseLabel({ ...view, language: ui.lang })}</div>
+  {/if}
 
   {#if view.phase === 'intermission' && view.intermission}
     <div class="time intermission">{view.intermission.text}</div>
@@ -98,9 +108,9 @@
     <div class="state">{t('Segna i tiri nei pannelli delle squadre')}</div>
   {:else if view.phase === 'final'}
     <div class="time word">{words.finalShort}</div>
-    <div class="state">{t('Partita terminata')}</div>
+    <div class="state">{view.clockOnly ? t('Cronometro finito') : t('Partita terminata')}</div>
     <button type="button" class="btn btn-primary btn-lg main-btn" onclick={onNewGame}>
-      {t('Nuova partita')}
+      {view.clockOnly ? t('Nuovo cronometro') : t('Nuova partita')}
       <kbd>{t('Spazio')}</kbd>
     </button>
   {:else}
@@ -148,21 +158,23 @@
     >
       {t('Correggi tempo…')}
     </button>
-    <button
-      type="button"
-      class="btn btn-sm"
-      disabled={!canRunClock || view.pregame}
-      onclick={endPeriod}
-    >
-      {t('Fine periodo')}
-    </button>
+    {#if !view.clockOnly}
+      <button
+        type="button"
+        class="btn btn-sm"
+        disabled={!canRunClock || view.pregame}
+        onclick={endPeriod}
+      >
+        {t('Fine periodo')}
+      </button>
+    {/if}
     <button
       type="button"
       class="btn btn-sm btn-danger"
       disabled={view.pregame || view.phase === 'final'}
       onclick={endGame}
     >
-      {t('Fine partita')}
+      {view.clockOnly ? t('Fine cronometro') : t('Fine partita')}
     </button>
   </div>
 </section>

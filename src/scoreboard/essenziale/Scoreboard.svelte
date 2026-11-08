@@ -34,7 +34,7 @@
   <div class="team {side}" class:dimmed={winner !== null && winner !== side} style:--team={t.color}>
     <div class="name">
       {#if t.logo}<img class="logo" src={t.logo} alt="" />{/if}
-      <span class="short" style:font-size="{fitFontSize(t.shortName, 120, t.logo ? 400 : 520)}px">
+      <span class="short" style:font-size="{fitFontSize(t.shortName, 134, t.logo ? 456 : 580)}px">
         {t.shortName}
       </span>
     </div>
@@ -83,7 +83,10 @@
       <div class="phase" class:final={view.phase === 'final'}>{phaseLabel(view)}</div>
       {#if view.phase === 'intermission' && view.intermission}
         <div class="clock intermission">{view.intermission.text}</div>
-        <div class="caption">{text.endOf(previousPeriod(view))} · {text.next(view)}</div>
+        {@const ended = text.endOf(previousPeriod(view))}
+        {@const next = text.next(view)}
+        <div class="caption" style:font-size="{fitFontSize(ended, 60, 600)}px">{ended}</div>
+        <div class="caption" style:font-size="{fitFontSize(next, 60, 600)}px">{next}</div>
       {:else if view.phase === 'shootout' || view.phase === 'final'}
         {@const word = view.phase === 'final' ? text.finalShort : text.shootoutWord}
         <div class="clock word" style:font-size="{fitFontSize(word, 200, 700)}px">{word}</div>
@@ -243,7 +246,7 @@
 
   .phase {
     height: 140px;
-    font-size: 76px;
+    font-size: 84px;
     line-height: 140px;
     letter-spacing: 0.06em;
     white-space: nowrap;
@@ -281,7 +284,7 @@
   .caption {
     max-width: 100%;
     overflow: hidden;
-    font-size: 44px;
+    line-height: 1.1;
     letter-spacing: 0.04em;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -292,7 +295,7 @@
     margin-top: 20px;
     padding: 4px 30px;
     border-radius: 10px;
-    font-size: 60px;
+    font-size: 66px;
     letter-spacing: 0.04em;
     white-space: nowrap;
     background: color-mix(in srgb, var(--team) 40%, #000);
@@ -317,12 +320,12 @@
     align-items: baseline;
     padding: 0 28px;
     border-left: 12px solid var(--team);
-    font-size: 84px;
+    font-size: 90px;
     line-height: 1.1;
   }
 
   .pen.misconduct {
-    font-size: 56px;
+    font-size: 62px;
     color: #b8bec6;
   }
 
@@ -332,7 +335,7 @@
 
   .waiting {
     padding-left: 40px;
-    font-size: 42px;
+    font-size: 50px;
     color: #b8bec6;
   }
 
@@ -345,7 +348,7 @@
   }
 
   .label {
-    font-size: 48px;
+    font-size: 56px;
     letter-spacing: 0.06em;
     color: #b8bec6;
     white-space: nowrap;
@@ -354,14 +357,14 @@
   .shots {
     display: flex;
     gap: 160px;
-    font-size: 130px;
+    font-size: 140px;
     line-height: 1.05;
   }
 
   .timeout-clock {
     padding: 0 40px;
     border-bottom: 14px solid var(--team);
-    font-size: 150px;
+    font-size: 160px;
     line-height: 1.05;
   }
 
@@ -373,7 +376,7 @@
   }
 
   .so-title {
-    font-size: 56px;
+    font-size: 62px;
     letter-spacing: 0.06em;
     color: #b8bec6;
   }

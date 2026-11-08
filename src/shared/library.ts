@@ -1,6 +1,7 @@
 import {
   DEFAULT_RULES,
   LANGUAGES,
+  PRESETS,
   validateRules,
   type Language,
   type Rules,
@@ -43,6 +44,60 @@ export interface BackupSettings {
 
 const TEAMS_KEY = 'tabellone-hockey:squadre:v1'
 const PRESETS_KEY = 'tabellone-hockey:regolamenti:v1'
+const BUILTINS_KEY = 'tabellone-hockey:regolamenti-predefiniti:v1'
+const BUILTIN_PREFIX = 'builtin-'
+
+// ── Regolamenti già pronti ──────────────────────────────────────────────
+// Entrano nell'archivio come tutti gli altri, così si possono modificare e
+// cancellare. L'elenco di quelli già visti evita che un cancellato ricompaia.
+
+export function isBuiltinPreset(p: { id: string }): boolean {
+  return p.id.startsWith(BUILTIN_PREFIX)
+}
+
+/**
+ * Aggiunge i regolamenti già pronti non ancora visti (`known`), subito dopo
+ * gli altri già pronti e prima di quelli creati dall'operatore.
+ */
+export function seedBuiltins(
+  presets: SavedPreset[],
+  known: readonly string[],
+): { presets: SavedPreset[]; known: string[] } {
+  const ids = new Set(presets.map((p) => p.id))
+  const fresh = PRESETS.filter(
+    (p) => !known.includes(p.id) && !ids.has(BUILTIN_PREFIX + p.id),
+  ).map<SavedPreset>((p) => ({
+    id: BUILTIN_PREFIX + p.id,
+    name: p.name,
+    rules: structuredClone(p.rules),
+  }))
+  const at = presets.map(isBuiltinPreset).lastIndexOf(true) + 1
+  return {
+    presets: [...presets.slice(0, at), ...fresh, ...presets.slice(at)],
+    known: [...new Set([...known, ...PRESETS.map((p) => p.id)])],
+  }
+}
+
+/** Regolamenti già pronti rimossi dall'operatore (si possono rimettere). */
+export function removedBuiltins(presets: SavedPreset[]): string[] {
+  const ids = new Set(presets.map((p) => p.id))
+  return PRESETS.filter((p) => !ids.has(BUILTIN_PREFIX + p.id)).map((p) => p.id)
+}
+
+export function loadKnownBuiltins(storage: Storage | undefined = safeStorage()): string[] {
+  return readList(storage, BUILTINS_KEY).filter((id) => typeof id === 'string')
+}
+
+export function saveKnownBuiltins(
+  known: readonly string[],
+  storage: Storage | undefined = safeStorage(),
+): void {
+  try {
+    storage?.setItem(BUILTINS_KEY, JSON.stringify(known))
+  } catch {
+    // Spazio finito: al prossimo avvio i già pronti mancanti verrebbero solo riproposti.
+  }
+}
 
 export function newId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto

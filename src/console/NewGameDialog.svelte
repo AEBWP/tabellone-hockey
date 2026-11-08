@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { PRESETS, rulesFromPreset, type Rules } from '../engine'
+  import type { Rules } from '../engine'
   import { t } from '../i18n/ui.svelte'
-  import { describeRules } from './rules-text'
+  import { describeRules, presetLabel } from './rules-text'
   import { library } from './library.svelte'
   import Modal from './Modal.svelte'
 
@@ -26,8 +26,7 @@
   })
 
   const selected = $derived.by((): Rules => {
-    if (choice.startsWith('b:')) return rulesFromPreset(choice.slice(2))
-    const saved = library.presets.find((p) => `s:${p.id}` === choice)
+    const saved = library.presets.find((p) => p.id === choice)
     return saved ? structuredClone(saved.rules) : structuredClone(currentRules)
   })
 
@@ -44,18 +43,9 @@
     {t('Regolamento')}
     <select class="input" bind:value={choice}>
       <option value="current">{t('Come la partita attuale')}</option>
-      <optgroup label={t('Predefiniti')}>
-        {#each PRESETS as p (p.id)}
-          <option value="b:{p.id}">{t(p.name)}</option>
-        {/each}
-      </optgroup>
-      {#if library.presets.length}
-        <optgroup label={t('Salvati da te')}>
-          {#each library.presets as p (p.id)}
-            <option value="s:{p.id}">{p.name}</option>
-          {/each}
-        </optgroup>
-      {/if}
+      {#each library.presets as p (p.id)}
+        <option value={p.id}>{presetLabel(p)}</option>
+      {/each}
     </select>
   </label>
   <p class="muted desc">{describeRules(selected)}</p>

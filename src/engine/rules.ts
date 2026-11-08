@@ -62,6 +62,11 @@ export interface Rules {
    * squadre si scambiano i lati, in console e sui tabelloni.
    */
   switchSides: boolean
+  /**
+   * Solo cronometro: un unico tempo per più campi in contemporanea (tornei dei
+   * più piccoli). Niente punti, periodi, penalità o timeout; a zero è finita.
+   */
+  clockOnly: boolean
 }
 
 export interface RulesPreset {
@@ -84,6 +89,7 @@ const COMMON = {
   shiftHornMs: 0,
   showShots: false,
   switchSides: false,
+  clockOnly: false,
 } satisfies Partial<Rules>
 
 export const PRESETS: readonly RulesPreset[] = [
@@ -151,6 +157,26 @@ export const PRESETS: readonly RulesPreset[] = [
       overtime: { enabled: false, periodMs: 5 * MIN, maxPeriods: 1, skaters: 3, breakMs: 0 },
       shootout: { enabled: false, rounds: 3 },
       shiftHornMs: MIN,
+    },
+  },
+  {
+    // Come l'attività promozionale FISG Under 7/9 e le regole IIHF Under 10: partite
+    // contemporanee a campi ridotti, senza punteggio, cambi volanti alla sirena.
+    id: 'torneo-giovanile',
+    name: 'Torneo Giovanile',
+    description:
+      'Un solo cronometro per tutti i campi, sirena del cambio ogni minuto: niente punti, tempi o penalità',
+    rules: {
+      ...COMMON,
+      periods: 1,
+      periodMs: 21 * MIN,
+      intermissionMs: 0,
+      overtime: { enabled: false, periodMs: 5 * MIN, maxPeriods: 1, skaters: 3, breakMs: 0 },
+      shootout: { enabled: false, rounds: 3 },
+      timeoutsPerTeam: 0,
+      tenthsBelowMs: 0,
+      shiftHornMs: MIN,
+      clockOnly: true,
     },
   },
 ]
@@ -245,6 +271,10 @@ export function describeRules(r: Rules): string {
   const len = (ms: number) => {
     const s = Math.round(ms / SEC)
     return s % 60 === 0 ? `${s / 60}′` : `${Math.floor(s / 60)}′${String(s % 60).padStart(2, '0')}″`
+  }
+  if (r.clockOnly) {
+    const horn = r.shiftHornMs > 0 ? `, cambio ogni ${len(r.shiftHornMs)}` : ''
+    return `solo cronometro ${len(r.periodMs)}${horn}`
   }
   const parts = [`${r.periods} × ${len(r.periodMs)}`]
   if (r.overtime.enabled) {

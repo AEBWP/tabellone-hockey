@@ -9,6 +9,8 @@
   import Retro from './retro/Scoreboard.svelte'
   import Palette from './palette/Scoreboard.svelte'
   import Essenziale from './essenziale/Scoreboard.svelte'
+  import Led from './led/Scoreboard.svelte'
+  import ClockOnly from './ClockOnly.svelte'
   import Matchup from './Matchup.svelte'
 
   /**
@@ -47,34 +49,40 @@
 </script>
 
 <div class="frame">
-  {#if view.pregame}
-    <div class="layer top" out:matchupOut>
-      <Matchup {view} variant={style} />
+  {#if view.clockOnly}
+    <ClockOnly {view} variant={style} />
+  {:else}
+    {#if view.pregame}
+      <div class="layer top" out:matchupOut>
+        <Matchup {view} variant={style} />
+      </div>
+    {/if}
+    <div
+      class="layer board"
+      class:waiting={view.pregame}
+      class:entering
+      aria-hidden={view.pregame}
+      onanimationend={(e) => e.target === e.currentTarget && (entering = false)}
+    >
+      {#if style === 'classico'}
+        <Classico {view} {animations} />
+      {:else if style === 'ghiaccio'}
+        <Ghiaccio {view} {animations} />
+      {:else if style === 'palette'}
+        <Palette {view} {animations} />
+      {:else if style === 'essenziale'}
+        <Essenziale {view} {animations} />
+      {:else if style === 'led'}
+        <Led {view} {animations} />
+      {:else if style === 'retro'}
+        <Retro {view} {animations} />
+      {:else if style === 'broadcast'}
+        <Broadcast {view} {animations} />
+      {:else}
+        <Arena {view} {animations} />
+      {/if}
     </div>
   {/if}
-  <div
-    class="layer board"
-    class:waiting={view.pregame}
-    class:entering
-    aria-hidden={view.pregame}
-    onanimationend={(e) => e.target === e.currentTarget && (entering = false)}
-  >
-    {#if style === 'classico'}
-      <Classico {view} {animations} />
-    {:else if style === 'ghiaccio'}
-      <Ghiaccio {view} {animations} />
-    {:else if style === 'palette'}
-      <Palette {view} {animations} />
-    {:else if style === 'essenziale'}
-      <Essenziale {view} {animations} />
-    {:else if style === 'retro'}
-      <Retro {view} {animations} />
-    {:else if style === 'broadcast'}
-      <Broadcast {view} {animations} />
-    {:else}
-      <Arena {view} {animations} />
-    {/if}
-  </div>
 </div>
 
 <style>

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { untrack } from 'svelte'
-  import { PRESETS, validateRules, type Rules } from '../engine'
+  import { validateRules, type Rules } from '../engine'
   import { t } from '../i18n/ui.svelte'
-  import { describeRules } from './rules-text'
+  import { describeRules, presetLabel } from './rules-text'
   import DurationInput from './DurationInput.svelte'
   import HelpTip from './HelpTip.svelte'
   import { library } from './library.svelte'
@@ -22,6 +22,10 @@
   // Bozza modificabile: diventa effettiva solo con "Applica".
   let draft = $state<Rules>(untrack(() => structuredClone($state.snapshot(rules))))
   let presetName = $state('')
+  /** Regolamento dell'archivio che si sta modificando; null = se ne crea uno nuovo. */
+  let editingId = $state<string | null>(null)
+  let nameInput = $state<HTMLInputElement>()
+  const editing = $derived(library.presets.find((p) => p.id === editingId) ?? null)
   let message = $state<string | null>(null)
 
   // I messaggi del motore sono in italiano: si traducono qui.
@@ -38,16 +42,30 @@
     }
   })
 
-  function loadFrom(value: string) {
-    const builtIn = PRESETS.find((p) => `b:${p.id}` === value)
-    const saved = library.presets.find((p) => `s:${p.id}` === value)
-    const source = builtIn?.rules ?? saved?.rules
-    if (!source) return
-    draft = structuredClone(source)
-    presetName = saved?.name ?? ''
-    message = t('Caricato “{name}”: premi Applica per usarlo.', {
-      name: builtIn ? t(builtIn.name) : (saved?.name ?? ''),
-    })
+  function loadFrom(id: string) {
+    const preset = library.presets.find((p) => p.id === id)
+    if (!preset) return
+    draft = structuredClone(preset.rules)
+    editingId = id
+    presetName = presetLabel(preset)
+    message = t('Caricato “{name}”: premi Applica per usarlo.', { name: presetName })
+  }
+
+  /** Il nome è già di un altro regolamento (anche nella sua versione tradotta)? */
+  function nameTaken(name: string, exceptId: string | null): boolean {
+    const wanted = name.trim().toLowerCase()
+    return library.presets.some(
+      (p) =>
+        p.id !== exceptId &&
+        [p.name, presetLabel(p)].some((n) => n.trim().toLowerCase() === wanted),
+    )
+  }
+
+  function newPreset() {
+    editingId = null
+    presetName = ''
+    message = t('Scrivi un nome e premi Salva per creare il regolamento con queste regole.')
+    nameInput?.focus()
   }
 
   function applyDraft() {
@@ -61,15 +79,36 @@
   function savePreset() {
     const name = presetName.trim()
     if (!name || errors.length) return
-    library.savePreset(name, $state.snapshot(draft))
+    if (nameTaken(name, null)) {
+      message = t('Esiste già un regolamento “{name}”.', { name })
+      return
+    }
+    editingId = library.savePreset(name, $state.snapshot(draft)).id
     message = library.error
       ? t(library.error)
       : t('Regolamento “{name}” salvato: lo trovi anche in Nuova partita.', { name })
   }
 
+  function saveChanges() {
+    const name = presetName.trim()
+    if (!editing || !name || errors.length) return
+    if (nameTaken(name, editing.id)) {
+      message = t('Esiste già un regolamento “{name}”.', { name })
+      return
+    }
+    // Nome non toccato: un regolamento già pronto continua a seguire la lingua.
+    const stored = name === presetLabel(editing) ? editing.name : name
+    library.updatePreset(editing.id, stored, $state.snapshot(draft))
+    message = library.error ? t(library.error) : t('Regolamento “{name}” aggiornato.', { name })
+  }
+
   function deletePreset(id: string, name: string) {
     if (!confirm(t('Eliminare il regolamento “{name}”?', { name }))) return
     library.deletePreset(id)
+    if (editingId === id) {
+      editingId = null
+      presetName = ''
+    }
   }
 </script>
 
@@ -87,18 +126,9 @@
           }}
         >
           <option value="" disabled>{t('Scegli…')}</option>
-          <optgroup label={t('Predefiniti')}>
-            {#each PRESETS as p (p.id)}
-              <option value="b:{p.id}">{t(p.name)} — {describeRules(p.rules)}</option>
-            {/each}
-          </optgroup>
-          {#if library.presets.length}
-            <optgroup label={t('Salvati da te')}>
-              {#each library.presets as p (p.id)}
-                <option value="s:{p.id}">{p.name} — {describeRules(p.rules)}</option>
-              {/each}
-            </optgroup>
-          {/if}
+          {#each library.presets as p (p.id)}
+            <option value={p.id}>{presetLabel(p)} — {describeRules(p.rules)}</option>
+          {/each}
         </select>
       </label>
       <div class="summary">
@@ -111,15 +141,28 @@
   <div class="grid">
     <fieldset class="panel">
       <legend class="panel-title">{t('Tempi')}</legend>
-      <label class="field">
-        {t('Numero di periodi')}
-        <input class="input small" type="number" min="1" max="10" bind:value={draft.periods} />
+      <label class="check">
+        <input type="checkbox" bind:checked={draft.clockOnly} />
+        {t('Solo cronometro (più campi in contemporanea: niente punti, tempi o penalità)')}
       </label>
-      <DurationInput label={t('Durata di ogni periodo')} bind:value={draft.periodMs} />
-      <DurationInput
-        label={t('Intervallo tra i periodi (0 = nessuno)')}
-        bind:value={draft.intermissionMs}
-      />
+      {#if draft.clockOnly}
+        <DurationInput label={t('Durata del cronometro')} bind:value={draft.periodMs} />
+        <p class="muted hint">
+          {t(
+            'Un unico cronometro vale per tutti i campi: console e tabellone mostrano solo il tempo.',
+          )}
+        </p>
+      {:else}
+        <label class="field">
+          {t('Numero di periodi')}
+          <input class="input small" type="number" min="1" max="10" bind:value={draft.periods} />
+        </label>
+        <DurationInput label={t('Durata di ogni periodo')} bind:value={draft.periodMs} />
+        <DurationInput
+          label={t('Intervallo tra i periodi (0 = nessuno)')}
+          bind:value={draft.intermissionMs}
+        />
+      {/if}
       <label class="check">
         <input
           type="checkbox"
@@ -128,14 +171,16 @@
         />
         {t('Decimi di secondo nell’ultimo minuto')}
       </label>
-      <label class="check">
-        <input type="checkbox" bind:checked={draft.showShots} />
-        {t('Tiri in porta (in console e sul tabellone)')}
-      </label>
-      <label class="check">
-        <input type="checkbox" bind:checked={draft.switchSides} />
-        {t('Cambio campo a ogni periodo (le squadre si scambiano i lati)')}
-      </label>
+      {#if !draft.clockOnly}
+        <label class="check">
+          <input type="checkbox" bind:checked={draft.showShots} />
+          {t('Tiri in porta (in console e sul tabellone)')}
+        </label>
+        <label class="check">
+          <input type="checkbox" bind:checked={draft.switchSides} />
+          {t('Cambio campo a ogni periodo (le squadre si scambiano i lati)')}
+        </label>
+      {/if}
       <DurationInput label={t('Sirena del cambio ogni (0 = mai)')} bind:value={draft.shiftHornMs} />
       <p class="muted hint">
         {t(
@@ -144,125 +189,127 @@
       </p>
     </fieldset>
 
-    <fieldset class="panel">
-      <legend class="panel-title">
-        {t('Supplementare')}
-        <HelpTip title={t('Supplementare')}>
-          {t(
-            'Si gioca solo se a fine tempi regolamentari il punteggio è pari. Chi segna vince subito. “Numero massimo 0” significa supplementari a oltranza (playoff).',
-          )}
-        </HelpTip>
-      </legend>
-      <label class="check">
-        <input type="checkbox" bind:checked={draft.overtime.enabled} />
-        {t('Supplementare in caso di parità')}
-      </label>
-      <DurationInput
-        label={t('Durata')}
-        bind:value={draft.overtime.periodMs}
-        disabled={!draft.overtime.enabled}
-      />
-      <div class="row">
-        <label class="field">
-          {t('Numero massimo')}
-          <input
-            class="input small"
-            type="number"
-            min="0"
-            max="10"
-            bind:value={draft.overtime.maxPeriods}
-            disabled={!draft.overtime.enabled}
-          />
+    {#if !draft.clockOnly}
+      <fieldset class="panel">
+        <legend class="panel-title">
+          {t('Supplementare')}
+          <HelpTip title={t('Supplementare')}>
+            {t(
+              'Si gioca solo se a fine tempi regolamentari il punteggio è pari. Chi segna vince subito. “Numero massimo 0” significa supplementari a oltranza (playoff).',
+            )}
+          </HelpTip>
+        </legend>
+        <label class="check">
+          <input type="checkbox" bind:checked={draft.overtime.enabled} />
+          {t('Supplementare in caso di parità')}
         </label>
-        <label class="field">
-          {t('Giocatori per squadra')}
-          <input
-            class="input small"
-            type="number"
-            min="3"
-            max="6"
-            bind:value={draft.overtime.skaters}
-            disabled={!draft.overtime.enabled}
-          />
-        </label>
-      </div>
-      <DurationInput
-        label={t('Pausa prima del supplementare')}
-        bind:value={draft.overtime.breakMs}
-        disabled={!draft.overtime.enabled}
-      />
-    </fieldset>
-
-    <fieldset class="panel">
-      <legend class="panel-title">{t('Rigori')}</legend>
-      <label class="check">
-        <input type="checkbox" bind:checked={draft.shootout.enabled} />
-        {t('Rigori se la parità resta')}
-      </label>
-      <label class="field">
-        {t('Tiratori per squadra (poi a oltranza)')}
-        <input
-          class="input small"
-          type="number"
-          min="1"
-          max="10"
-          bind:value={draft.shootout.rounds}
-          disabled={!draft.shootout.enabled}
+        <DurationInput
+          label={t('Durata')}
+          bind:value={draft.overtime.periodMs}
+          disabled={!draft.overtime.enabled}
         />
-      </label>
-    </fieldset>
+        <div class="row">
+          <label class="field">
+            {t('Numero massimo')}
+            <input
+              class="input small"
+              type="number"
+              min="0"
+              max="10"
+              bind:value={draft.overtime.maxPeriods}
+              disabled={!draft.overtime.enabled}
+            />
+          </label>
+          <label class="field">
+            {t('Giocatori per squadra')}
+            <input
+              class="input small"
+              type="number"
+              min="3"
+              max="6"
+              bind:value={draft.overtime.skaters}
+              disabled={!draft.overtime.enabled}
+            />
+          </label>
+        </div>
+        <DurationInput
+          label={t('Pausa prima del supplementare')}
+          bind:value={draft.overtime.breakMs}
+          disabled={!draft.overtime.enabled}
+        />
+      </fieldset>
 
-    <fieldset class="panel">
-      <legend class="panel-title">
-        {t('Penalità')}
-        <HelpTip title={t('Penalità')}>
-          {t(
-            'La doppia minore vale due minori. “Penalizzati contemporanei” è il massimo di giocatori che scontano la penalità nello stesso momento (di solito 2): le altre restano in attesa.',
-          )}
-        </HelpTip>
-      </legend>
-      <DurationInput label={t('Minore')} bind:value={draft.penaltyMs.minor} />
-      <DurationInput label={t('Maggiore')} bind:value={draft.penaltyMs.major} />
-      <DurationInput label={t('Cattiva condotta')} bind:value={draft.penaltyMs.misconduct} />
-      <div class="row">
+      <fieldset class="panel">
+        <legend class="panel-title">{t('Rigori')}</legend>
+        <label class="check">
+          <input type="checkbox" bind:checked={draft.shootout.enabled} />
+          {t('Rigori se la parità resta')}
+        </label>
         <label class="field">
-          {t('Penalizzati contemporanei')}
+          {t('Tiratori per squadra (poi a oltranza)')}
           <input
             class="input small"
             type="number"
             min="1"
-            max="3"
-            bind:value={draft.maxPenalizedOnIce}
+            max="10"
+            bind:value={draft.shootout.rounds}
+            disabled={!draft.shootout.enabled}
           />
         </label>
-        <label class="field">
-          {t('Giocatori in pista')}
-          <input class="input small" type="number" min="3" max="6" bind:value={draft.skaters} />
-        </label>
-      </div>
-    </fieldset>
+      </fieldset>
 
-    <fieldset class="panel">
-      <legend class="panel-title">{t('Timeout')}</legend>
-      <DurationInput label={t('Durata')} bind:value={draft.timeoutMs} />
-      <label class="field">
-        {t('Timeout per squadra')}
-        <input
-          class="input small"
-          type="number"
-          min="0"
-          max="5"
-          bind:value={draft.timeoutsPerTeam}
-        />
-      </label>
-    </fieldset>
+      <fieldset class="panel">
+        <legend class="panel-title">
+          {t('Penalità')}
+          <HelpTip title={t('Penalità')}>
+            {t(
+              'La doppia minore vale due minori. “Penalizzati contemporanei” è il massimo di giocatori che scontano la penalità nello stesso momento (di solito 2): le altre restano in attesa.',
+            )}
+          </HelpTip>
+        </legend>
+        <DurationInput label={t('Minore')} bind:value={draft.penaltyMs.minor} />
+        <DurationInput label={t('Maggiore')} bind:value={draft.penaltyMs.major} />
+        <DurationInput label={t('Cattiva condotta')} bind:value={draft.penaltyMs.misconduct} />
+        <div class="row">
+          <label class="field">
+            {t('Penalizzati contemporanei')}
+            <input
+              class="input small"
+              type="number"
+              min="1"
+              max="3"
+              bind:value={draft.maxPenalizedOnIce}
+            />
+          </label>
+          <label class="field">
+            {t('Giocatori in pista')}
+            <input class="input small" type="number" min="3" max="6" bind:value={draft.skaters} />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="panel">
+        <legend class="panel-title">{t('Timeout')}</legend>
+        <DurationInput label={t('Durata')} bind:value={draft.timeoutMs} />
+        <label class="field">
+          {t('Timeout per squadra')}
+          <input
+            class="input small"
+            type="number"
+            min="0"
+            max="5"
+            bind:value={draft.timeoutsPerTeam}
+          />
+        </label>
+      </fieldset>
+    {/if}
 
     <section class="panel">
       <h2 class="panel-title">
-        {t('Regolamenti salvati')}
-        <HelpTip title={t('Regolamenti salvati')} align="right">
+        {t('Regolamenti')}
+        <HelpTip title={t('Regolamenti')} align="right">
           {t(
-            'Salva le regole che usi spesso (es. “Under 13”): le ritrovi nel menu qui sopra e quando inizi una nuova partita.',
+            'Tutti i regolamenti, anche quelli già pronti: puoi modificarli, cancellarli o crearne di nuovi. Li ritrovi nel menu qui sopra e quando inizi una nuova partita.',
           )}
         </HelpTip>
       </h2>
@@ -271,38 +318,77 @@
           class="input"
           placeholder={t('Nome, es. Under 13')}
           maxlength="40"
+          bind:this={nameInput}
           bind:value={presetName}
-          onkeydown={(e) => e.key === 'Enter' && savePreset()}
+          onkeydown={(e) => e.key === 'Enter' && (editing ? saveChanges() : savePreset())}
         />
-        <button
-          type="button"
-          class="btn"
-          disabled={!presetName.trim() || errors.length > 0}
-          onclick={savePreset}
-        >
-          {t('Salva')}
-        </button>
+      </div>
+      <div class="save-buttons">
+        {#if editing}
+          <button
+            type="button"
+            class="btn btn-primary"
+            disabled={!presetName.trim() || errors.length > 0}
+            onclick={saveChanges}
+          >
+            {t('Salva modifiche')}
+          </button>
+          <button
+            type="button"
+            class="btn"
+            disabled={!presetName.trim() || errors.length > 0}
+            onclick={savePreset}
+          >
+            {t('Salva come nuovo')}
+          </button>
+          <button type="button" class="btn" onclick={newPreset}>{t('Nuovo regolamento')}</button>
+        {:else}
+          <button
+            type="button"
+            class="btn btn-primary"
+            disabled={!presetName.trim() || errors.length > 0}
+            onclick={savePreset}
+          >
+            {t('Salva')}
+          </button>
+        {/if}
       </div>
       <ul class="saved">
         {#each library.presets as p (p.id)}
-          <li>
+          <li class:editing={p.id === editingId}>
             <span>
-              <strong>{p.name}</strong>
+              <strong>{presetLabel(p)}</strong>
               <small class="muted">{describeRules(p.rules)}</small>
             </span>
-            <button
-              type="button"
-              class="btn btn-sm btn-danger"
-              aria-label={t('Elimina {name}', { name: p.name })}
-              onclick={() => deletePreset(p.id, p.name)}
-            >
-              ✕
-            </button>
+            <div class="row-buttons">
+              <button
+                type="button"
+                class="btn btn-sm"
+                aria-label={t('Modifica {name}', { name: presetLabel(p) })}
+                title={t('Modifica {name}', { name: presetLabel(p) })}
+                onclick={() => loadFrom(p.id)}
+              >
+                ✎
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-danger"
+                aria-label={t('Elimina {name}', { name: presetLabel(p) })}
+                onclick={() => deletePreset(p.id, presetLabel(p))}
+              >
+                ✕
+              </button>
+            </div>
           </li>
         {:else}
           <li class="muted">{t('Nessun regolamento salvato.')}</li>
         {/each}
       </ul>
+      {#if library.removedBuiltins > 0}
+        <button type="button" class="btn btn-sm restore" onclick={() => library.restoreBuiltins()}>
+          {t('Ripristina i predefiniti cancellati')}
+        </button>
+      {/if}
     </section>
   </div>
 
@@ -420,6 +506,27 @@
   .save-row {
     display: flex;
     gap: 0.5rem;
+  }
+
+  .save-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .row-buttons {
+    display: flex;
+    flex: none;
+    gap: 0.3rem;
+  }
+
+  .saved li.editing strong {
+    color: var(--ok);
+  }
+
+  .restore {
+    margin-top: 0.75rem;
   }
 
   .saved {

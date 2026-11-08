@@ -88,7 +88,6 @@
     mask:
       linear-gradient(#000 0 0) content-box exclude,
       linear-gradient(#000 0 0);
-    filter: drop-shadow(0 0 8px var(--lamp));
     animation: chase 0.3s steps(1) infinite;
   }
 
@@ -103,9 +102,6 @@
     line-height: 0.9;
     letter-spacing: 0.04em;
     color: var(--lamp);
-    text-shadow:
-      0 0 20px var(--lamp),
-      0 0 60px var(--lamp);
     animation: flash 0.6s steps(2, end) 5;
   }
 
@@ -136,7 +132,6 @@
     font-size: 100px;
     white-space: nowrap;
     color: #ffb000;
-    text-shadow: 0 0 16px rgba(255, 176, 0, 0.7);
   }
 
   @keyframes scroll {
@@ -157,7 +152,6 @@
   .s-name {
     font-size: 64px;
     color: #ffb000;
-    text-shadow: 0 0 12px rgba(255, 176, 0, 0.6);
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -89,6 +89,10 @@
   /** Schede che stanno nel menu Impostazioni invece che nella barra delle schede. */
   const SETTINGS: Tab[] = ['rules', 'audio', 'backup', 'style']
   const MAIN_TABS = TABS.filter((item) => !SETTINGS.includes(item.id))
+  /** Con il solo cronometro le squadre non esistono: la scheda sparisce. */
+  const shownTabs = $derived(
+    game.rules.clockOnly ? MAIN_TABS.filter((item) => item.id !== 'teams') : MAIN_TABS,
+  )
   const tabItem = (id: Tab) => TABS.find((item) => item.id === id)!
   /** Nel menu: prima le impostazioni della partita, poi (sotto Schermi) lo stile. */
   const SETTINGS_TABS = (['rules', 'audio', 'backup'] as Tab[]).map(tabItem)
@@ -251,6 +255,12 @@
     showToast(t('Nuova partita pronta'))
   }
 
+  /** A fine partita: col solo cronometro si riparte subito, non c'è niente da scegliere. */
+  function askNewGame() {
+    if (game.rules.clockOnly) run({ type: 'newGame' })
+    else newGameOpen = true
+  }
+
   function showToast(text: string) {
     toast = text
     clearTimeout(toastTimer)
@@ -324,13 +334,13 @@
       // La barra spaziatrice fa sempre quello che fa il pulsante grande del tempo.
       case 'toggleClock':
         if (view.phase === 'intermission') run({ type: 'endIntermission' })
-        else if (view.phase === 'final') newGameOpen = true
+        else if (view.phase === 'final') askNewGame()
         else run({ type: 'toggleClock' })
         break
       case 'goalLeft':
       case 'goalRight': {
         const team = action === 'goalLeft' ? left : right
-        if (view.phase === 'shootout') break
+        if (view.phase === 'shootout' || view.clockOnly) break
         // Come il pulsante GOL: solo a gioco in corso.
         if (view.phase !== 'play') {
           if (!view.pregame) showToast(t('Gol solo a gioco in corso: per correggere usa +1'))
@@ -594,7 +604,7 @@
 
     <!-- Al centro, appoggiate sul bordo in basso: le schede, subito sopra la console. -->
     <nav class="tabs" aria-label={t('Sezioni')}>
-      {#each MAIN_TABS as item (item.id)}
+      {#each shownTabs as item (item.id)}
         {#if item.id === 'streaming'}
           <!-- Lo stato dello streaming sta nella sua scheda: grigio se spento, verde se in corso. -->
           <button
@@ -678,11 +688,13 @@
 
   {#if tab === 'game'}
     <!-- Le squadre dal lato in cui le vede l'operatore (Inverti squadre / cambio campo). -->
-    <main class="game">
+    <main class="game" class:clock-only={view.clockOnly}>
       <!-- Rimontati al cambio lato: un numero di giocatore a metà non passa all'altra squadra. -->
-      {#key view.sidesSwapped}
-        <TeamControls id={view.sidesSwapped ? 'away' : 'home'} {view} rules={game.rules} {run} />
-      {/key}
+      {#if !view.clockOnly}
+        {#key view.sidesSwapped}
+          <TeamControls id={view.sidesSwapped ? 'away' : 'home'} {view} rules={game.rules} {run} />
+        {/key}
+      {/if}
 
       <div class="center">
         <ClockPanel
@@ -690,15 +702,19 @@
           {run}
           confirm={(r) => (confirmRequest = r)}
           onEditClock={() => (clockEditOpen = true)}
-          onNewGame={() => (newGameOpen = true)}
+          onNewGame={askNewGame}
         />
 
-        <EventLog {game} />
+        {#if !view.clockOnly}
+          <EventLog {game} />
+        {/if}
       </div>
 
-      {#key view.sidesSwapped}
-        <TeamControls id={view.sidesSwapped ? 'home' : 'away'} {view} rules={game.rules} {run} />
-      {/key}
+      {#if !view.clockOnly}
+        {#key view.sidesSwapped}
+          <TeamControls id={view.sidesSwapped ? 'home' : 'away'} {view} rules={game.rules} {run} />
+        {/key}
+      {/if}
     </main>
   {:else if tab === 'teams'}
     <main class="page">
@@ -1362,6 +1378,13 @@
     gap: 1rem;
     padding: 1rem;
     overflow: auto;
+  }
+
+  /* Solo cronometro: un'unica colonna al centro. */
+  .game.clock-only {
+    grid-template-columns: minmax(0, 720px);
+    justify-content: center;
+    align-content: center;
   }
 
   .center {

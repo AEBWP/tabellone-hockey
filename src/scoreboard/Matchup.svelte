@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AlphaSegment from './led/AlphaSegment.svelte'
+  import { fitSegmentHeight } from './led/segments'
   import type { BoardStyle, GameView, TeamView } from '../engine'
   import { boardText } from '../i18n/board'
   import { fitFontSize } from '../shared/labels'
@@ -35,9 +37,19 @@
         {:else}
           <div class="monogram">{monogram(team)}</div>
         {/if}
-        <div class="short" style:font-size="{fitFontSize(team.shortName, 140, 700)}px">
-          {team.shortName}
-        </div>
+        {#if variant === 'led'}
+          <div class="short">
+            <AlphaSegment
+              text={team.shortName}
+              height={fitSegmentHeight(team.shortName, 150, 760)}
+              color="color-mix(in srgb, {team.color} 55%, white)"
+            />
+          </div>
+        {:else}
+          <div class="short" style:font-size="{fitFontSize(team.shortName, 140, 700)}px">
+            {team.shortName}
+          </div>
+        {/if}
         <div class="name">{team.name}</div>
       </div>
     </div>
@@ -196,9 +208,9 @@
   .name {
     max-width: 100%;
     overflow: hidden;
-    font-size: 46px;
+    font-size: 54px;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -277,9 +289,9 @@
     padding: 12px 54px 8px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     background: rgba(2, 4, 9, 0.85);
-    font-size: 46px;
+    font-size: 54px;
     font-weight: 700;
-    letter-spacing: 0.24em;
+    letter-spacing: 0.14em;
     white-space: nowrap;
     transform: translateX(-50%);
     opacity: var(--p, 1);
@@ -292,8 +304,8 @@
 
   .plate.bottom {
     bottom: 56px;
-    font-size: 40px;
-    letter-spacing: 0.16em;
+    font-size: 48px;
+    letter-spacing: 0.1em;
     color: #c9d8ea;
   }
 
@@ -528,13 +540,11 @@
   .v-retro .short,
   .v-retro .name {
     color: color-mix(in srgb, var(--team) 70%, white);
-    text-shadow: 0 0 18px currentColor;
   }
 
   .v-retro .monogram {
     border: 8px dotted currentColor;
     background: none;
-    box-shadow: none;
     color: color-mix(in srgb, var(--team) 70%, white);
   }
 
@@ -545,19 +555,16 @@
   .v-retro .divider {
     width: 8px;
     background: repeating-linear-gradient(180deg, #ffb000 0 14px, transparent 14px 28px);
-    box-shadow: 0 0 18px rgba(255, 176, 0, 0.6);
   }
 
   .v-retro .vs {
     border: 6px dotted #ffb000;
     background: #030303;
-    box-shadow: 0 0 40px rgba(255, 176, 0, 0.35);
   }
 
   .v-retro .vs span {
     font-style: normal;
     color: #ffb000;
-    text-shadow: 0 0 20px rgba(255, 176, 0, 0.8);
     animation: retro-blink 1s steps(2, start) infinite;
   }
 
@@ -571,7 +578,55 @@
     border: 4px dotted #ffb000;
     background: #030303;
     color: #ffb000;
-    text-shadow: 0 0 14px rgba(255, 176, 0, 0.7);
+  }
+
+  /* ══ Variante LED: nero pieno, colori netti, nessuna sfocatura ══ */
+  .v-led {
+    background: #000;
+  }
+
+  .v-led .half-bg {
+    background: color-mix(in srgb, var(--team) 14%, #000);
+  }
+
+  .v-led .short,
+  .v-led .name {
+    text-shadow: none;
+  }
+
+  .v-led .logo img {
+    filter: none;
+  }
+
+  .v-led .monogram {
+    border: 8px solid currentColor;
+    background: none;
+    box-shadow: none;
+  }
+
+  .v-led .divider {
+    width: 6px;
+    background: #333;
+    box-shadow: none;
+  }
+
+  .v-led .vs {
+    border: 6px solid #ffb000;
+    background: #000;
+    box-shadow: none;
+  }
+
+  .v-led .vs span {
+    font-style: normal;
+    color: #ffb000;
+    text-shadow: none;
+  }
+
+  .v-led .plate {
+    border: 3px solid #333;
+    background: #000;
+    color: #ffb000;
+    box-shadow: none;
   }
 
   /* ══ Variante Palette: targhe scure, fascia nel colore della squadra ══ */

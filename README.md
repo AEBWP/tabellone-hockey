@@ -18,7 +18,8 @@ anche seguire **in streaming** dal telefono, con un link e un QR code fissi per 
 
 | Versione            | Data       | Download                                                                                                                                                      |
 | ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1.0.2** (ultima)  | 8 nov 2026 | [⬇️ Tabellone-Hockey-1.0.2-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.2/Tabellone-Hockey-1.0.2-installazione.exe)    |
+| **1.0.3** (ultima)  | 8 nov 2026 | [⬇️ Tabellone-Hockey-1.0.3-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.3/Tabellone-Hockey-1.0.3-installazione.exe)    |
+| 1.0.2              | 8 nov 2026 | [⬇️ Tabellone-Hockey-1.0.2-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.2/Tabellone-Hockey-1.0.2-installazione.exe)    |
 | 1.0.1               | 7 nov 2026 | [⬇️ Tabellone-Hockey-1.0.1-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.1/Tabellone-Hockey-1.0.1-installazione.exe)    |
 | 1.0.0               | 7 nov 2026 | [⬇️ Tabellone-Hockey-1.0.0-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v1.0.0/Tabellone-Hockey-1.0.0-installazione.exe)    |
 | 0.9.11 (beta)       | 7 nov 2026 | [⬇️ Tabellone-Hockey-0.9.11-installazione.exe](https://github.com/AEBWP/tabellone-hockey/releases/download/v0.9.11/Tabellone-Hockey-0.9.11-installazione.exe) |
@@ -131,7 +132,7 @@ src/
   i18n/             lingue: scritte del tabellone (board.ts) e della console (console.ts)
   console/          interfaccia della console operatore
   display/          finestra del tabellone spettatori (e demo)
-  scoreboard/       grafica del tabellone spettatori: arena/, broadcast/, ghiaccio/, retro/, classico/, palette/ ed essenziale/ (stili), Matchup (presentazione “A VS B”)
+  scoreboard/       grafica del tabellone spettatori: arena/, broadcast/, ghiaccio/, retro/, classico/, palette/, essenziale/ e led/ (stili), ClockOnly (solo cronometro), Matchup (presentazione “A VS B”)
   styles/           stili comuni
   setup/            scelta degli schermi all'avvio (programma desktop)
   live/             pagina per gli spettatori dello streaming su internet

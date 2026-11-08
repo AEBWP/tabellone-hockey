@@ -36,7 +36,7 @@
   .title {
     padding-left: 12px;
     border-left: 8px solid var(--team);
-    font-size: 36px;
+    font-size: 46px;
     font-weight: 700;
     letter-spacing: 0.12em;
     color: #9cc3ea;
@@ -48,7 +48,7 @@
     align-items: baseline;
     padding: 0 24px;
     border-radius: 14px;
-    font-size: 76px;
+    font-size: 84px;
     font-weight: 800;
     line-height: 1.12;
     background: rgba(255, 255, 255, 0.06);
@@ -59,13 +59,13 @@
   }
 
   .row.misconduct {
-    font-size: 52px;
+    font-size: 60px;
     opacity: 0.75;
   }
 
   .waiting {
     padding-left: 24px;
-    font-size: 36px;
+    font-size: 46px;
     font-weight: 700;
     letter-spacing: 0.08em;
     color: #9cc3ea;

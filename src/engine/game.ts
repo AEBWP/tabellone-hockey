@@ -165,8 +165,24 @@ const BLOCKED_BEFORE_START = new Set<Command['type']>([
   'endGame',
 ])
 
+/** Con il regolamento "solo cronometro" non esistono punti, tiri, penalità e timeout. */
+const BLOCKED_CLOCK_ONLY = new Set<Command['type']>([
+  'goal',
+  'setScore',
+  'shot',
+  'penalty',
+  'endPenalty',
+  'removePenalty',
+  'timeout',
+  'restoreTimeout',
+  'endTimeout',
+  'shootoutAttempt',
+  'undoShootoutAttempt',
+])
+
 /** Il comando è permesso adesso? (La console lo usa anche per disattivare i pulsanti.) */
 export function isAllowed(s: GameState, type: Command['type']): boolean {
+  if (s.rules.clockOnly === true && BLOCKED_CLOCK_ONLY.has(type)) return false
   return !(BLOCKED_BEFORE_START.has(type) && isPregame(s))
 }
 
@@ -214,6 +230,11 @@ function finishPeriod(state: GameState, at: number): void {
   state.clock.runningSince = null
   state.timeout = null
   settle(state, state.clock.periodEndMs)
+
+  if (rules.clockOnly === true) {
+    state.phase = 'final'
+    return
+  }
 
   if (state.period < rules.periods) {
     goToPeriod(state, state.period + 1, rules.intermissionMs, at)

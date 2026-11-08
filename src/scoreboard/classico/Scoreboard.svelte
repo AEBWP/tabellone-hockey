@@ -130,7 +130,7 @@
     padding: 6px 48px;
     border: 3px solid rgba(156, 195, 234, 0.45);
     border-radius: 999px;
-    font-size: 64px;
+    font-size: 70px;
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: 0.08em;
@@ -161,7 +161,7 @@
   }
 
   .clock {
-    font-size: 270px;
+    font-size: 290px;
     white-space: nowrap;
     font-weight: 800;
     line-height: 1;
@@ -180,17 +180,17 @@
   }
 
   .clock.intermission {
-    font-size: 240px;
+    font-size: 260px;
     color: #9cc3ea;
   }
 
   .clock.word {
-    font-size: 180px;
+    font-size: 190px;
     letter-spacing: 0.06em;
   }
 
   .sub {
-    font-size: 48px;
+    font-size: 54px;
     font-weight: 700;
     letter-spacing: 0.08em;
     color: #9cc3ea;
@@ -203,11 +203,11 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    padding: 8px 28px;
+    padding: 8px 20px;
     border-radius: 14px;
-    font-size: 52px;
+    font-size: 56px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.01em;
     background: color-mix(in srgb, var(--team) 35%, transparent);
     border: 3px solid var(--team);
   }
@@ -235,7 +235,7 @@
   }
 
   .stat-label {
-    font-size: 40px;
+    font-size: 48px;
     font-weight: 700;
     letter-spacing: 0.1em;
     color: #9cc3ea;
@@ -244,7 +244,7 @@
   .stat-row {
     display: flex;
     gap: 140px;
-    font-size: 110px;
+    font-size: 130px;
     font-weight: 800;
     line-height: 1.1;
   }
@@ -264,7 +264,7 @@
   }
 
   .timeout-label {
-    font-size: 64px;
+    font-size: 68px;
     font-weight: 800;
     letter-spacing: 0.08em;
   }
@@ -272,7 +272,7 @@
   .timeout-clock {
     padding: 0 32px;
     border-radius: 16px;
-    font-size: 130px;
+    font-size: 150px;
     font-weight: 800;
     line-height: 1.05;
     color: #fff;

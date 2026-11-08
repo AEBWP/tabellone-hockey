@@ -42,7 +42,7 @@
   }
 
   .title {
-    font-size: 52px;
+    font-size: 58px;
     font-weight: 700;
     letter-spacing: 0.1em;
     color: #9cc3ea;

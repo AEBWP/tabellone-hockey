@@ -8,6 +8,7 @@
   import Retro from './retro/Scoreboard.svelte'
   import Palette from './palette/Scoreboard.svelte'
   import Essenziale from './essenziale/Scoreboard.svelte'
+  import Led from './led/Scoreboard.svelte'
 
   /**
    * "Prova generale" invisibile, fatta una volta all'apertura del tabellone:
@@ -87,6 +88,8 @@
         <Palette view={warmView} />
       {:else if current === 'essenziale'}
         <Essenziale view={warmView} />
+      {:else if current === 'led'}
+        <Led view={warmView} />
       {:else if current === 'retro'}
         <Retro view={warmView} />
       {:else if current === 'broadcast'}

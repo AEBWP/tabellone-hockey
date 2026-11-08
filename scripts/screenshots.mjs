@@ -12,7 +12,16 @@ const outArg = process.argv.slice(2).find((a) => !a.startsWith('-') && !a.endsWi
 const outDir = path.resolve(outArg ?? path.join(root, 'screenshots'))
 mkdirSync(outDir, { recursive: true })
 
-const STYLES = ['arena', 'broadcast', 'ghiaccio', 'retro', 'classico', 'palette', 'essenziale']
+const STYLES = [
+  'arena',
+  'broadcast',
+  'ghiaccio',
+  'retro',
+  'classico',
+  'palette',
+  'essenziale',
+  'led',
+]
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 app.commandLine.appendSwitch('force-device-scale-factor', '1')

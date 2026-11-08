@@ -68,7 +68,9 @@
           <div class="logo"><img src={t.logo} alt="" /></div>
         {/if}
         <div class="names">
-          <span class="short" style:font-size="{fitFontSize(t.shortName, 96, t.logo ? 300 : 470)}px"
+          <span
+            class="short"
+            style:font-size="{fitFontSize(t.shortName, 108, t.logo ? 325 : 490)}px"
             >{t.shortName}</span
           >
           <span class="full">{t.name}</span>
@@ -246,8 +248,8 @@
     display: grid;
     flex: none;
     place-items: center;
-    width: 170px;
-    height: 170px;
+    width: 148px;
+    height: 148px;
     border-radius: 50%;
     background: #fff;
     padding: 20px;
@@ -271,7 +273,7 @@
 
   .short {
     overflow: hidden;
-    font-size: 96px;
+    font-size: 108px;
     font-weight: 800;
     line-height: 0.92;
     letter-spacing: 0.02em;
@@ -281,9 +283,9 @@
 
   .full {
     overflow: hidden;
-    font-size: 32px;
+    font-size: 40px;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -302,8 +304,8 @@
   }
 
   .tos i {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border: 3px solid currentColor;
     border-radius: 50%;
     opacity: 0.45;
@@ -315,9 +317,9 @@
   }
 
   .tos b {
-    font-size: 24px;
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.1em;
     opacity: 0.75;
   }
 
@@ -348,9 +350,9 @@
   }
 
   .period-small {
-    font-size: 30px;
+    font-size: 40px;
     font-weight: 700;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.1em;
     color: var(--muted);
   }
 
@@ -384,15 +386,15 @@
     align-items: center;
     justify-content: space-between;
     padding: 16px 28px 0;
-    font-size: 34px;
+    font-size: 44px;
     font-weight: 700;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.1em;
     color: var(--muted);
   }
 
   .status {
     padding: 4px 16px 2px;
-    font-size: 26px;
+    font-size: 36px;
     letter-spacing: 0.14em;
     color: var(--ink);
   }
@@ -409,7 +411,7 @@
     display: grid;
     flex: 1;
     place-items: center;
-    font-size: 270px;
+    font-size: 290px;
     font-weight: 800;
     line-height: 1;
     white-space: nowrap;
@@ -424,12 +426,12 @@
   }
 
   .clock.intermission {
-    font-size: 240px;
+    font-size: 260px;
     color: #9cc3ea;
   }
 
   .clock.word {
-    font-size: 190px;
+    font-size: 200px;
     letter-spacing: 0.06em;
   }
 
@@ -450,9 +452,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 24px 8px;
-    font-size: 34px;
+    font-size: 44px;
     font-weight: 800;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.1em;
     color: var(--on-team);
     background: var(--team);
   }
@@ -490,7 +492,7 @@
     justify-content: center;
     white-space: nowrap;
     width: 150px;
-    font-size: 64px;
+    font-size: 76px;
     color: var(--ink);
     background: var(--paper);
   }
@@ -505,7 +507,7 @@
     flex: 1;
     place-items: center end;
     padding-right: 26px;
-    font-size: 84px;
+    font-size: 92px;
     background: var(--grey-2);
   }
 
@@ -515,17 +517,17 @@
 
   .pen.misconduct .pen-time,
   .pen.misconduct .pen-num {
-    font-size: 54px;
+    font-size: 62px;
   }
 
   .pen-none {
     display: grid;
     flex: 1;
     place-items: center;
-    font-size: 36px;
+    font-size: 44px;
     font-weight: 700;
-    letter-spacing: 0.3em;
-    color: #3a4252;
+    letter-spacing: 0.16em;
+    color: #7b8698;
   }
 
   .so {
@@ -576,16 +578,16 @@
   }
 
   .shots-val {
-    font-size: 130px;
+    font-size: 150px;
     font-weight: 800;
     line-height: 1;
     text-align: center;
   }
 
   .shots-label {
-    font-size: 34px;
+    font-size: 44px;
     font-weight: 700;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.1em;
     text-align: center;
     color: var(--muted);
   }
@@ -601,14 +603,14 @@
   }
 
   .timeout-label {
-    font-size: 54px;
+    font-size: 60px;
     font-weight: 800;
     letter-spacing: 0.12em;
   }
 
   .timeout-clock {
     padding: 4px 26px 0;
-    font-size: 120px;
+    font-size: 140px;
     font-weight: 800;
     color: var(--ink);
     background: var(--paper);
@@ -636,13 +638,13 @@
   }
 
   .pp-label {
-    font-size: 50px;
+    font-size: 56px;
     font-weight: 800;
     letter-spacing: 0.12em;
   }
 
   .pp-strength {
-    font-size: 90px;
+    font-size: 100px;
     font-weight: 800;
     line-height: 1;
   }

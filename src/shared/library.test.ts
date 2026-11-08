@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { rulesFromPreset } from '../engine'
+import { PRESETS, rulesFromPreset } from '../engine'
 import {
   exportLibrary,
   loadLibrary,
   mergeById,
   parseBackup,
+  removedBuiltins,
   saveLibrary,
+  seedBuiltins,
   type LibraryData,
 } from './library'
 
@@ -96,5 +98,40 @@ describe('backup su file', () => {
       { id: 't3', name: 'Orsi', shortName: 'ORS', color: '#333333', logo: null },
     ])
     expect(merged.map((t) => t.name)).toEqual(['Castori', 'Lupi del Lago', 'Orsi'])
+  })
+})
+
+describe('regolamenti già pronti', () => {
+  const custom = sample.presets[0]
+  const allIds = PRESETS.map((p) => p.id)
+
+  it('al primo avvio entrano tutti, prima di quelli creati a mano', () => {
+    const { presets, known } = seedBuiltins([custom], [])
+    expect(presets).toHaveLength(PRESETS.length + 1)
+    expect(presets.at(-1)).toEqual(custom)
+    expect(known).toEqual(allIds)
+  })
+
+  it('un regolamento cancellato non ricompare ai riavvii', () => {
+    const { presets, known } = seedBuiltins([], [])
+    const left = presets.filter((p) => p.id !== 'builtin-senior')
+    const again = seedBuiltins(left, known)
+    expect(again.presets).toEqual(left)
+    expect(removedBuiltins(again.presets)).toEqual(['senior'])
+  })
+
+  it('un regolamento modificato non cambia', () => {
+    const { presets, known } = seedBuiltins([], [])
+    const changed = presets.map((p) => (p.id === 'builtin-senior' ? { ...p, name: 'Serie B' } : p))
+    expect(seedBuiltins(changed, known).presets).toEqual(changed)
+  })
+
+  it('un regolamento nuovo arriva anche negli archivi esistenti', () => {
+    const { presets } = seedBuiltins([custom], [])
+    const without = presets.filter((p) => p.id !== 'builtin-torneo-giovanile')
+    const known = allIds.filter((id) => id !== 'torneo-giovanile')
+    const updated = seedBuiltins(without, known).presets
+    expect(updated.map((p) => p.id)).toContain('builtin-torneo-giovanile')
+    expect(updated.at(-1)).toEqual(custom)
   })
 })
