@@ -6,6 +6,7 @@
   import { music } from './music.svelte'
   import { t } from '../i18n/ui.svelte'
   import { SOUND_IDS, SOUND_LABELS, type SoundId } from './sound-events'
+  import { SOUND_PRESETS, type SoundSource } from './sound-presets'
 
   let { confirm }: { confirm: (request: ConfirmRequest) => void } = $props()
 
@@ -56,10 +57,26 @@
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   }
 
+  // ── Suoni ─────────────────────────────────────────────────────────────
+  /** Valore della voce "Carica file…" del menu: non è una sorgente. */
+  const UPLOAD = '__upload__'
+
+  /** I predefiniti adatti al suono vengono per primi, poi gli altri. */
+  function presetsFor(id: SoundId) {
+    return {
+      suggested: SOUND_PRESETS.filter((p) => p.suggested.includes(id)),
+      others: SOUND_PRESETS.filter((p) => !p.suggested.includes(id)),
+    }
+  }
+
   let errors = $state<Partial<Record<SoundId, string>>>({})
   let busy = $state<SoundId | null>(null)
   let fileInput: HTMLInputElement
   let target: SoundId | null = null
+
+  function showError(id: SoundId, e: unknown, fallback: string) {
+    errors = { ...errors, [id]: t(e instanceof Error ? e.message : fallback) }
+  }
 
   function pickFile(id: SoundId) {
     target = id
@@ -77,13 +94,48 @@
       await audio.setCustom(id, file)
       audio.test(id)
     } catch (e) {
-      errors = {
-        ...errors,
-        [id]: t(e instanceof Error ? e.message : 'Impossibile usare il file.'),
-      }
+      showError(id, e, 'Impossibile usare il file.')
     } finally {
       busy = null
     }
+  }
+
+  async function chooseSource(id: SoundId, select: HTMLSelectElement) {
+    const value = select.value
+    // Il menu torna sempre alla sorgente attiva: cambia solo se la scelta riesce.
+    select.value = audio.sourceOf(id)
+    if (value === UPLOAD) {
+      pickFile(id)
+      return
+    }
+    busy = id
+    errors = { ...errors, [id]: undefined }
+    try {
+      await audio.setSource(id, value as SoundSource)
+    } catch (e) {
+      showError(id, e, 'Impossibile usare il suono scelto.')
+    } finally {
+      busy = null
+      select.value = audio.sourceOf(id)
+    }
+  }
+
+  function askRemoveCustom(id: SoundId) {
+    const name = audio.settings.custom[id]
+    if (!name) return
+    confirm({
+      title: t('Eliminare il file personale?'),
+      message: t(
+        '“{name}” viene cancellato dal programma (il file sul computer resta). Se era il suono in uso, si torna a quello sintetizzato.',
+        { name },
+      ),
+      confirmLabel: t('Elimina'),
+      danger: true,
+      action: () => {
+        errors = { ...errors, [id]: undefined }
+        void audio.removeCustom(id)
+      },
+    })
   }
 </script>
 
@@ -144,12 +196,14 @@
       {t('Suoni')}
       <HelpTip title={t('Suoni')}>
         {t(
-          'I suoni partono da soli al momento giusto. Togli la spunta per quelli che non vuoi (es. se il palazzetto ha già una sua sirena). “Prova” li fa sentire anche se sono disattivati. Con “Carica file…” puoi usare una tua registrazione (es. la sirena vera del palazzetto, in MP3 o WAV): resta salvata nel programma e funziona anche senza internet. “Ripristina” torna al suono incluso.',
+          'I suoni partono da soli al momento giusto. Togli la spunta per quelli che non vuoi (es. se il palazzetto ha già una sua sirena). Dal menu di ogni suono scegli cosa far sentire: il suono sintetizzato, uno dei suoni inclusi (trombe, sirena, cicalini, campanella: in cima quelli più adatti) oppure un file personale con “Carica file…” (es. la sirena vera del palazzetto, in MP3 o WAV). Tutto resta salvato nel programma e funziona anche senza internet. “Prova” fa sentire il suono scelto anche se è disattivato; 🗑 cancella il file personale.',
         )}
       </HelpTip>
     </h2>
     <ul class="sounds">
       {#each SOUND_IDS as id (id)}
+        {@const presets = presetsFor(id)}
+        {@const customName = audio.settings.custom[id]}
         <li>
           <label class="check">
             <input
@@ -160,34 +214,60 @@
             <span>
               <strong>{t(SOUND_LABELS[id].name)}</strong>
               <small class="muted">{t(SOUND_LABELS[id].description)}</small>
-              {#if audio.settings.custom[id]}
-                <small class="custom">🎵 {audio.settings.custom[id]}</small>
-              {/if}
-              {#if errors[id]}<small class="error">{errors[id]}</small>{/if}
             </span>
           </label>
-          <div class="actions">
-            <button type="button" class="btn btn-sm" onclick={() => audio.test(id)}
-              >▶ {t('Prova')}</button
+          <div class="sound-controls">
+            <select
+              class="input source"
+              value={audio.sourceOf(id)}
+              disabled={busy === id}
+              aria-label={`${t('Suono')}: ${t(SOUND_LABELS[id].name)}`}
+              title={t('Suono')}
+              onchange={(e) => void chooseSource(id, e.currentTarget)}
             >
-            {#if audio.settings.custom[id]}
+              <option value="synth">{t('Incluso (sintetizzato)')}</option>
+              {#if presets.suggested.length}
+                <optgroup label={t('Adatti a questo suono')}>
+                  {#each presets.suggested as preset (preset.id)}
+                    <option value={preset.id}>{t(preset.name)}</option>
+                  {/each}
+                </optgroup>
+              {/if}
+              {#if presets.others.length}
+                <optgroup label={t('Altri suoni inclusi')}>
+                  {#each presets.others as preset (preset.id)}
+                    <option value={preset.id}>{t(preset.name)}</option>
+                  {/each}
+                </optgroup>
+              {/if}
+              <optgroup label={t('File personale')}>
+                {#if customName}
+                  <option value="custom">{t('Il mio file: {name}', { name: customName })}</option>
+                {/if}
+                <option value={UPLOAD}>{t('Carica file…')}</option>
+              </optgroup>
+            </select>
+            <div class="actions">
               <button
                 type="button"
                 class="btn btn-sm"
-                title={t('Torna al suono incluso nel programma')}
-                onclick={() => void audio.removeCustom(id)}>{t('Ripristina')}</button
-              >
-            {:else}
-              <button
-                type="button"
-                class="btn btn-sm"
-                title={t('Usa un tuo file audio (MP3, WAV, OGG)')}
                 disabled={busy === id}
-                onclick={() => pickFile(id)}
-                >{busy === id ? t('Carico…') : t('Carica file…')}</button
+                onclick={() => audio.test(id)}
+                >{busy === id ? t('Carico…') : `▶ ${t('Prova')}`}</button
               >
-            {/if}
+              {#if customName}
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  title={t('Elimina il file personale')}
+                  aria-label={t('Elimina il file personale')}
+                  disabled={busy === id}
+                  onclick={() => askRemoveCustom(id)}>🗑</button
+                >
+              {/if}
+            </div>
           </div>
+          {#if errors[id]}<p class="error" role="alert">{errors[id]}</p>{/if}
         </li>
       {/each}
     </ul>
@@ -412,9 +492,10 @@
 
   .sounds li {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.5rem 1rem;
     padding: 0.5rem 0.65rem;
     border-radius: 10px;
     background: var(--ice-950);
@@ -437,11 +518,31 @@
     flex-direction: column;
   }
 
-  .custom {
-    color: var(--ice-50);
+  .sounds .check {
+    flex: 1 1 16rem;
+    min-width: 0;
+  }
+
+  .sound-controls {
+    display: flex;
+    flex: 1 1 18rem;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .source {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
   }
 
   .error {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.85rem;
     color: var(--warn);
   }
 
