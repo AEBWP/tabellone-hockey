@@ -5,6 +5,7 @@ import { STYLE_INFO } from '../scoreboard/styles'
 import { PENALTY_NAMES } from '../console/format'
 import { SHORTCUTS } from '../console/shortcuts'
 import { SOUND_LABELS } from '../console/sound-events'
+import { SOUND_PRESETS } from '../console/sound-presets'
 import { BOARD_TEXT, phaseLabel } from './board'
 import { CONSOLE_TEXT, ROWS } from './console'
 import { t, ui } from './ui.svelte'
@@ -48,6 +49,7 @@ describe('traduzioni della console', () => {
       ...Object.values(PENALTY_NAMES),
       ...SHORTCUTS.flatMap((s) => [s.description, ...s.keys.filter((k) => k.length > 2)]),
       ...Object.values(SOUND_LABELS).flatMap((s) => [s.name, s.description]),
+      ...SOUND_PRESETS.map((p) => p.name),
       ...Object.values(STYLE_INFO).flatMap((s) => [s.name, s.description]),
       ...PRESETS.map((p) => p.name),
     ]

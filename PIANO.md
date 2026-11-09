@@ -120,3 +120,21 @@ Parametri configurabili:
 - Versione di Windows
 - Collegamento audio (uscita del PC verso l'impianto)
 - Regole effettivamente usate per le varie categorie
+
+## Varianti dei suoni per sirene e segnali
+
+Per ogni suono si sceglie tra **principale**, **una delle varianti incluse** o **un proprio file**.
+
+- Le varianti cambiano solo il timbro (`TIMBRES` in `src/console/synth.ts`, elenco in
+  `src/console/sound-presets.ts`). Colpi, durate e pause di ogni segnale stanno solo in
+  `SOUND_RHYTHMS` e valgono per tutte: niente file audio inclusi.
+- Impostazioni (`AudioSettings` in `audio.svelte.ts`): nuovo campo
+  `source: Partial<Record<SoundId, SoundSource>>`. Mancante = `'synth'`, tranne se esiste
+  `custom[id]` (impostazioni vecchie) → `'custom'`. `custom[id]` resta il nome del file caricato,
+  che non si perde passando a un altro suono.
+- API di `audio` usata dall'interfaccia:
+  - `sourceOf(id): SoundSource`
+  - `setSource(id, source): Promise<void>` — con un file personale lo decodifica prima di cambiare;
+    se fallisce lancia un `Error` con messaggio in italiano e lascia la sorgente precedente.
+  - `setCustom(id, file)` — come oggi, e in più imposta la sorgente a `'custom'`.
+  - `removeCustom(id)` — cancella il file caricato; se era la sorgente attiva torna a `'synth'`.
