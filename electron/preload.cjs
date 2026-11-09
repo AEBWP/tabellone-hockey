@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld('tabelloneApp', {
   identifyScreens: () => ipcRenderer.invoke('screens:identify'),
   startWithScreens: (choice) => ipcRenderer.invoke('screens:start', choice),
   chooseScreens: () => ipcRenderer.invoke('screens:choose'),
+  isScreenMissing: () => ipcRenderer.invoke('screens:is-missing'),
+  onScreenMissing: (callback) => {
+    ipcRenderer.on('screens:missing', (_event, missing) => callback(!!missing))
+  },
 
   // Finestra del tabellone
   openDisplay: () => ipcRenderer.invoke('display:open'),

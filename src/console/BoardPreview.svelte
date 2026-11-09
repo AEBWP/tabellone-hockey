@@ -17,9 +17,12 @@
     game,
     connected,
     busy = null,
+    missing = false,
   }: {
     game: GameState
     connected: boolean
+    /** Lo schermo scelto per il tabellone non è collegato: spento e in rosso. */
+    missing?: boolean
     /** Apertura o chiusura in corso: al posto dell'anteprima, l'attesa. */
     busy?: 'opening' | 'closing' | null
   } = $props()
@@ -40,14 +43,18 @@
     <span class="spinner" aria-hidden="true"></span>
     <span class="label">{busy === 'closing' ? t('Chiusura…') : t('Apertura…')}</span>
   </div>
-{:else if connected}
+{:else if connected && !missing}
   <div class="board-preview" title={t('Anteprima del tabellone')}>
     <Stage>
       <Scoreboard {view} style={game.boardStyle} animations={false} />
     </Stage>
   </div>
 {:else}
-  <div class="board-preview off" title={t('Tabellone non aperto')}>
+  <div
+    class="board-preview off"
+    class:missing
+    title={missing ? t('Schermo non trovato') : t('Tabellone non aperto')}
+  >
     <!-- Schermo spento, barrato. -->
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <rect x="2.5" y="4" width="19" height="12.5" rx="1.5" />
@@ -81,6 +88,11 @@
     background:
       repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 6px, transparent 6px 12px),
       var(--ice-950);
+  }
+
+  .board-preview.off.missing {
+    border-color: var(--danger);
+    color: var(--danger);
   }
 
   .board-preview.wait {

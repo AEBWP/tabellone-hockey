@@ -549,6 +549,7 @@ function syncDisplays() {
   if (!choice) return
   // Uno schermo ricollegato può tornare con un id diverso: si riconosce qui.
   choice = resolveChoice(choice, screens()) ?? choice
+  sendScreenMissing()
   if (!displayOpen) return
   const targets = displayTargets()
   const wanted = new Map(targets.map((t) => [t.display.id, t]))
@@ -620,8 +621,19 @@ function destroyDisplay(id) {
   if (entry && !entry.win.isDestroyed()) entry.win.destroy()
 }
 
+/** Nessuno degli schermi scelti per il tabellone è collegato. */
+function screenMissing() {
+  return !!choice && displayTargets().length === 0
+}
+
+function sendScreenMissing() {
+  if (consoleWin && !consoleWin.isDestroyed()) {
+    consoleWin.webContents.send('screens:missing', screenMissing())
+  }
+}
+
 function openDisplay() {
-  if (!choice) return
+  if (!choice || screenMissing()) return
   const existing = [...displayWins.values()].map((e) => e.win)
   displayOpen = true
   syncDisplays()
@@ -696,6 +708,8 @@ function registerIpc() {
     const current = choice ?? (usable ? resolved : defaultChoice(list))
     return { screens: list, choice: current, remember: config.rememberScreens !== false }
   })
+
+  ipcMain.handle('screens:is-missing', () => screenMissing())
 
   ipcMain.handle('screens:identify', () => identifyScreens())
 
@@ -843,15 +857,16 @@ if (!app.requestSingleInstanceLock()) {
       const base = defaultChoice(list)
       startMain(all && base ? { ...base, displayIds: list.map((s) => s.id) } : base)
       void runSmokeTest(SMOKE_TEST)
-    } else if (config.rememberScreens && list.length > 0 && normalizeChoice(config.screens)) {
-      // Scelta ricordata: si parte sempre, anche se uno schermo manca (vedi displayPlan).
-      const resolved = resolveChoice(config.screens, list)
-      if (JSON.stringify(resolved) !== JSON.stringify(config.screens)) {
+    } else {
+      const resolved =
+        config.rememberScreens && list.length > 0 ? resolveChoice(config.screens, list) : null
+      if (resolved && JSON.stringify(resolved) !== JSON.stringify(config.screens)) {
         writeConfig({ ...config, screens: resolved })
       }
-      startMain(resolved)
-    } else {
-      openSetup()
+      // Scelta ricordata: si parte sempre. Senza il suo schermo il tabellone resta
+      // chiuso e la console propone di configurare gli schermi.
+      if (resolved) startMain(resolved)
+      else openSetup()
     }
     // Subito, senza aspettare la scelta degli schermi: la console legge l'esito
     // appena si apre.

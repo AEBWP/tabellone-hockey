@@ -85,16 +85,16 @@ describe('scelta degli schermi', () => {
     ])
   })
 
-  it('schermi scollegati: si saltano; se non ne resta nessuno, finestra sulla console', () => {
+  it('schermi scollegati: si saltano; se non ne resta nessuno il tabellone non si apre', () => {
     expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, [laptop, maxi])).toEqual([
       { id: 7, mode: 'fullscreen', mirror: false },
     ])
-    expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, [laptop])).toEqual([
-      { id: 1, mode: 'window', mirror: false },
-    ])
-    // Manca anche lo schermo della console: si usa il principale.
-    // Lì c'è la console: il tabellone resta in finestra per non coprirla.
-    expect(displayPlan({ consoleId: 9, displayIds: [8] }, [laptop, maxi])).toEqual([
+    expect(displayPlan({ consoleId: 1, displayIds: [7, 3] }, [laptop])).toEqual([])
+    expect(displayPlan({ consoleId: 9, displayIds: [8] }, [laptop, maxi])).toEqual([])
+  })
+
+  it('manca lo schermo della console: sul principale il tabellone non la copre', () => {
+    expect(displayPlan({ consoleId: 9, displayIds: [1] }, [laptop, maxi])).toEqual([
       { id: 1, mode: 'window', mirror: false },
     ])
   })
@@ -151,7 +151,7 @@ describe('scelta degli schermi', () => {
     it('schermo davvero assente: resta nella scelta e si riprende quando torna', () => {
       const out = resolveChoice(saved, [laptop])
       expect(ids(out)).toEqual([1, [7], [7]])
-      expect(displayPlan(out, [laptop])).toEqual([{ id: 1, mode: 'window', mirror: false }])
+      expect(displayPlan(out, [laptop])).toEqual([])
       const back = resolveChoice(out, [laptop, { ...maxi, id: 50 }])
       expect(ids(back)).toEqual([1, [50], [50]])
     })
@@ -160,9 +160,7 @@ describe('scelta degli schermi', () => {
       const out = resolveChoice(saved, [{ ...laptop, id: 7 }])
       expect(out.consoleId).toBe(7)
       expect(out.displayIds[0]).toBeLessThan(0)
-      expect(displayPlan(out, [{ ...laptop, id: 7 }])).toEqual([
-        { id: 7, mode: 'window', mirror: false },
-      ])
+      expect(displayPlan(out, [{ ...laptop, id: 7 }])).toEqual([])
     })
 
     it('le scelte delle versioni precedenti si riconoscono dall’id e imparano lo schermo', () => {

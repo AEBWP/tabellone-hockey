@@ -60,6 +60,9 @@ export interface DesktopApi {
   identifyScreens(): Promise<void>
   startWithScreens(choice: ScreenChoice & { remember: boolean }): Promise<boolean>
   chooseScreens(): Promise<void>
+  /** Nessuno degli schermi scelti per il tabellone è collegato. */
+  isScreenMissing(): Promise<boolean>
+  onScreenMissing(callback: (missing: boolean) => void): void
   openDisplay(): Promise<void>
   /** Chiude il tabellone (sul maxischermo si può chiudere solo da qui). */
   closeDisplay(): Promise<void>

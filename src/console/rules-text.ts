@@ -7,6 +7,24 @@ export function presetLabel(p: SavedPreset): string {
   return isBuiltinPreset(p) ? t(p.name) : p.name
 }
 
+/** Confronto profondo: l'ordine dei campi può cambiare da una versione all'altra. */
+function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (typeof a !== 'object' || typeof b !== 'object' || !a || !b) return false
+  const x = a as Record<string, unknown>
+  const y = b as Record<string, unknown>
+  return [...new Set([...Object.keys(x), ...Object.keys(y)])].every((k) => sameValue(x[k], y[k]))
+}
+
+/**
+ * Nome del regolamento in uso. La partita tiene solo le regole, non il loro nome:
+ * si cerca quello con regole identiche, altrimenti è un regolamento personalizzato.
+ */
+export function currentRulesLabel(rules: Rules, presets: SavedPreset[]): string {
+  const found = presets.find((p) => sameValue(p.rules, rules))
+  return found ? presetLabel(found) : t('Personalizzato')
+}
+
 /**
  * Descrizione breve di un regolamento nella lingua della console,
  * es. "3 × 20′, supplementare 5′, rigori".

@@ -2642,6 +2642,29 @@ export const ROWS: readonly Row[] = [
   ],
   ['Indietro', 'Back', 'Zurück', 'Atrás', 'Retour'],
   ['Avanti', 'Next', 'Weiter', 'Siguiente', 'Suivant'],
+  [
+    'Schermo non trovato',
+    'Screen not found',
+    'Bildschirm nicht gefunden',
+    'Pantalla no encontrada',
+    'Écran introuvable',
+  ],
+  [
+    'Configura schermi',
+    'Set up screens',
+    'Bildschirme einrichten',
+    'Configurar pantallas',
+    'Configurer les écrans',
+  ],
+  [
+    'Lo schermo del tabellone non è collegato. Collegalo e comparirà Apri tabellone, oppure scegline un altro qui.',
+    'The scoreboard screen is not connected. Connect it and Open scoreboard will appear, or choose another one here.',
+    'Der Bildschirm der Anzeigetafel ist nicht angeschlossen. Schließe ihn an, dann erscheint Anzeigetafel öffnen, oder wähle hier einen anderen.',
+    'La pantalla del marcador no está conectada. Conéctala y aparecerá Abrir marcador, o elige otra aquí.',
+    'L’écran du tableau n’est pas branché. Branchez-le et Ouvrir le tableau apparaîtra, ou choisissez-en un autre ici.',
+  ],
+  ['Partita corrente', 'Current game', 'Aktuelles Spiel', 'Partido actual', 'Match en cours'],
+  ['Personalizzato', 'Custom', 'Benutzerdefiniert', 'Personalizado', 'Personnalisé'],
 ]
 
 /** Traduzioni per lingua: frase italiana → frase tradotta. */

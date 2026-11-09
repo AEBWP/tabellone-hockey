@@ -38,6 +38,8 @@
   import { musicEvent } from './music'
   import { snapshot, soundEvents } from './sound-events'
   import RulesTab from './RulesTab.svelte'
+  import { library } from './library.svelte'
+  import { currentRulesLabel } from './rules-text'
   import StyleTab from './StyleTab.svelte'
   import TeamsTab from './TeamsTab.svelte'
   import StreamingTab from './StreamingTab.svelte'
@@ -59,6 +61,7 @@
   let lastDisplaySeen = $state(0)
 
   const view = $derived(deriveView(game, clock))
+  const currentRulesName = $derived(currentRulesLabel(game.rules, library.presets))
   const displayConnected = $derived(clock - lastDisplaySeen < HEARTBEAT_TIMEOUT_MS)
   /**
    * Apertura o chiusura del tabellone in corso: la console mostra una rotellina
@@ -268,6 +271,11 @@
   }
 
   /** Versione browser: la scheda del tabellone aperta dalla console. */
+  /** Nessuno degli schermi scelti per il tabellone è collegato. */
+  let screenMissing = $state(false)
+  desktop?.onScreenMissing((missing) => (screenMissing = missing))
+  void desktop?.isScreenMissing().then((missing) => (screenMissing = missing))
+
   let displayWindow: Window | null = null
   const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
   function openDisplay() {
@@ -578,6 +586,7 @@
       <button type="button" class="btn" onclick={() => (newGameOpen = true)}
         >{t('Nuova partita')}</button
       >
+      <span class="current-game">{t('Partita corrente')}: <b>{currentRulesName}</b></span>
       {#if !audio.unlocked && !audio.settings.muted}
         <button type="button" class="btn btn-sm audio-locked" onclick={() => audio.unlock()}>
           🔈 {t('Clicca per attivare l’audio')}
@@ -635,21 +644,30 @@
          Apri/Chiudi, a destra l'anteprima; lo stato in piccolo sul bordo in basso. -->
     <div
       class="display-control"
-      class:ok={displayConnected && !displayBusy}
+      class:ok={displayConnected && !displayBusy && !screenMissing}
       class:busy={!!displayBusy}
-      class:off={!displayConnected && !displayBusy}
+      class:off={!displayConnected && !displayBusy && !screenMissing}
+      class:missing={screenMissing && !displayBusy}
     >
       <span class="status">
         {#if displayBusy}
           <span class="spinner" aria-hidden="true"></span>
           {displayBusy === 'closing' ? t('Chiusura del tabellone…') : t('Apertura del tabellone…')}
+        {:else if screenMissing}
+          <span class="dot"></span>
+          {t('Schermo non trovato')}
         {:else}
           <span class="dot"></span>
           {displayConnected ? t('Tabellone collegato') : t('Tabellone non aperto')}
         {/if}
       </span>
       <div class="dc-board">
-        <BoardPreview {game} connected={displayConnected} busy={displayBusy} />
+        <BoardPreview
+          {game}
+          connected={displayConnected}
+          busy={displayBusy}
+          missing={screenMissing}
+        />
       </div>
       <!-- Lingua del tabellone, in piccolo in fondo alla pillola: al clic l'elenco completo. -->
       <label class="dc-lang" title={t('Lingua del tabellone')}>
@@ -667,6 +685,17 @@
       {#if displayBusy}
         <button type="button" class="dc-btn" disabled aria-busy="true">
           {displayBusy === 'closing' ? t('Chiudi') : t('Apri')}
+        </button>
+      {:else if screenMissing}
+        <button
+          type="button"
+          class="dc-btn configure"
+          title={t(
+            'Lo schermo del tabellone non è collegato. Collegalo e comparirà Apri tabellone, oppure scegline un altro qui.',
+          )}
+          onclick={() => void desktop?.chooseScreens()}
+        >
+          {t('Configura schermi')}
         </button>
       {:else if displayConnected}
         <button
@@ -911,6 +940,17 @@
     color: var(--warn);
   }
 
+  .current-game {
+    font-size: 0.8rem;
+    color: var(--ice-300);
+    white-space: nowrap;
+  }
+
+  .current-game b {
+    font-weight: 600;
+    color: var(--ice-50);
+  }
+
   .now-playing {
     display: flex;
     align-items: center;
@@ -1090,6 +1130,27 @@
   .display-control.off {
     border-color: var(--warn);
     box-shadow: 0 0 14px color-mix(in srgb, var(--warn) 45%, transparent);
+  }
+
+  /* Lo schermo del tabellone non c'è: rosso, e il pulsante porta alla scelta. */
+  .display-control.missing {
+    border-color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 8%, var(--ice-950));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--danger) 45%, transparent);
+  }
+
+  .display-control.missing .status {
+    color: var(--danger);
+  }
+
+  .dc-btn.configure {
+    background: var(--danger);
+    color: #1a0004;
+    font-weight: 700;
+  }
+
+  .dc-btn.configure:hover {
+    background: color-mix(in srgb, var(--danger) 80%, #fff);
   }
 
   @keyframes open-pulse {

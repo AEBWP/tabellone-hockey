@@ -191,9 +191,9 @@ function isChoiceValid(choice, screens) {
  * Su quali schermi aprire il tabellone e come. Sul maxischermo (schermo diverso
  * da quello della console) va a schermo intero; sullo schermo della console resta
  * una finestra normale. Gli schermi scollegati si saltano; se non ne resta
- * nessuno, il tabellone va in una finestra sullo schermo della console. Se manca
- * lo schermo della console, la console si apre sul principale: lì il tabellone
- * resta in finestra per non coprirla.
+ * nessuno il tabellone non si apre: la scelta è dell'operatore, non si sposta
+ * da solo su un altro schermo. Se manca lo schermo della console, la console si
+ * apre sul principale: lì il tabellone resta in finestra per non coprirla.
  * @param {ScreenChoice} choice
  * @param {ScreenInfo[]} screens
  * @param {boolean} [forceFullscreen] solo per i collaudi con un monitor
@@ -204,15 +204,12 @@ function displayPlan(choice, screens, forceFullscreen = false) {
   const primary = (screens.find((s) => s.primary) ?? screens[0])?.id
   const mirrored = new Set(choice.mirrorIds ?? [])
   const consoleId = connected.has(choice.consoleId) ? choice.consoleId : primary
-  let ids = choice.displayIds.filter((id) => connected.has(id))
-  if (ids.length === 0) ids = [consoleId]
-  return [...new Set(ids)]
-    .filter((id) => id !== undefined)
-    .map((id) => ({
-      id,
-      mode: forceFullscreen || id !== consoleId ? 'fullscreen' : 'window',
-      mirror: mirrored.has(id),
-    }))
+  const ids = choice.displayIds.filter((id) => connected.has(id))
+  return [...new Set(ids)].map((id) => ({
+    id,
+    mode: forceFullscreen || id !== consoleId ? 'fullscreen' : 'window',
+    mirror: mirrored.has(id),
+  }))
 }
 
 /**
