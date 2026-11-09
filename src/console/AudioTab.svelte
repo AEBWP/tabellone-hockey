@@ -509,6 +509,7 @@
   }
 
   .check input {
+    flex: none;
     width: 18px;
     height: 18px;
   }
