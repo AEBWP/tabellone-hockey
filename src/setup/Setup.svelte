@@ -11,20 +11,6 @@
   /** Schermi del tabellone girati verso la console: destra e sinistra rovesciate. */
   let mirrorIds = $state<number[]>([])
 
-  /** Passi del wizard: lingua, schermi, verso di ogni tabellone rispetto al pubblico. */
-  const STEPS = ['language', 'screens', 'sides'] as const
-  type Step = (typeof STEPS)[number]
-  const STEP_LABELS: Record<Step, string> = {
-    language: 'Lingua',
-    screens: 'Schermi',
-    sides: 'Posizione',
-  }
-  let step = $state<Step>('language')
-  const stepIndex = $derived(STEPS.indexOf(step))
-
-  /** Salva le preferenze: vale per tutto il wizard, di base acceso. */
-  let remember = $state(true)
-
   /**
    * Lingua all'apertura: se l'operatore la cambia qui (o al primo avvio) diventa
    * anche la lingua del tabellone. Riaprendo la scelta degli schermi senza
@@ -32,6 +18,24 @@
    */
   const initialLanguage = ui.lang
   const firstTime = ui.firstTime
+
+  /**
+   * Passi del wizard: lingua, schermi, verso di ogni tabellone rispetto al pubblico.
+   * Il passo della lingua c'è solo al primo avvio; dopo basta il menu negli schermi.
+   */
+  const ALL_STEPS = ['language', 'screens', 'sides'] as const
+  type Step = (typeof ALL_STEPS)[number]
+  const STEPS: readonly Step[] = firstTime ? ALL_STEPS : ALL_STEPS.slice(1)
+  const STEP_LABELS: Record<Step, string> = {
+    language: 'Lingua',
+    screens: 'Schermi',
+    sides: 'Posizione',
+  }
+  let step = $state<Step>(STEPS[0])
+  const stepIndex = $derived(STEPS.indexOf(step))
+
+  /** Salva le preferenze: vale per tutto il wizard, di base acceso. */
+  let remember = $state(true)
   let starting = $state(false)
   let error = $state<string | null>(null)
 
@@ -50,6 +54,7 @@
     const first = !loaded
     if (first) {
       loaded = true
+      remember = data.remember
       consoleId = data.choice?.consoleId ?? null
       displayIds = data.choice?.displayIds ?? []
       mirrorIds = data.choice?.mirrorIds ?? []
@@ -119,7 +124,23 @@
 
 <main>
   <header>
-    <h1>Tabellone Hockey <small class="version">v{__APP_VERSION__}</small></h1>
+    <div class="title-row">
+      <h1>Tabellone Hockey <small class="version">v{__APP_VERSION__}</small></h1>
+      {#if !firstTime && step === 'screens'}
+        <label class="lang-menu">
+          {t('Lingua')}
+          <select
+            value={ui.lang}
+            aria-label={t('Lingua della console')}
+            onchange={(e) => ui.set(e.currentTarget.value as Language)}
+          >
+            {#each LANGUAGES as l (l)}
+              <option value={l}>{LANGUAGE_NAMES[l]}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
+    </div>
     <ol class="steps">
       {#each STEPS as s, i (s)}
         <li class:current={s === step} class:done={i < stepIndex}>
@@ -348,7 +369,33 @@
 </main>
 
 <style>
-  /* Passi del wizard: 1 Lingua · 2 Schermi · 3 Posizione. */
+  .title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+  }
+
+  /* Lingua dopo il primo avvio: un menu piccolo, in disparte. */
+  .lang-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    color: var(--ice-300);
+  }
+
+  .lang-menu select {
+    padding: 0.2rem 0.4rem;
+    border: 1px solid var(--ice-800);
+    border-radius: 6px;
+    background: var(--ice-900);
+    color: inherit;
+    font: inherit;
+  }
+
+  /* Passi del wizard: Lingua (solo al primo avvio) · Schermi · Posizione. */
   .steps {
     display: flex;
     flex-wrap: wrap;

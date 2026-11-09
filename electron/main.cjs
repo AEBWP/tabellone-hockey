@@ -28,6 +28,8 @@ const {
   displayPlan,
   isChoiceValid,
   normalizeChoice,
+  resolveChoice,
+  withIdentities,
 } = require('./screens.cjs')
 const { createUpdater } = require('./updater.cjs')
 
@@ -202,6 +204,7 @@ function screens() {
     primary: d.id === screen.getPrimaryDisplay().id,
     scaleFactor: d.scaleFactor,
     label: d.label || '',
+    internal: !!d.internal,
   }))
 }
 
@@ -416,7 +419,13 @@ function placeConsole() {
       consoleWin?.show()
       // All'avvio la console va a schermo intero, tranne quando il tabellone è
       // sullo stesso schermo (lo coprirebbe): lì resta una finestra.
-      if (choice && !choice.displayIds.includes(choice.consoleId) && screens().length > 1) {
+      // Vale anche se il maxischermo manca e il tabellone è finito in finestra.
+      if (
+        choice &&
+        !choice.displayIds.includes(choice.consoleId) &&
+        screens().length > 1 &&
+        !displayTargets().some((t) => t.mode === 'window')
+      ) {
         setConsoleFullScreen(true)
       }
       closeSplash()
@@ -537,7 +546,10 @@ function quitApp() {
  * mancano, chiude quelle in più e rimette al loro posto le altre.
  */
 function syncDisplays() {
-  if (!choice || !displayOpen) return
+  if (!choice) return
+  // Uno schermo ricollegato può tornare con un id diverso: si riconosce qui.
+  choice = resolveChoice(choice, screens()) ?? choice
+  if (!displayOpen) return
   const targets = displayTargets()
   const wanted = new Map(targets.map((t) => [t.display.id, t]))
   for (const [id, entry] of [...displayWins]) {
@@ -677,18 +689,21 @@ function registerIpc() {
 
   ipcMain.handle('screens:list', () => {
     const list = describeScreens(screens())
-    const saved = readConfig().screens
-    const current =
-      choice ?? (isChoiceValid(saved, list) ? normalizeChoice(saved) : defaultChoice(list))
-    return { screens: list, choice: current, remember: readConfig().rememberScreens !== false }
+    const config = readConfig()
+    const resolved = resolveChoice(config.screens, list)
+    // Si propone la scelta salvata se almeno uno schermo del tabellone c'è ancora.
+    const usable = resolved?.displayIds.some((id) => list.some((s) => s.id === id))
+    const current = choice ?? (usable ? resolved : defaultChoice(list))
+    return { screens: list, choice: current, remember: config.rememberScreens !== false }
   })
 
   ipcMain.handle('screens:identify', () => identifyScreens())
 
   ipcMain.handle('screens:start', (_event, { consoleId, displayIds, mirrorIds, remember }) => {
     const list = screens()
-    const next = normalizeChoice({ consoleId, displayIds, mirrorIds })
-    if (!next || !isChoiceValid(next, list)) return false
+    const picked = normalizeChoice({ consoleId, displayIds, mirrorIds })
+    if (!picked || !isChoiceValid(picked, list)) return false
+    const next = withIdentities(picked, list)
     writeConfig({ ...readConfig(), screens: next, rememberScreens: !!remember })
     startMain(next)
     setupWin?.close()
@@ -828,8 +843,13 @@ if (!app.requestSingleInstanceLock()) {
       const base = defaultChoice(list)
       startMain(all && base ? { ...base, displayIds: list.map((s) => s.id) } : base)
       void runSmokeTest(SMOKE_TEST)
-    } else if (config.rememberScreens && isChoiceValid(config.screens, list)) {
-      startMain(normalizeChoice(config.screens))
+    } else if (config.rememberScreens && list.length > 0 && normalizeChoice(config.screens)) {
+      // Scelta ricordata: si parte sempre, anche se uno schermo manca (vedi displayPlan).
+      const resolved = resolveChoice(config.screens, list)
+      if (JSON.stringify(resolved) !== JSON.stringify(config.screens)) {
+        writeConfig({ ...config, screens: resolved })
+      }
+      startMain(resolved)
     } else {
       openSetup()
     }

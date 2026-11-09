@@ -3,10 +3,12 @@
 
 /**
  * @typedef {{ x: number, y: number, width: number, height: number }} Rect
- * @typedef {{ id: number, bounds: Rect, primary: boolean, scaleFactor: number, label?: string }} ScreenInfo
- * @typedef {{ consoleId: number, displayIds: number[], mirrorIds: number[] }} ScreenChoice
+ * @typedef {{ id: number, bounds: Rect, primary: boolean, scaleFactor: number, label?: string, internal?: boolean }} ScreenInfo
+ * @typedef {{ label: string, width: number, height: number, x: number, y: number, internal: boolean }} ScreenIdentity
+ * @typedef {{ consoleId: number, displayIds: number[], mirrorIds: number[], known?: Record<string, ScreenIdentity> }} ScreenChoice
  * `mirrorIds`: schermi del tabellone girati verso la console (di fronte all'operatore),
  * dove destra e sinistra vanno rovesciate rispetto alla console.
+ * `known`: com'è fatto ogni schermo scelto, per riconoscerlo ai riavvii.
  */
 
 /**
@@ -48,7 +50,127 @@ function normalizeChoice(saved) {
   const mirrorIds = Array.isArray(s.mirrorIds)
     ? [...new Set(s.mirrorIds)].filter((id) => displayIds.includes(id))
     : []
-  return { consoleId: s.consoleId, displayIds, mirrorIds }
+  // Fino alla 1.0.5 non c'era: gli schermi si riconoscono solo dall'id.
+  const known = {}
+  if (s.known && typeof s.known === 'object') {
+    for (const id of [s.consoleId, ...displayIds]) {
+      const k = s.known[id]
+      if (k && typeof k.width === 'number' && typeof k.height === 'number') known[id] = k
+    }
+  }
+  return {
+    consoleId: s.consoleId,
+    displayIds,
+    mirrorIds,
+    ...(Object.keys(known).length ? { known } : {}),
+  }
+}
+
+/**
+ * Come è fatto uno schermo: serve a riconoscerlo anche se al riavvio ha un id
+ * diverso. Il nome può mancare, la risoluzione è quella reale.
+ * @param {ScreenInfo} s
+ * @returns {ScreenIdentity}
+ */
+function screenIdentity(s) {
+  return {
+    label: s.label ?? '',
+    width: Math.round(s.bounds.width * s.scaleFactor),
+    height: Math.round(s.bounds.height * s.scaleFactor),
+    x: s.bounds.x,
+    y: s.bounds.y,
+    internal: !!s.internal,
+  }
+}
+
+/**
+ * Aggiunge alla scelta come sono fatti gli schermi scelti, per poterli
+ * riconoscere ai prossimi avvii.
+ * @param {ScreenChoice} choice
+ * @param {ScreenInfo[]} screens
+ * @returns {ScreenChoice}
+ */
+function withIdentities(choice, screens) {
+  /** @type {Record<string, ScreenIdentity>} */
+  const known = {}
+  for (const id of [choice.consoleId, ...choice.displayIds]) {
+    const s = screens.find((x) => x.id === id)
+    if (s) known[id] = screenIdentity(s)
+  }
+  return { ...choice, known }
+}
+
+/** @param {ScreenIdentity} [k] @param {ScreenIdentity} [c] */
+const sameModel = (k, c) =>
+  !!k &&
+  !!c &&
+  k.label === c.label &&
+  k.width === c.width &&
+  k.height === c.height &&
+  !!k.internal === c.internal
+
+/**
+ * Criteri per riconoscere uno schermo salvato, dal più sicuro al meno sicuro.
+ * L'ultimo vale anche per le scelte salvate dalle versioni precedenti.
+ * @type {((k: ScreenIdentity | undefined, c: ScreenIdentity, sameId: boolean) => boolean)[]}
+ */
+const MATCHES = [
+  (k, c) => sameModel(k, c) && k?.x === c.x && k?.y === c.y,
+  (k, c, sameId) => sameId && sameModel(k, c),
+  (k, c) => sameModel(k, c),
+  (k, c) => !!k?.label && k.label === c.label,
+  (_k, _c, sameId) => sameId,
+]
+
+/**
+ * Riporta una scelta salvata sugli schermi collegati adesso: l'id di uno schermo
+ * può cambiare da un avvio all'altro, le sue caratteristiche no. Uno schermo che
+ * non si trova resta nella scelta, così viene ripreso appena si ricollega.
+ * @param {unknown} saved
+ * @param {ScreenInfo[]} screens
+ * @returns {ScreenChoice | null}
+ */
+function resolveChoice(saved, screens) {
+  const c = normalizeChoice(saved)
+  if (!c) return null
+  const ids = [...new Set([c.consoleId, ...c.displayIds])]
+  const current = new Map(screens.map((s) => [s.id, screenIdentity(s)]))
+  /** Da id salvato a id attuale. @type {Map<number, number>} */
+  const found = new Map()
+  const taken = new Set()
+  for (const matches of MATCHES) {
+    for (const id of ids) {
+      if (found.has(id)) continue
+      const hit = screens.find(
+        (s) => !taken.has(s.id) && matches(c.known?.[id], current.get(s.id), s.id === id),
+      )
+      if (hit) {
+        found.set(id, hit.id)
+        taken.add(hit.id)
+      }
+    }
+  }
+  // Uno schermo mancante il cui id è ora di un altro schermo: gli serve un id
+  // che nessuno schermo collegato ha, altrimenti verrebbe scambiato per quello.
+  let free = -1
+  for (const id of ids) {
+    if (found.has(id) || !current.has(id)) continue
+    while (ids.includes(free)) free--
+    found.set(id, free--)
+  }
+  const now = (/** @type {number} */ id) => found.get(id) ?? id
+  /** @type {Record<string, ScreenIdentity>} */
+  const known = {}
+  for (const id of ids) {
+    const identity = current.get(now(id)) ?? c.known?.[id]
+    if (identity) known[now(id)] = identity
+  }
+  return {
+    consoleId: now(c.consoleId),
+    displayIds: c.displayIds.map(now),
+    mirrorIds: c.mirrorIds.map(now),
+    ...(Object.keys(known).length ? { known } : {}),
+  }
 }
 
 /**
@@ -69,8 +191,9 @@ function isChoiceValid(choice, screens) {
  * Su quali schermi aprire il tabellone e come. Sul maxischermo (schermo diverso
  * da quello della console) va a schermo intero; sullo schermo della console resta
  * una finestra normale. Gli schermi scollegati si saltano; se non ne resta
- * nessuno, il tabellone va in una finestra sullo schermo della console (o sul
- * principale, se manca anche quello).
+ * nessuno, il tabellone va in una finestra sullo schermo della console. Se manca
+ * lo schermo della console, la console si apre sul principale: lì il tabellone
+ * resta in finestra per non coprirla.
  * @param {ScreenChoice} choice
  * @param {ScreenInfo[]} screens
  * @param {boolean} [forceFullscreen] solo per i collaudi con un monitor
@@ -80,13 +203,14 @@ function displayPlan(choice, screens, forceFullscreen = false) {
   const connected = new Set(screens.map((s) => s.id))
   const primary = (screens.find((s) => s.primary) ?? screens[0])?.id
   const mirrored = new Set(choice.mirrorIds ?? [])
+  const consoleId = connected.has(choice.consoleId) ? choice.consoleId : primary
   let ids = choice.displayIds.filter((id) => connected.has(id))
-  if (ids.length === 0) ids = [connected.has(choice.consoleId) ? choice.consoleId : primary]
+  if (ids.length === 0) ids = [consoleId]
   return [...new Set(ids)]
     .filter((id) => id !== undefined)
     .map((id) => ({
       id,
-      mode: forceFullscreen || id !== choice.consoleId ? 'fullscreen' : 'window',
+      mode: forceFullscreen || id !== consoleId ? 'fullscreen' : 'window',
       mirror: mirrored.has(id),
     }))
 }
@@ -112,4 +236,12 @@ function describeScreens(screens) {
     })
 }
 
-module.exports = { defaultChoice, normalizeChoice, isChoiceValid, displayPlan, describeScreens }
+module.exports = {
+  defaultChoice,
+  normalizeChoice,
+  isChoiceValid,
+  resolveChoice,
+  withIdentities,
+  displayPlan,
+  describeScreens,
+}

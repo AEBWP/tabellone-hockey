@@ -8,6 +8,8 @@ const {
   displayPlan,
   isChoiceValid,
   normalizeChoice,
+  resolveChoice,
+  withIdentities,
 } = require('./screens.cjs')
 
 const laptop = {
@@ -91,9 +93,92 @@ describe('scelta degli schermi', () => {
       { id: 1, mode: 'window', mirror: false },
     ])
     // Manca anche lo schermo della console: si usa il principale.
+    // Lì c'è la console: il tabellone resta in finestra per non coprirla.
     expect(displayPlan({ consoleId: 9, displayIds: [8] }, [laptop, maxi])).toEqual([
-      { id: 1, mode: 'fullscreen', mirror: false },
+      { id: 1, mode: 'window', mirror: false },
     ])
+  })
+
+  describe('scelta salvata ai riavvii', () => {
+    const saved = withIdentities({ consoleId: 1, displayIds: [7], mirrorIds: [7] }, [laptop, maxi])
+    const ids = (c: { consoleId: number; displayIds: number[]; mirrorIds: number[] }) => [
+      c.consoleId,
+      c.displayIds,
+      c.mirrorIds,
+    ]
+
+    it('con gli stessi schermi non cambia nulla', () => {
+      expect(resolveChoice(saved, [laptop, maxi])).toEqual(saved)
+    })
+
+    it('riconosce gli schermi anche se Windows ha cambiato i loro id', () => {
+      const out = resolveChoice(saved, [
+        { ...laptop, id: 21 },
+        { ...maxi, id: 22 },
+      ])
+      expect(ids(out)).toEqual([21, [22], [22]])
+    })
+
+    it('non si confonde se due schermi si sono scambiati gli id', () => {
+      const out = resolveChoice(saved, [
+        { ...laptop, id: 7 },
+        { ...maxi, id: 1 },
+      ])
+      expect(ids(out)).toEqual([7, [1], [1]])
+    })
+
+    it('due schermi uguali si distinguono dalla posizione', () => {
+      const a = { ...maxi, id: 10, bounds: { ...maxi.bounds, x: 1536 } }
+      const b = { ...maxi, id: 11, bounds: { ...maxi.bounds, x: 3456 } }
+      const twin = withIdentities({ consoleId: 1, displayIds: [11], mirrorIds: [] }, [laptop, a, b])
+      const out = resolveChoice(twin, [laptop, { ...a, id: 30 }, { ...b, id: 31 }])
+      expect(out.displayIds).toEqual([31])
+    })
+
+    it('riconosce lo schermo anche se ha cambiato risoluzione, dal nome', () => {
+      const named = { ...maxi, label: 'SAMSUNG' }
+      const choice = withIdentities({ consoleId: 1, displayIds: [7], mirrorIds: [] }, [
+        laptop,
+        named,
+      ])
+      const out = resolveChoice(choice, [
+        laptop,
+        { ...named, id: 40, bounds: { ...maxi.bounds, width: 3840, height: 2160 } },
+      ])
+      expect(out.displayIds).toEqual([40])
+    })
+
+    it('schermo davvero assente: resta nella scelta e si riprende quando torna', () => {
+      const out = resolveChoice(saved, [laptop])
+      expect(ids(out)).toEqual([1, [7], [7]])
+      expect(displayPlan(out, [laptop])).toEqual([{ id: 1, mode: 'window', mirror: false }])
+      const back = resolveChoice(out, [laptop, { ...maxi, id: 50 }])
+      expect(ids(back)).toEqual([1, [50], [50]])
+    })
+
+    it('schermo assente il cui id ora è di un altro: non viene confuso con quello', () => {
+      const out = resolveChoice(saved, [{ ...laptop, id: 7 }])
+      expect(out.consoleId).toBe(7)
+      expect(out.displayIds[0]).toBeLessThan(0)
+      expect(displayPlan(out, [{ ...laptop, id: 7 }])).toEqual([
+        { id: 7, mode: 'window', mirror: false },
+      ])
+    })
+
+    it('le scelte delle versioni precedenti si riconoscono dall’id e imparano lo schermo', () => {
+      const out = resolveChoice({ consoleId: 1, displayId: 7 }, [laptop, maxi])
+      expect(ids(out)).toEqual([1, [7], []])
+      expect(out.known[7]).toMatchObject({ width: 1920, height: 1080 })
+      const moved = resolveChoice(out, [
+        { ...laptop, id: 60 },
+        { ...maxi, id: 61 },
+      ])
+      expect(ids(moved)).toEqual([60, [61], []])
+    })
+
+    it('una scelta illeggibile non si può usare', () => {
+      expect(resolveChoice({ consoleId: 1 }, [laptop])).toBeNull()
+    })
   })
 
   it('schermi girati verso la console: solo tra quelli del tabellone', () => {
