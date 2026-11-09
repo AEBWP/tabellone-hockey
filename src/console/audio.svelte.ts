@@ -1,6 +1,7 @@
 import { SOUND_IDS, type SoundId } from './sound-events'
 import { deleteSound, loadSound, saveSound } from './sound-store'
 import { scheduleSound } from './synth'
+import type { SoundSource } from './sound-presets'
 import { t } from '../i18n/ui.svelte'
 
 /**
@@ -144,6 +145,17 @@ class AudioEngine {
     await saveSound(id, { name: file.name, data })
     this.buffers.set(id, buffer)
     this.update({ custom: { ...this.settings.custom, [id]: file.name } })
+  }
+
+  // STUB da scartare al merge: l'implementazione vera è in claude/sirene-logica.
+  sourceOf(id: SoundId): SoundSource {
+    return this.settings.custom[id] ? 'custom' : 'synth'
+  }
+
+  // STUB da scartare al merge: l'implementazione vera è in claude/sirene-logica.
+  async setSource(id: SoundId, source: SoundSource): Promise<void> {
+    void id
+    void source
   }
 
   /** Torna al suono sintetizzato. */
