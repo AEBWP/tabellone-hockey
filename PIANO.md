@@ -120,3 +120,26 @@ Parametri configurabili:
 - Versione di Windows
 - Collegamento audio (uscita del PC verso l'impianto)
 - Regole effettivamente usate per le varie categorie
+
+## Suoni predefiniti per sirene e segnali (in corso)
+
+Oggi ogni suono ha il suono sintetizzato e, in alternativa, un file caricato dall'operatore.
+Obiettivo: per ogni suono scegliere tra **sintetizzato**, **uno dei suoni inclusi** o **un proprio file**.
+
+Interfaccia comune (non cambiarla senza aggiornare tutti): `src/console/sound-presets.ts`.
+
+- File inclusi in `public/sounds/<file>` (OGG Vorbis, mono, 44,1 kHz, max ~150 KB, picco −1 dBFS,
+  suoni originali generati da noi: niente audio di terzi). Elenco in `SOUND_PRESETS`.
+- Impostazioni (`AudioSettings` in `audio.svelte.ts`): nuovo campo
+  `source: Partial<Record<SoundId, SoundSource>>`. Mancante = `'synth'`, tranne se esiste
+  `custom[id]` (impostazioni vecchie) → `'custom'`. `custom[id]` resta il nome del file caricato,
+  che non si perde passando a un altro suono.
+- API di `audio` usata dall'interfaccia:
+  - `sourceOf(id): SoundSource`
+  - `setSource(id, source): Promise<void>` — carica e decodifica il file (predefinito o personale);
+    se fallisce lancia un `Error` con messaggio in italiano e lascia la sorgente precedente.
+  - `setCustom(id, file)` — come oggi, e in più imposta la sorgente a `'custom'`.
+  - `removeCustom(id)` — cancella il file caricato; se era la sorgente attiva torna a `'synth'`.
+
+Lavoro diviso in branch: `claude/sirene-audio` (file), `claude/sirene-logica` (audio.svelte.ts + test),
+`claude/sirene-ui` (AudioTab.svelte + traduzioni). Si uniscono su `claude/magical-faraday-dqbwng`.
