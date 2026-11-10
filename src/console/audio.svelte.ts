@@ -1,7 +1,7 @@
 import { SOUND_IDS, type SoundId } from './sound-events'
 import { deleteSound, loadSound, saveSound } from './sound-store'
 import { findPreset, type SoundSource } from './sound-presets'
-import { scheduleSound } from './synth'
+import { fadeOut, holdEnd, holdHorn, scheduleSound, type HeldSound } from './synth'
 import { t } from '../i18n/ui.svelte'
 
 /**
@@ -117,6 +117,8 @@ class AudioEngine {
   private customBuffers = new Map<SoundId, AudioBuffer>()
   /** Ultima riproduzione di ogni file: riprovando, la precedente si ferma. */
   private playing = new Map<SoundId, AudioBufferSourceNode>()
+  /** Tromba manuale che sta suonando (tasto ancora premuto). */
+  private held: HeldSound | null = null
 
   /** Quanto far passare prima della musica, per non coprire la sirena di fine periodo. */
   get periodEndWaitMs(): number {
@@ -183,6 +185,51 @@ class AudioEngine {
     }
     source.start(at)
     this.playing.set(id, source)
+  }
+
+  /**
+   * Tromba manuale: inizia a suonare e va avanti fino a `hornUp`, per tutto il
+   * tempo in cui l'operatore tiene premuto. False se l'audio è spento o la
+   * tromba è disattivata (e allora non suona).
+   */
+  hornDown(force = false): boolean {
+    if (!force && (this.settings.muted || !this.settings.enabled.horn)) return false
+    this.hornUp()
+    const ctx = this.ensureContext()
+    if (ctx.state !== 'running') void ctx.resume()
+    const at = ctx.currentTime + 0.005
+    const buffer = this.bufferFor('horn')
+    this.held = buffer
+      ? this.holdBuffer(ctx, buffer, at)
+      : holdHorn(ctx, this.master!, at, findPreset(this.sourceOf('horn'))?.id)
+    return true
+  }
+
+  /** Tasto della tromba rilasciato: il suono smette subito. */
+  hornUp() {
+    this.held?.release()
+    this.held = null
+  }
+
+  /** File dell'operatore suonato a ripetizione finché non viene rilasciato. */
+  private holdBuffer(ctx: AudioContext, buffer: AudioBuffer, at: number): HeldSound {
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.loop = true
+    const env = ctx.createGain()
+    env.gain.setValueAtTime(0, at)
+    env.gain.linearRampToValueAtTime(1, at + 0.01)
+    source.connect(env).connect(this.master!)
+    source.onended = () => env.disconnect()
+    source.start(at)
+    let released = false
+    return {
+      release() {
+        if (released) return
+        released = true
+        source.stop(fadeOut(env.gain, holdEnd(ctx, at)))
+      },
+    }
   }
 
   /**
@@ -267,8 +314,16 @@ class AudioEngine {
     this.unlock()
     const wasMuted = this.settings.muted
     if (wasMuted) this.applyVolume(true)
-    this.play(id, true)
-    const seconds = this.bufferFor(id)?.duration ?? 4
+    let seconds = this.bufferFor(id)?.duration ?? 4
+    if (id === 'horn') {
+      // La tromba manuale non ha una durata sua: in prova si sente per un secondo.
+      seconds = 1
+      this.hornDown(true)
+      const mine = this.held
+      setTimeout(() => this.held === mine && this.hornUp(), seconds * 1000)
+    } else {
+      this.play(id, true)
+    }
     if (wasMuted) setTimeout(() => this.applyVolume(), (seconds + 0.5) * 1000)
   }
 

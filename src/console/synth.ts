@@ -121,6 +121,35 @@ export const SOUND_RHYTHMS: Record<
   timeoutEnd: { kind: 'signal', count: 1, length: 1.1, gap: 0 },
   intermissionEnd: { kind: 'signal', count: 3, length: 0.35, gap: 0.2 },
   shiftChange: { kind: 'signal', count: 1, length: 1.2, gap: 0 },
+  // Tromba manuale: dura quanto l'operatore tiene premuto (holdHorn); questo
+  // colpo vale solo se la si fa partire come un segnale qualsiasi.
+  horn: { kind: 'signal', count: 1, length: 1, gap: 0 },
+}
+
+/** Un suono tenuto: va avanti finché non si chiama `release`. */
+export interface HeldSound {
+  release(): void
+}
+
+/** Durata minima di un colpo tenuto (s): anche un tocco brevissimo si deve sentire. */
+const HOLD_MIN = 0.05
+/** Tempo in cui un suono tenuto si spegne al rilascio (s): breve, senza "clic". */
+const HOLD_RELEASE = 0.08
+
+/**
+ * Spegne in fretta un volume dall'istante `at`, da qualunque punto si trovi
+ * (anche a metà dell'attacco). Restituisce l'istante in cui c'è silenzio.
+ */
+export function fadeOut(gain: AudioParam, at: number): number {
+  if (gain.cancelAndHoldAtTime) gain.cancelAndHoldAtTime(at)
+  else gain.cancelScheduledValues(at)
+  gain.setTargetAtTime(0, at, HOLD_RELEASE / 5)
+  return at + HOLD_RELEASE
+}
+
+/** Istante in cui può finire un suono tenuto iniziato a `start`. */
+export function holdEnd(ctx: BaseAudioContext, start: number): number {
+  return Math.max(ctx.currentTime, start + HOLD_MIN)
 }
 
 /** Tromba ad aria con le armoniche di una tromba compressa e un leggero tremolio dell'aria. */
@@ -254,6 +283,43 @@ function horn(
   duration: number,
 ): number {
   const end = start + duration
+  const voice = startHorn(ctx, out, tone, attack, start)
+  voice.env.gain.setValueAtTime(tone.gain, Math.max(start + attack * 2.5, end - release))
+  voice.env.gain.exponentialRampToValueAtTime(0.0001, end)
+  voice.stop(end)
+  return end
+}
+
+/**
+ * Tromba che suona finché non viene rilasciata (tromba manuale dell'operatore).
+ * Va dritta all'uscita, senza l'eco del palazzetto: al rilascio tace subito.
+ */
+export function holdHorn(
+  ctx: BaseAudioContext,
+  out: AudioNode,
+  at: number,
+  timbre: TimbreId = 'synth',
+): HeldSound {
+  const voice = startHorn(ctx, out, TIMBRES[timbre].signal, ENVELOPES.signal.attack, at)
+  let released = false
+  return {
+    release() {
+      if (released) return
+      released = true
+      voice.stop(fadeOut(voice.env.gain, holdEnd(ctx, at)))
+    },
+  }
+}
+
+/** Avvia una tromba senza fine: chi la chiama decide quando spegnerla (`env`) e fermarla (`stop`). */
+function startHorn(
+  ctx: BaseAudioContext,
+  out: AudioNode,
+  tone: Tone,
+  attack: number,
+  start: number,
+): { env: GainNode; stop(at: number): void } {
+  const oscillators: OscillatorNode[] = []
   const spread = tone.spread ?? 6
   const spreads = spread === 0 ? [0] : [-spread, spread]
 
@@ -292,7 +358,7 @@ function horn(
     depth.gain.value = amount
     lfo.connect(depth).connect(am.gain)
     lfo.start(start)
-    lfo.stop(end)
+    oscillators.push(lfo)
     node = node.connect(am)
   }
 
@@ -301,8 +367,6 @@ function horn(
   env.gain.linearRampToValueAtTime(tone.gain * 0.75, start + attack)
   // Piccolo "gonfiarsi" dopo l'attacco, poi tenuta
   env.gain.linearRampToValueAtTime(tone.gain, start + attack * 2.5)
-  env.gain.setValueAtTime(tone.gain, Math.max(start + attack * 2.5, end - release))
-  env.gain.exponentialRampToValueAtTime(0.0001, end)
   node.connect(env).connect(out)
 
   // Leggera instabilità dell'intonazione (aria/membrana): rende il suono vivo
@@ -312,7 +376,7 @@ function horn(
   wobbleDepth.gain.value = 3 // cent
   wobble.connect(wobbleDepth)
   wobble.start(start)
-  wobble.stop(end)
+  oscillators.push(wobble)
 
   const wave = tone.wave
     ? ctx.createPeriodicWave(
@@ -345,10 +409,17 @@ function horn(
       wobbleDepth.connect(osc.detune)
       osc.connect(input)
       osc.start(start)
-      osc.stop(end)
+      oscillators.push(osc)
     }
   })
-  return end
+  return {
+    env,
+    stop(at) {
+      for (const osc of oscillators) osc.stop(at)
+      // Finita la tromba si stacca dall'uscita: una tenuta non lascia nodi appesi.
+      oscillators[oscillators.length - 1].onended = () => env.disconnect()
+    },
+  }
 }
 
 /** Programma il suono `id` a partire dall'istante `at`; restituisce quando finisce. */

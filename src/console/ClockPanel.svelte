@@ -11,12 +11,15 @@
     confirm,
     onEditClock,
     onNewGame,
+    horn,
   }: {
     view: GameView
     run: (command: Command) => void
     confirm: (request: ConfirmRequest) => void
     onEditClock: () => void
     onNewGame: () => void
+    /** Tromba manuale: suona da `down` a `up`. Null se è disattivata nelle impostazioni audio. */
+    horn: { on: boolean; down: () => void; up: () => void } | null
   } = $props()
 
   const canRunClock = $derived(view.phase === 'ready' || view.phase === 'play')
@@ -177,6 +180,34 @@
       {view.clockOnly ? t('Fine cronometro') : t('Fine partita')}
     </button>
   </div>
+
+  {#if horn}
+    <!-- Tromba manuale: un pulsante tondo a sé, come quello di una pulsantiera,
+         sul lato destro del pannello. Suona finché resta premuto (anche con il
+         tasto T). Il puntatore viene "catturato", così vale anche se si rilascia
+         fuori dal pulsante. -->
+    <div class="horn-pod" class:on={horn.on}>
+      <button
+        type="button"
+        class="horn"
+        aria-label={t('Tromba')}
+        title={t('Tieni premuto per suonare la tromba')}
+        onpointerdown={(e) => {
+          if (e.button !== 0) return
+          e.currentTarget.setPointerCapture(e.pointerId)
+          horn.down()
+        }}
+        onpointerup={horn.up}
+        onpointercancel={horn.up}
+        onlostpointercapture={horn.up}
+        oncontextmenu={(e) => e.preventDefault()}
+      >
+        <span class="horn-icon" aria-hidden="true">🎺</span>
+        <kbd>T</kbd>
+      </button>
+      <small>{t('Tromba')}</small>
+    </div>
+  {/if}
 </section>
 
 <style>
@@ -272,5 +303,111 @@
     justify-content: center;
     gap: 0.5rem;
     margin-top: 0.75rem;
+  }
+
+  .clock-panel {
+    position: relative;
+  }
+
+  /* Tromba: nello spazio libero a destra del cronometro, sopra il pulsante del
+     tempo, staccata dal resto. */
+  .horn-pod {
+    --horn: #ffd166;
+    position: absolute;
+    right: 1.25rem;
+    top: 8.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    user-select: none;
+  }
+
+  .horn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    padding: 0;
+    border: 2px solid color-mix(in srgb, var(--horn) 45%, transparent);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 30%, #2a4468, #14253d 70%);
+    /* Anello scuro attorno: il "pozzetto" in cui sta il pulsante. */
+    box-shadow:
+      0 0 0 5px rgba(0, 0, 0, 0.28),
+      0 3px 0 5px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    color: inherit;
+    cursor: pointer;
+    touch-action: none;
+    transition:
+      transform 0.06s,
+      border-color 0.12s,
+      background 0.12s;
+  }
+
+  .horn:hover {
+    border-color: var(--horn);
+  }
+
+  .horn:focus-visible {
+    outline: 2px solid var(--ice-300);
+    outline-offset: 7px;
+  }
+
+  .horn-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  /* Il tasto T, come un'etichetta appoggiata sul bordo del pulsante. */
+  .horn kbd {
+    position: absolute;
+    right: -0.45rem;
+    bottom: -0.3rem;
+    font-size: 0.7rem;
+  }
+
+  .horn-pod small {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ice-300);
+    opacity: 0.8;
+  }
+
+  /* Mentre suona: premuto, acceso, con le onde che si allargano. */
+  .horn-pod.on .horn {
+    transform: scale(0.94);
+    border-color: var(--horn);
+    background: radial-gradient(circle at 50% 35%, #ffe199, #f2b530 75%);
+  }
+
+  .horn-pod.on .horn::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 2px solid var(--horn);
+    border-radius: 50%;
+    animation: horn-wave 0.7s ease-out infinite;
+    pointer-events: none;
+  }
+
+  .horn-pod.on small {
+    color: var(--horn);
+    opacity: 1;
+  }
+
+  @keyframes horn-wave {
+    from {
+      transform: scale(1);
+      opacity: 0.9;
+    }
+    to {
+      transform: scale(1.7);
+      opacity: 0;
+    }
   }
 </style>

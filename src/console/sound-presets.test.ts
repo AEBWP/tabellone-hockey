@@ -46,6 +46,7 @@ describe('SOUND_RHYTHMS', () => {
     expect(rhythm('timeoutEnd')).toEqual([1, 1.1, 0])
     expect(rhythm('intermissionEnd')).toEqual([3, 0.35, 0.2])
     expect(rhythm('shiftChange')).toEqual([1, 1.2, 0])
+    expect(rhythm('horn')).toEqual([1, 1, 0])
   })
 })
 

@@ -317,6 +317,19 @@
     helpOpen || clockEditOpen || newGameOpen || !!confirmRequest || quitOpen,
   )
 
+  // ── Tromba manuale ────────────────────────────────────────────────────
+  // Suona per tutto il tempo in cui l'operatore tiene premuto il pulsante o il
+  // tasto T: parte alla pressione e smette al rilascio.
+  let hornOn = $state(false)
+  function hornDown() {
+    if (audio.hornDown()) hornOn = true
+    else if (audio.settings.muted) showToast(t('Audio disattivato'))
+  }
+  function hornUp() {
+    audio.hornUp()
+    hornOn = false
+  }
+
   function onKeydown(e: KeyboardEvent) {
     const action = actionForKey(e)
     if (!action) return
@@ -365,6 +378,9 @@
         run({ type: 'shot', team, delta: 1 })
         break
       }
+      case 'horn':
+        hornDown()
+        break
       case 'mute':
         audio.toggleMute()
         showToast(audio.settings.muted ? t('Audio disattivato') : t('Audio attivo'))
@@ -383,6 +399,10 @@
     }
     onKeydown(e)
   }}
+  onkeyup={(e) => {
+    if (e.code === 'KeyT') hornUp()
+  }}
+  onblur={hornUp}
   onpointerdown={(e) => {
     audio.unlock()
     // Clic fuori dal menu Impostazioni: si chiude.
@@ -732,6 +752,7 @@
           confirm={(r) => (confirmRequest = r)}
           onEditClock={() => (clockEditOpen = true)}
           onNewGame={askNewGame}
+          horn={audio.settings.enabled.horn ? { on: hornOn, down: hornDown, up: hornUp } : null}
         />
 
         {#if !view.clockOnly}

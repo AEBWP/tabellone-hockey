@@ -2665,6 +2665,29 @@ export const ROWS: readonly Row[] = [
   ],
   ['Partita corrente', 'Current game', 'Aktuelles Spiel', 'Partido actual', 'Match en cours'],
   ['Personalizzato', 'Custom', 'Benutzerdefiniert', 'Personalizado', 'Personnalisé'],
+  ['Tromba', 'Horn', 'Hupe', 'Bocina', 'Klaxon'],
+  ['Tromba manuale', 'Manual horn', 'Manuelle Hupe', 'Bocina manual', 'Klaxon manuel'],
+  [
+    'Tieni premuto per suonare la tromba',
+    'Hold down to sound the horn',
+    'Gedrückt halten, um die Hupe ertönen zu lassen',
+    'Mantén pulsado para hacer sonar la bocina',
+    'Maintenez appuyé pour faire retentir le klaxon',
+  ],
+  [
+    'Tromba: suona finché tieni premuto',
+    'Horn: sounds for as long as you hold it',
+    'Hupe: ertönt, solange du gedrückt hältst',
+    'Bocina: suena mientras mantienes pulsado',
+    'Klaxon : retentit tant que vous maintenez appuyé',
+  ],
+  [
+    'Suona finché tieni premuto il pulsante Tromba o il tasto T, e smette quando lasci. Un file personale si ripete finché tieni premuto.',
+    'Sounds for as long as you hold the Horn button or the T key, and stops when you let go. A personal file repeats for as long as you hold.',
+    'Ertönt, solange du die Schaltfläche Hupe oder die Taste T gedrückt hältst, und verstummt beim Loslassen. Eine eigene Datei wird wiederholt, solange du gedrückt hältst.',
+    'Suena mientras mantienes pulsado el botón Bocina o la tecla T, y se detiene al soltar. Un archivo personal se repite mientras mantienes pulsado.',
+    'Retentit tant que vous maintenez le bouton Klaxon ou la touche T, et s’arrête dès que vous relâchez. Un fichier personnel se répète tant que vous maintenez appuyé.',
+  ],
 ]
 
 /** Traduzioni per lingua: frase italiana → frase tradotta. */

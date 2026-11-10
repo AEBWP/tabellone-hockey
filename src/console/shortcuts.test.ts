@@ -28,6 +28,13 @@ describe('scorciatoie', () => {
     expect(actionForKey(key('KeyO'))).toBeNull()
   })
 
+  it('T suona la tromba, una volta per pressione; la freccia su resta libera per scorrere', () => {
+    expect(actionForKey(key('KeyT'))).toBe('horn')
+    expect(actionForKey(key('KeyT', { repeat: true }))).toBeNull()
+    expect(actionForKey(key('KeyT', { shiftKey: true }))).toBeNull()
+    expect(actionForKey(key('ArrowUp'))).toBeNull()
+  })
+
   it('M attiva e disattiva l’audio', () => {
     expect(actionForKey(key('KeyM'))).toBe('mute')
   })

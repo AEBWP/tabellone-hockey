@@ -2,7 +2,7 @@ import type { GameState, GameView } from '../engine'
 
 /** Suoni del tabellone. */
 export type SoundId =
-  'goal' | 'periodEnd' | 'timeout' | 'timeoutEnd' | 'intermissionEnd' | 'shiftChange'
+  'goal' | 'periodEnd' | 'timeout' | 'timeoutEnd' | 'intermissionEnd' | 'shiftChange' | 'horn'
 
 export const SOUND_LABELS: Record<SoundId, { name: string; description: string }> = {
   goal: { name: 'Sirena del gol', description: 'Quando premi GOL (non con le correzioni ±1).' },
@@ -23,6 +23,12 @@ export const SOUND_LABELS: Record<SoundId, { name: string; description: string }
     name: 'Sirena del cambio',
     description:
       'Segnale breve a intervalli regolari mentre il tempo scorre, per il cambio dei giocatori. Si attiva nel regolamento (es. Bambini: ogni minuto).',
+  },
+  // Non parte mai da sola: la suona l'operatore (soundEvents non la restituisce).
+  horn: {
+    name: 'Tromba manuale',
+    description:
+      'Suona finché tieni premuto il pulsante Tromba o il tasto T, e smette quando lasci. Un file personale si ripete finché tieni premuto.',
   },
 }
 

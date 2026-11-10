@@ -12,6 +12,7 @@ export type ShortcutAction =
   | 'goalRight'
   | 'shotLeft'
   | 'shotRight'
+  | 'horn'
   | 'mute'
   | 'help'
   | 'fullscreen'
@@ -29,6 +30,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: 'goalRight', keys: ['→'], description: 'Gol della squadra a destra' },
   { action: 'shotLeft', keys: ['Maiusc', '←'], description: 'Tiro in porta squadra a sinistra' },
   { action: 'shotRight', keys: ['Maiusc', '→'], description: 'Tiro in porta squadra a destra' },
+  { action: 'horn', keys: ['T'], description: 'Tromba: suona finché tieni premuto' },
   { action: 'mute', keys: ['M'], description: 'Audio sì / no' },
   { action: 'help', keys: ['F1'], description: 'Apri / chiudi la guida' },
   { action: 'fullscreen', keys: ['F11'], description: 'Console a schermo intero sì / no' },
@@ -60,6 +62,9 @@ export function actionForKey(e: KeyInput): ShortcutAction | null {
       return e.shiftKey ? 'shotLeft' : 'goalLeft'
     case 'ArrowRight':
       return e.shiftKey ? 'shotRight' : 'goalRight'
+    // Tromba manuale: parte alla pressione, Console la ferma al rilascio del tasto.
+    case 'KeyT':
+      return e.shiftKey ? null : 'horn'
     case 'KeyM':
       return e.shiftKey ? null : 'mute'
   }
