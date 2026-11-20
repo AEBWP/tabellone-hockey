@@ -3,6 +3,7 @@ import { audio } from './audio.svelte'
 import {
   cleanMusicSettings,
   isAudioFile,
+  PAUSE_DELAY_MS,
   pickNext,
   type MusicEvent,
   type MusicSettings,
@@ -101,7 +102,10 @@ class MusicPlayer {
     )
   }
 
-  /** Evento della partita. `waitMs`: quanto dura la sirena da lasciar finire. */
+  /**
+   * Evento della partita. `waitMs`: quanto dura la sirena da lasciar finire, per
+   * la musica dell'intervallo; a tempo fermo l'attesa è sempre `PAUSE_DELAY_MS`.
+   */
   handle(event: MusicEvent, waitMs: number) {
     clearTimeout(this.waiting)
     if (event === 'stop') {
@@ -109,12 +113,10 @@ class MusicPlayer {
       return
     }
     if (!this.settings.enabled || !this.settings.tracks.length) return
-    this.waiting = setTimeout(
-      () => {
-        if (!this.current) void this.begin()
-      },
-      Math.min(waitMs, MAX_WAIT_MS),
-    )
+    const delay = event === 'pause' ? PAUSE_DELAY_MS : Math.min(waitMs, MAX_WAIT_MS)
+    this.waiting = setTimeout(() => {
+      if (!this.current) void this.begin()
+    }, delay)
   }
 
   /** Musica negli intervalli sì o no. Spegnendola, quella in corso sfuma. */

@@ -14,7 +14,7 @@
   let { view, animations = true }: { view: GameView; animations?: boolean } = $props()
 
   const text = $derived(boardText(view))
-  const lastMinute = $derived(view.phase === 'play' && view.clockText.includes('.'))
+  const lastMinute = $derived(view.phase === 'play' && view.clockUrgent)
   const winner = $derived.by<TeamId | null>(() => {
     if (view.phase !== 'final') return null
     const { home, away } = view.teams

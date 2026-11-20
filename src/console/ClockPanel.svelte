@@ -23,7 +23,7 @@
   } = $props()
 
   const canRunClock = $derived(view.phase === 'ready' || view.phase === 'play')
-  const lastMinute = $derived(view.clockText.includes('.'))
+  const lastMinute = $derived(view.clockUrgent)
   /** Nomi dei periodi nella lingua della console (non in quella del tabellone). */
   const words = $derived(BOARD_TEXT[ui.lang])
 
@@ -140,6 +140,15 @@
         : `▶ ${view.pregame ? t('Avvia partita') : t('Avvia tempo')}`}
       <kbd>{t('Spazio')}</kbd>
     </button>
+  {/if}
+
+  {#if !view.clockOnly}
+    <!-- Tempo giocato dall'inizio della partita: si ferma col tempo e non si azzera
+         al cambio di periodo. -->
+    <div class="played" title={t('Somma del tempo giocato in tutti i periodi')}>
+      {t('Tempo totale di gioco')}
+      <strong>{view.playedText}</strong>
+    </div>
   {/if}
 
   {#if view.timeout}
@@ -274,6 +283,20 @@
   .main-btn {
     width: min(100%, 360px);
     margin-top: 0.4rem;
+  }
+
+  .played {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--ice-300);
+  }
+
+  .played strong {
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
   }
 
   .main-btn kbd {

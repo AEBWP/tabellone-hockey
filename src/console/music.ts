@@ -32,16 +32,30 @@ export const DEFAULT_MUSIC: MusicSettings = {
   played: [],
 }
 
-export type MusicEvent = 'start' | 'stop'
+/**
+ * - `start`: parte l'intervallo (dopo la sirena di fine periodo);
+ * - `pause`: il tempo si è fermato a gioco in corso (arbitro, timeout, infortunio…):
+ *   la musica parte dopo `PAUSE_DELAY_MS`;
+ * - `stop`: finito l'intervallo o ripartito il tempo, la musica sfuma.
+ */
+export type MusicEvent = 'start' | 'pause' | 'stop'
+
+/** Dallo stop del tempo alla musica: il tempo di vedere se riparte subito. */
+export const PAUSE_DELAY_MS = 2_000
+
+type MusicState = Pick<SoundSnapshot, 'phase'> & Partial<Pick<SoundSnapshot, 'clockRunning'>>
 
 /** Cosa deve fare la musica passando dallo stato `prev` allo stato `cur`. */
-export function musicEvent(
-  prev: Pick<SoundSnapshot, 'phase'>,
-  cur: Pick<SoundSnapshot, 'phase'>,
-): MusicEvent | null {
+export function musicEvent(prev: MusicState, cur: MusicState): MusicEvent | null {
   if (prev.phase === 'play' && cur.phase === 'intermission') return 'start'
   // Intervallo finito, saltato o annullato con una correzione.
   if (prev.phase === 'intermission' && cur.phase !== 'intermission') return 'stop'
+  // Tempo fermato o ripartito durante il periodo. Il primo avvio (da `ready`) e la
+  // fine del periodo non contano: hanno già i loro casi.
+  if (prev.phase === 'play' && cur.phase === 'play') {
+    if (prev.clockRunning && cur.clockRunning === false) return 'pause'
+    if (prev.clockRunning === false && cur.clockRunning) return 'stop'
+  }
   return null
 }
 

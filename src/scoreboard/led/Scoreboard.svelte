@@ -20,7 +20,7 @@
   const WHITE = '#f2f6ff'
 
   const sides: TeamId[] = ['home', 'away']
-  const lastMinute = $derived(view.phase === 'play' && view.clockText.includes('.'))
+  const lastMinute = $derived(view.phase === 'play' && view.clockUrgent)
   const clockColor = $derived(lastMinute ? RED : view.clockRunning ? GREEN : AMBER)
   const winner = $derived.by<TeamId | null>(() => {
     if (view.phase !== 'final') return null

@@ -820,7 +820,10 @@
 
 <ClockEditDialog
   open={clockEditOpen}
-  currentMs={view.clockMs}
+  currentMs={view.clockCountsUp
+    ? game.clock.periodEndMs - game.clock.periodStartMs - view.clockMs
+    : view.clockMs}
+  countsUp={view.clockCountsUp}
   maxMs={game.clock.periodEndMs - game.clock.periodStartMs}
   onclose={() => (clockEditOpen = false)}
   onsave={(remainingMs) => run({ type: 'setClock', remainingMs })}

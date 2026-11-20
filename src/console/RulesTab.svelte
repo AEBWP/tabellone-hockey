@@ -171,6 +171,10 @@
         />
         {t('Decimi di secondo nell’ultimo minuto')}
       </label>
+      <label class="check">
+        <input type="checkbox" bind:checked={draft.clockCountsUp} />
+        {t('Tempo in progressivo (da 0:00 alla fine del periodo, invece del conto alla rovescia)')}
+      </label>
       {#if !draft.clockOnly}
         <label class="check">
           <input type="checkbox" bind:checked={draft.showShots} />

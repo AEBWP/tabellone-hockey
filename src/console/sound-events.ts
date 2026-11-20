@@ -37,6 +37,8 @@ export const SOUND_IDS = Object.keys(SOUND_LABELS) as SoundId[]
 /** Quanto serve per capire, da un istante all'altro, se deve partire un suono. */
 export interface SoundSnapshot {
   phase: GameView['phase']
+  /** Il tempo scorre. */
+  clockRunning: boolean
   period: number
   /** Id dell'ultimo gol registrato (0 se nessuno). */
   lastGoalId: number
@@ -52,6 +54,7 @@ export function snapshot(state: GameState, view: GameView): SoundSnapshot {
   const goals = state.events.filter((e) => e.type === 'goal')
   return {
     phase: view.phase,
+    clockRunning: view.clockRunning,
     period: view.period,
     lastGoalId: goals.at(-1)?.id ?? 0,
     goalCount: goals.length,

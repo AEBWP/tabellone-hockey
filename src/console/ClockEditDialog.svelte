@@ -3,17 +3,24 @@
   import Modal from './Modal.svelte'
   import { t } from '../i18n/ui.svelte'
 
-  /** Correzione del tempo rimanente nel periodo. */
+  /**
+   * Correzione del tempo del periodo. Di norma si imposta il tempo che rimane;
+   * con il tempo in progressivo (`countsUp`) quello che è trascorso, come si legge
+   * sul tabellone. `onsave` riceve sempre il tempo che rimane.
+   */
   let {
     open,
     currentMs,
     maxMs,
+    countsUp = false,
     onclose,
     onsave,
   }: {
     open: boolean
+    /** Il tempo mostrato adesso: rimanente, o trascorso se `countsUp`. */
     currentMs: number
     maxMs: number
+    countsUp?: boolean
     onclose: () => void
     onsave: (remainingMs: number) => void
   } = $props()
@@ -48,16 +55,18 @@
 
   function save() {
     if (!valid) return
-    if (edited) onsave(totalMs)
+    if (edited) onsave(countsUp ? maxMs - totalMs : totalMs)
     onclose()
   }
 </script>
 
 <Modal {open} {onclose} title={t('Correggi tempo')}>
   <p class="muted">
-    {@html t(
-      'Imposta il tempo che deve <b>rimanere</b> nel periodo. Le penalità in corso non cambiano.',
-    )}
+    {@html countsUp
+      ? t('Imposta il tempo <b>trascorso</b> nel periodo. Le penalità in corso non cambiano.')
+      : t(
+          'Imposta il tempo che deve <b>rimanere</b> nel periodo. Le penalità in corso non cambiano.',
+        )}
   </p>
   <form
     onsubmit={(e) => {

@@ -67,6 +67,12 @@ export interface Rules {
    * più piccoli). Niente punti, periodi, penalità o timeout; a zero è finita.
    */
   clockOnly: boolean
+  /**
+   * Tempo in progressivo: console e tabelloni mostrano il tempo trascorso nel
+   * periodo (da 0:00 alla durata) invece del conto alla rovescia. Cambia solo
+   * come si legge il tempo: durata dei periodi, penalità e sirene restano uguali.
+   */
+  clockCountsUp: boolean
 }
 
 export interface RulesPreset {
@@ -90,6 +96,7 @@ const COMMON = {
   showShots: false,
   switchSides: false,
   clockOnly: false,
+  clockCountsUp: false,
 } satisfies Partial<Rules>
 
 export const PRESETS: readonly RulesPreset[] = [

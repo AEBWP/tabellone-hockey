@@ -4,6 +4,7 @@ import {
   cleanMusicSettings,
   isAudioFile,
   musicEvent,
+  PAUSE_DELAY_MS,
   pickNext,
   type MusicEvent,
   type MusicTrack,
@@ -45,6 +46,18 @@ describe('quando parte la musica', () => {
       skipBreak() {
         run({ type: 'endIntermission' })
       },
+      start() {
+        now += 1_000
+        run({ type: 'startClock' })
+      },
+      stopClock() {
+        now += 5_000
+        run({ type: 'stopClock' })
+      },
+      timeout() {
+        now += 5_000
+        run({ type: 'timeout', team: 'home' })
+      },
       get phase() {
         return prev.phase
       },
@@ -75,6 +88,52 @@ describe('quando parte la musica', () => {
 
   it('riaprendo la console a intervallo in corso non riparte', () => {
     expect(musicEvent({ phase: 'intermission' }, { phase: 'intermission' })).toBeNull()
+  })
+
+  it('a tempo fermato in partita parte la pausa, e si ferma quando il tempo riparte', () => {
+    const s = session()
+    s.start()
+    s.stopClock()
+    expect(s.heard).toEqual(['pause'])
+    s.start()
+    expect(s.heard).toEqual(['pause', 'stop'])
+  })
+
+  it('ogni stop è una pausa, anche i successivi', () => {
+    const s = session()
+    s.start()
+    s.stopClock()
+    s.start()
+    s.stopClock()
+    expect(s.heard).toEqual(['pause', 'stop', 'pause'])
+  })
+
+  it('il primo avvio del tempo, o dopo un intervallo, non ferma niente', () => {
+    const s = session()
+    s.start()
+    expect(s.heard).toEqual([])
+    s.playPeriod()
+    s.skipBreak()
+    s.start()
+    expect(s.heard).toEqual(['start', 'stop'])
+  })
+
+  it('fine periodo: solo la musica dell’intervallo, non anche quella della pausa', () => {
+    const s = session()
+    s.start()
+    s.playPeriod()
+    expect(s.heard).toEqual(['start'])
+  })
+
+  it('il timeout ferma il tempo: la musica parte come per ogni stop', () => {
+    const s = session()
+    s.start()
+    s.timeout()
+    expect(s.heard).toEqual(['pause'])
+  })
+
+  it('la pausa parte 2 secondi dopo lo stop', () => {
+    expect(PAUSE_DELAY_MS).toBe(2_000)
   })
 })
 

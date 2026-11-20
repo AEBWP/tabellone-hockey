@@ -25,6 +25,17 @@ export function formatClock(ms: number, tenthsBelowMs = 60_000): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
+/**
+ * Tempo trascorso, `M:SS`: parte da `0:00` e i secondi si contano solo a secondo
+ * compiuto (si arrotonda per difetto, al contrario del conto alla rovescia).
+ */
+export function formatElapsed(ms: number): string {
+  const totalSeconds = Math.floor(Math.max(0, ms) / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
 /** Tempo di gioco assoluto all'istante `now`, senza mai superare la fine del periodo. */
 export function gameTimeMs(clock: GameClock, now: number): number {
   const elapsed = clock.runningSince === null ? 0 : now - clock.runningSince

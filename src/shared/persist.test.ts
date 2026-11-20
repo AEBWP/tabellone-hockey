@@ -27,6 +27,12 @@ describe('ripristino partita salvata', () => {
     expect(migrate(old)?.boardLanguage).toBe('it')
   })
 
+  it('le partite salvate prima del tempo in progressivo restano a conto alla rovescia', () => {
+    const old = JSON.parse(JSON.stringify(createGame()))
+    delete old.rules.clockCountsUp
+    expect(migrate(old)?.rules.clockCountsUp).toBe(false)
+  })
+
   it('ricorda la lingua del tabellone', () => {
     const state = createGame(undefined, undefined, 'arena', 'es')
     expect(migrate(JSON.parse(JSON.stringify(state)))?.boardLanguage).toBe('es')

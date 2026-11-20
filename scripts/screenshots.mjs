@@ -112,7 +112,7 @@ app.whenReady().then(async () => {
   }
 
   // ── Tabellone (demo) ────────────────────────────────────────────────
-  // SOLO=console, SOLO=tabellone o SOLO=setup per rifare solo una parte
+  // SOLO=console, SOLO=tabellone, SOLO=setup o SOLO=progressivo per rifare solo una parte
   const only = process.env.SOLO
   if (only === 'setup') {
     await setupShots()
@@ -121,7 +121,8 @@ app.whenReady().then(async () => {
   win.setContentSize(1920, 1080)
   // STILI=palette,essenziale per rifare solo alcuni stili (con tutte le scene)
   const pick = process.env.STILI?.split(',')
-  for (const [i, style] of (only === 'console' ? [] : STYLES).entries()) {
+  const consoleOnly = only === 'console' || only === 'progressivo'
+  for (const [i, style] of (consoleOnly ? [] : STYLES).entries()) {
     if (pick && !pick.includes(style)) continue
     await open('/display.html?demo')
     for (let s = 0; s < i; s++) await key('s')
@@ -160,7 +161,7 @@ app.whenReady().then(async () => {
     }
   }
 
-  if (only !== 'console') await setupShots()
+  if (!consoleOnly) await setupShots()
 
   // ── Console ─────────────────────────────────────────────────────────
   if (only === 'tabellone') return finish()
@@ -190,6 +191,38 @@ app.whenReady().then(async () => {
       await sleep(150)
     }
     await js(`${find}?.click()`)
+  }
+  // SOLO=progressivo: console, regolamento e tabellone con il tempo in progressivo
+  // (senza streaming). Il tabellone è un'altra finestra, collegata alla console.
+  if (only === 'progressivo') {
+    await js(`(async () => {
+      const { DEMO_SCENES } = await import('/src/display/demo.ts')
+      const { saveGame } = await import('/src/shared/persist.ts')
+      const game = DEMO_SCENES[1].build(performance.timeOrigin + performance.now())
+      game.rules.clockCountsUp = true
+      saveGame(game)
+    })()`)
+    await open('/')
+    await snap('console-progressivo')
+    const board = new BrowserWindow({
+      show: false,
+      width: 1920,
+      height: 1080,
+      useContentSize: true,
+      webPreferences: { backgroundThrottling: false, offscreen: true },
+    })
+    await board.loadURL(`${base}/display.html`)
+    await sleep(3000)
+    writeFileSync(
+      path.join(outDir, 'tabellone-progressivo.png'),
+      (await board.webContents.capturePage()).toPNG(),
+    )
+    console.log('  tabellone-progressivo.png')
+    board.destroy()
+    await clickTab('Regolamento')
+    await sleep(700)
+    await snap('console-regolamento-progressivo')
+    return finish()
   }
   for (const [label, name] of [
     ['Squadre', 'squadre'],

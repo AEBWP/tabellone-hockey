@@ -258,7 +258,7 @@
       {t('Tracce audio')}
       <HelpTip title={t('Tracce audio')}>
         {t(
-          'Una playlist tua: trascina qui i file o sceglili dal computer. Il programma ricorda dove stanno, non ne fa una copia. Dopo la sirena di fine periodo parte sempre la traccia successiva, mai quella interrotta, e a fine intervallo la musica sfuma da sola. Se un file non si trova più compare ⚠: la traccia viene saltata e torna buona appena il file è di nuovo al suo posto.',
+          'Una playlist tua: trascina qui i file o sceglili dal computer. Il programma ricorda dove stanno, non ne fa una copia. Dopo la sirena di fine periodo parte sempre la traccia successiva, mai quella interrotta, e a fine intervallo la musica sfuma da sola. Parte anche 2 secondi dopo ogni stop del tempo durante la partita (arbitro, timeout) e sfuma quando il tempo riparte. Se un file non si trova più compare ⚠: la traccia viene saltata e torna buona appena il file è di nuovo al suo posto.',
         )}
       </HelpTip>
     </h2>
@@ -270,7 +270,7 @@
           checked={music.settings.enabled}
           onchange={(e) => music.setEnabled(e.currentTarget.checked)}
         />
-        <span>{t('Musica negli intervalli')}</span>
+        <span>{t('Musica negli intervalli e a tempo fermo')}</span>
       </label>
       <label class="check">
         <input

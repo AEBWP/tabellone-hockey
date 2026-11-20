@@ -2120,18 +2120,18 @@ export const ROWS: readonly Row[] = [
   // ── Tracce audio negli intervalli ──────────────────────────────────────
   ['Tracce audio', 'Audio tracks', 'Audiotitel', 'Pistas de audio', 'Pistes audio'],
   [
-    'Una playlist tua: trascina qui i file o sceglili dal computer. Il programma ricorda dove stanno, non ne fa una copia. Dopo la sirena di fine periodo parte sempre la traccia successiva, mai quella interrotta, e a fine intervallo la musica sfuma da sola. Se un file non si trova più compare ⚠: la traccia viene saltata e torna buona appena il file è di nuovo al suo posto.',
-    'Your own playlist: drag files here or pick them from your computer. The program remembers where they are and makes no copy. After the end-of-period horn the next track always starts, never the interrupted one, and the music fades out by itself when the intermission ends. If a file can no longer be found, ⚠ appears: the track is skipped and works again as soon as the file is back in place.',
-    'Deine eigene Playlist: Dateien hierher ziehen oder vom Computer auswählen. Das Programm merkt sich, wo sie liegen, und erstellt keine Kopie. Nach der Sirene am Drittelende startet immer der nächste Titel, nie der unterbrochene, und am Ende der Pause wird die Musik von selbst ausgeblendet. Wird eine Datei nicht mehr gefunden, erscheint ⚠: Der Titel wird übersprungen und funktioniert wieder, sobald die Datei zurück ist.',
-    'Tu propia lista: arrastra aquí los archivos o elígelos del ordenador. El programa recuerda dónde están y no hace ninguna copia. Tras la bocina de fin de periodo empieza siempre la pista siguiente, nunca la interrumpida, y al acabar el descanso la música se apaga sola. Si un archivo ya no se encuentra aparece ⚠: la pista se salta y vuelve a funcionar en cuanto el archivo esté de nuevo en su sitio.',
-    'Votre propre playlist : glissez les fichiers ici ou choisissez-les sur l’ordinateur. Le programme retient leur emplacement et n’en fait aucune copie. Après la sirène de fin de période, c’est toujours la piste suivante qui démarre, jamais celle interrompue, et la musique s’estompe d’elle-même à la fin de l’entracte. Si un fichier est introuvable, ⚠ apparaît : la piste est sautée et refonctionne dès que le fichier est de retour.',
+    'Una playlist tua: trascina qui i file o sceglili dal computer. Il programma ricorda dove stanno, non ne fa una copia. Dopo la sirena di fine periodo parte sempre la traccia successiva, mai quella interrotta, e a fine intervallo la musica sfuma da sola. Parte anche 2 secondi dopo ogni stop del tempo durante la partita (arbitro, timeout) e sfuma quando il tempo riparte. Se un file non si trova più compare ⚠: la traccia viene saltata e torna buona appena il file è di nuovo al suo posto.',
+    'Your own playlist: drag files here or pick them from your computer. The program remembers where they are and makes no copy. After the end-of-period horn the next track always starts, never the interrupted one, and the music fades out by itself when the intermission ends. It also starts 2 seconds after every clock stoppage during the game (referee, timeout) and fades out when the clock restarts. If a file can no longer be found, ⚠ appears: the track is skipped and works again as soon as the file is back in place.',
+    'Deine eigene Playlist: Dateien hierher ziehen oder vom Computer auswählen. Das Programm merkt sich, wo sie liegen, und erstellt keine Kopie. Nach der Sirene am Drittelende startet immer der nächste Titel, nie der unterbrochene, und am Ende der Pause wird die Musik von selbst ausgeblendet. Sie startet auch 2 Sekunden nach jedem Stopp der Uhr während des Spiels (Schiedsrichter, Auszeit) und blendet aus, wenn die Uhr wieder läuft. Wird eine Datei nicht mehr gefunden, erscheint ⚠: Der Titel wird übersprungen und funktioniert wieder, sobald die Datei zurück ist.',
+    'Tu propia lista: arrastra aquí los archivos o elígelos del ordenador. El programa recuerda dónde están y no hace ninguna copia. Tras la bocina de fin de periodo empieza siempre la pista siguiente, nunca la interrumpida, y al acabar el descanso la música se apaga sola. También empieza 2 segundos después de cada parada del reloj durante el partido (árbitro, tiempo muerto) y se apaga cuando el reloj vuelve a correr. Si un archivo ya no se encuentra aparece ⚠: la pista se salta y vuelve a funcionar en cuanto el archivo esté de nuevo en su sitio.',
+    'Votre propre playlist : glissez les fichiers ici ou choisissez-les sur l’ordinateur. Le programme retient leur emplacement et n’en fait aucune copie. Après la sirène de fin de période, c’est toujours la piste suivante qui démarre, jamais celle interrompue, et la musique s’estompe d’elle-même à la fin de l’entracte. Elle démarre aussi 2 secondes après chaque arrêt du chrono pendant le match (arbitre, temps mort) et s’estompe quand le chrono repart. Si un fichier est introuvable, ⚠ apparaît : la piste est sautée et refonctionne dès que le fichier est de retour.',
   ],
   [
-    'Musica negli intervalli',
-    'Music during intermissions',
-    'Musik in den Pausen',
-    'Música en los descansos',
-    'Musique pendant les entractes',
+    'Musica negli intervalli e a tempo fermo',
+    'Music during intermissions and stoppages',
+    'Musik in den Pausen und bei Spielunterbrechungen',
+    'Música en los descansos y con el juego parado',
+    'Musique pendant les entractes et les arrêts de jeu',
   ],
   ['Ordine casuale', 'Shuffle', 'Zufällige Reihenfolge', 'Orden aleatorio', 'Ordre aléatoire'],
   [
@@ -2687,6 +2687,34 @@ export const ROWS: readonly Row[] = [
     'Ertönt, solange du die Schaltfläche Hupe oder die Taste T gedrückt hältst, und verstummt beim Loslassen. Eine eigene Datei wird wiederholt, solange du gedrückt hältst.',
     'Suena mientras mantienes pulsado el botón Bocina o la tecla T, y se detiene al soltar. Un archivo personal se repite mientras mantienes pulsado.',
     'Retentit tant que vous maintenez le bouton Klaxon ou la touche T, et s’arrête dès que vous relâchez. Un fichier personnel se répète tant que vous maintenez appuyé.',
+  ],
+  [
+    'Tempo totale di gioco',
+    'Total playing time',
+    'Gesamte Spielzeit',
+    'Tiempo total de juego',
+    'Temps de jeu total',
+  ],
+  [
+    'Somma del tempo giocato in tutti i periodi',
+    'Sum of the time played in all periods',
+    'Summe der gespielten Zeit in allen Abschnitten',
+    'Suma del tiempo jugado en todos los periodos',
+    'Somme du temps joué dans toutes les périodes',
+  ],
+  [
+    'Imposta il tempo <b>trascorso</b> nel periodo. Le penalità in corso non cambiano.',
+    'Set the time that has <b>elapsed</b> in the period. Running penalties do not change.',
+    'Die im Abschnitt <b>vergangene</b> Zeit einstellen. Laufende Strafen ändern sich nicht.',
+    'Indica el tiempo <b>transcurrido</b> en el periodo. Las exclusiones en curso no cambian.',
+    'Réglez le temps <b>écoulé</b> dans la période. Les pénalités en cours ne changent pas.',
+  ],
+  [
+    'Tempo in progressivo (da 0:00 alla fine del periodo, invece del conto alla rovescia)',
+    'Count-up clock (from 0:00 to the end of the period, instead of counting down)',
+    'Zeit aufwärts zählen (von 0:00 bis zum Ende des Abschnitts statt abwärts)',
+    'Tiempo en progresivo (de 0:00 al final del periodo, en lugar de la cuenta atrás)',
+    'Chrono progressif (de 0:00 à la fin de la période, au lieu du compte à rebours)',
   ],
 ]
 

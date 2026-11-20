@@ -1,4 +1,11 @@
-import { countdownRemainingMs, formatClock, gameTimeMs, periodRemainingMs } from './clock'
+import {
+  countdownRemainingMs,
+  formatClock,
+  formatElapsed,
+  gameTimeMs,
+  periodElapsedMs,
+  periodRemainingMs,
+} from './clock'
 import { advance, isClockRunning, isOvertime, isPregame } from './game'
 import { countsForStrength, skatersOnIce } from './penalties'
 import { shootoutWinner } from './shootout'
@@ -32,8 +39,17 @@ export interface GameView {
   clockOnly: boolean
   /** Lingua delle scritte del tabellone. */
   language: Language
+  /** Tempo che rimane nel periodo (sempre, anche con il tempo in progressivo). */
   clockMs: number
+  /** Il tempo come si legge sul tabellone: rimanente, o trascorso se il regolamento è in progressivo. */
   clockText: string
+  /** Il regolamento mostra il tempo in progressivo (0:00 → fine periodo). */
+  clockCountsUp: boolean
+  /** Ultimo minuto (o la soglia dei decimi del regolamento): il tabellone lo evidenzia. */
+  clockUrgent: boolean
+  /** Tempo di gioco totale dall'inizio della partita: non si azzera al cambio di periodo. */
+  playedMs: number
+  playedText: string
   clockRunning: boolean
   intermission: { remainingMs: number; text: string } | null
   timeout: { team: TeamId; remainingMs: number; text: string } | null
@@ -99,6 +115,7 @@ export function deriveView(state: GameState, now: number): GameView {
   const skaters = skatersOnIce(s.penalties, baseSkaters)
   const clockMs = periodRemainingMs(s.clock, now)
   const tenths = s.rules.tenthsBelowMs
+  const countsUp = s.rules.clockCountsUp === true
 
   const winner = s.shootout ? shootoutWinner(s.shootout, s.rules.shootout.rounds) : null
 
@@ -158,7 +175,14 @@ export function deriveView(state: GameState, now: number): GameView {
     clockOnly: s.rules.clockOnly === true,
     language: s.boardLanguage,
     clockMs,
-    clockText: formatClock(clockMs, tenths),
+    clockText: countsUp
+      ? formatElapsed(periodElapsedMs(s.clock, now))
+      : formatClock(clockMs, tenths),
+    clockCountsUp: countsUp,
+    clockUrgent: tenths > 0 && clockMs < tenths,
+    // Tempo di gioco assoluto: parte da zero e continua attraverso periodi e supplementari.
+    playedMs: gameMs,
+    playedText: formatElapsed(gameMs),
     clockRunning: isClockRunning(s),
     intermission: s.intermission
       ? { remainingMs: intermissionMs, text: formatClock(intermissionMs, 0) }
