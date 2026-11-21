@@ -226,6 +226,7 @@ app.whenReady().then(async () => {
   }
   for (const [label, name] of [
     ['Squadre', 'squadre'],
+    ['Musica', 'musica'],
     ['Stile', 'stile'],
     ['Regolamento', 'regolamento'],
     ['Audio', 'audio'],
