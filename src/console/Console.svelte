@@ -33,6 +33,7 @@
   import TeamControls from './TeamControls.svelte'
   import { audio } from './audio.svelte'
   import AudioTab from './AudioTab.svelte'
+  import MusicTab from './MusicTab.svelte'
   import BackupTab from './BackupTab.svelte'
   import { music } from './music.svelte'
   import { musicEvent } from './music'
@@ -77,11 +78,12 @@
     if (kind) busyTimer = setTimeout(() => (displayBusy = null), maxMs)
   }
 
-  type Tab = 'game' | 'teams' | 'style' | 'rules' | 'audio' | 'streaming' | 'backup'
+  type Tab = 'game' | 'teams' | 'music' | 'style' | 'rules' | 'audio' | 'streaming' | 'backup'
   // Etichette in italiano: tradotte al momento di mostrarle.
   const TABS: { id: Tab; label: string }[] = [
     { id: 'game', label: 'Partita' },
     { id: 'teams', label: 'Squadre' },
+    { id: 'music', label: 'Musica' },
     { id: 'style', label: 'Stile' },
     { id: 'rules', label: 'Regolamento' },
     { id: 'audio', label: 'Audio' },
@@ -201,6 +203,8 @@
     if (JSON.stringify(after) === JSON.stringify(advance(before, now()))) return false
     game = after
     publish()
+    // La musica della partita precedente non deve continuare nella nuova.
+    if (command.type === 'newGame') music.reset()
     if (command.type === 'setScore') noteRestoredPenalties(before, after)
     return true
   }
@@ -600,35 +604,18 @@
     <!-- In alto a sinistra: Nuova partita (nel browser anche titolo e impostazioni). -->
     <div class="bar-left">
       {#if !desktop}
-        <h1>Tabellone Hockey {@render versionInfo()}</h1>
-        {@render appTools()}
-      {/if}
-      <button type="button" class="btn" onclick={() => (newGameOpen = true)}
-        >{t('Nuova partita')}</button
-      >
-      <span class="current-game">{t('Partita corrente')}: <b>{currentRulesName}</b></span>
-      {#if !audio.unlocked && !audio.settings.muted}
-        <button type="button" class="btn btn-sm audio-locked" onclick={() => audio.unlock()}>
-          🔈 {t('Clicca per attivare l’audio')}
-        </button>
-      {/if}
-      {#if music.current}
-        <div class="now-playing" title={music.current.name}>
-          <span class="now-playing-name">🎵 {music.current.name}</span>
-          <button
-            type="button"
-            title={t('Traccia successiva')}
-            aria-label={t('Traccia successiva')}
-            onclick={() => music.skip()}>⏭</button
-          >
-          <button
-            type="button"
-            title={t('Ferma musica')}
-            aria-label={t('Ferma musica')}
-            onclick={() => music.stop()}>⏹</button
-          >
+        <!-- Titolo e strumenti su una riga a sé; sotto, Nuova partita e partita corrente. -->
+        <div class="brand-row">
+          <h1>Tabellone Hockey {@render versionInfo()}</h1>
+          {@render appTools()}
         </div>
       {/if}
+      <div class="newgame-block">
+        <button type="button" class="btn" onclick={() => (newGameOpen = true)}
+          >{t('Nuova partita')}</button
+        >
+        <span class="current-game">{t('Partita corrente')}: <b>{currentRulesName}</b></span>
+      </div>
     </div>
 
     <!-- Al centro, appoggiate sul bordo in basso: le schede, subito sopra la console. -->
@@ -651,6 +638,19 @@
           >
             <span class="dot"></span>
             {streaming.status === 'live' ? t('Streaming in corso') : t(item.label)}
+          </button>
+        {:else if item.id === 'music'}
+          <!-- Come lo streaming: pallino grigio a musica ferma, verde (scheda accesa) mentre suona. -->
+          <button
+            type="button"
+            class="stream"
+            class:active={tab === item.id}
+            class:live={music.active}
+            title={music.active ? t('Musica in corso') : t('Musica ferma')}
+            onclick={() => (tab = item.id)}
+          >
+            <span class="dot"></span>
+            {t(item.label)}
           </button>
         {:else}
           <button type="button" class:active={tab === item.id} onclick={() => (tab = item.id)}>
@@ -797,6 +797,13 @@
   {:else if tab === 'audio'}
     <main class="page">
       <AudioTab confirm={(r) => (confirmRequest = r)} />
+    </main>
+  {:else if tab === 'music'}
+    <main class="page">
+      <MusicTab
+        confirm={(r) => (confirmRequest = r)}
+        clockRunning={game.phase === 'play' && game.clock.runningSince !== null}
+      />
     </main>
   {:else if tab === 'streaming'}
     <main class="page">
@@ -959,9 +966,19 @@
     color: #fff;
   }
 
-  .audio-locked {
-    border-color: var(--warn);
-    color: var(--warn);
+  .brand-row {
+    display: flex;
+    flex: 0 0 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.9rem;
+  }
+
+  .newgame-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
   }
 
   .current-game {
@@ -973,34 +990,6 @@
   .current-game b {
     font-weight: 600;
     color: var(--ice-50);
-  }
-
-  .now-playing {
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-    min-width: 0;
-    max-width: 260px;
-    padding: 0.15rem 0.3rem 0.15rem 0.6rem;
-    border-radius: 8px;
-    background: var(--ice-950);
-    font-size: 0.85rem;
-  }
-
-  .now-playing-name {
-    overflow: hidden;
-    min-width: 0;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  .now-playing button {
-    flex: none;
-    padding: 0.1rem 0.3rem;
-    border: 0;
-    background: none;
-    color: inherit;
-    cursor: pointer;
   }
 
   .lang {

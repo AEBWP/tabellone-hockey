@@ -13,7 +13,8 @@ export interface MusicTrack {
 export interface MusicSettings {
   /** Musica negli intervalli sì o no. */
   enabled: boolean
-  shuffle: boolean
+  /** A tempo fermo: alla ripartenza la traccia va in pausa e al prossimo stop continua, invece di cambiarla. */
+  continueTrack: boolean
   /** 0–100, in proporzione al volume generale. */
   volume: number
   tracks: MusicTrack[]
@@ -25,7 +26,7 @@ export interface MusicSettings {
 
 export const DEFAULT_MUSIC: MusicSettings = {
   enabled: true,
-  shuffle: true,
+  continueTrack: true,
   volume: 70,
   tracks: [],
   lastId: null,
@@ -36,9 +37,10 @@ export const DEFAULT_MUSIC: MusicSettings = {
  * - `start`: parte l'intervallo (dopo la sirena di fine periodo);
  * - `pause`: il tempo si è fermato a gioco in corso (arbitro, timeout, infortunio…):
  *   la musica parte dopo `PAUSE_DELAY_MS`;
- * - `stop`: finito l'intervallo o ripartito il tempo, la musica sfuma.
+ * - `stop`: finito l'intervallo, la musica sfuma;
+ * - `resume`: il tempo è ripartito, la musica si ferma subito (nessuna attesa).
  */
-export type MusicEvent = 'start' | 'pause' | 'stop'
+export type MusicEvent = 'start' | 'pause' | 'stop' | 'resume'
 
 /** Dallo stop del tempo alla musica: il tempo di vedere se riparte subito. */
 export const PAUSE_DELAY_MS = 2_000
@@ -50,11 +52,13 @@ export function musicEvent(prev: MusicState, cur: MusicState): MusicEvent | null
   if (prev.phase === 'play' && cur.phase === 'intermission') return 'start'
   // Intervallo finito, saltato o annullato con una correzione.
   if (prev.phase === 'intermission' && cur.phase !== 'intermission') return 'stop'
-  // Tempo fermato o ripartito durante il periodo. Il primo avvio (da `ready`) e la
-  // fine del periodo non contano: hanno già i loro casi.
+  // Si comincia a giocare: vincono le regole della partita, anche sulla musica
+  // fatta partire a mano nell'attesa.
+  if (prev.phase === 'ready' && cur.phase === 'play') return 'resume'
+  // Tempo fermato o ripartito durante il periodo. La fine del periodo ha già il suo caso.
   if (prev.phase === 'play' && cur.phase === 'play') {
     if (prev.clockRunning && cur.clockRunning === false) return 'pause'
-    if (prev.clockRunning === false && cur.clockRunning) return 'stop'
+    if (prev.clockRunning === false && cur.clockRunning) return 'resume'
   }
   return null
 }
@@ -64,22 +68,13 @@ export function musicEvent(prev: MusicState, cur: MusicState): MusicEvent | null
  * Le tracce in `unavailable` (file non raggiungibili) si saltano.
  */
 export function pickNext(
-  settings: Pick<MusicSettings, 'tracks' | 'lastId' | 'played' | 'shuffle'>,
+  settings: Pick<MusicSettings, 'tracks' | 'lastId' | 'played'>,
   unavailable: ReadonlySet<string> = new Set(),
   random: () => number = Math.random,
 ): { id: string; played: string[] } | null {
-  const { tracks: all, lastId, shuffle } = settings
+  const { tracks: all, lastId } = settings
   const tracks = all.filter((t) => !unavailable.has(t.id))
   if (!tracks.length) return null
-  if (!shuffle) {
-    // Si conta sull'elenco intero: una traccia mancante non fa perdere il punto.
-    const last = all.findIndex((t) => t.id === lastId)
-    for (let step = 1; step <= all.length; step++) {
-      const track = all[(last + step) % all.length]
-      if (!unavailable.has(track.id)) return { id: track.id, played: [] }
-    }
-    return null
-  }
   const heard = new Set(settings.played)
   let played = settings.played.filter((id) => tracks.some((t) => t.id === id))
   let pool = tracks.filter((t) => !heard.has(t.id))
@@ -121,8 +116,9 @@ export function cleanMusicSettings(raw: unknown): MusicSettings {
   const volume = Number(saved.volume)
   return {
     enabled: typeof saved.enabled === 'boolean' ? saved.enabled : DEFAULT_MUSIC.enabled,
-    shuffle: typeof saved.shuffle === 'boolean' ? saved.shuffle : DEFAULT_MUSIC.shuffle,
     volume: Number.isFinite(volume) ? Math.min(100, Math.max(0, volume)) : DEFAULT_MUSIC.volume,
+    continueTrack:
+      typeof saved.continueTrack === 'boolean' ? saved.continueTrack : DEFAULT_MUSIC.continueTrack,
     tracks: cleanTracks(saved.tracks),
     lastId: typeof saved.lastId === 'string' ? saved.lastId : null,
     played: Array.isArray(saved.played)

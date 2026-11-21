@@ -28,7 +28,8 @@ describe('quando parte la musica', () => {
     const check = () => {
       const cur = snapshot(state, deriveView(state, now))
       const event = musicEvent(prev, cur)
-      if (event) heard.push(event)
+      // Il via della partita ha il suo test: qui interessano gli eventi durante il gioco.
+      if (event && prev.phase !== 'ready') heard.push(event)
       prev = cur
     }
     const run = (c: Command) => {
@@ -86,6 +87,11 @@ describe('quando parte la musica', () => {
     expect(musicEvent({ phase: 'intermission' }, { phase: 'play' })).toBe('stop')
   })
 
+  it('il via della partita ferma la musica fatta partire a mano nell’attesa', () => {
+    expect(musicEvent({ phase: 'ready' }, { phase: 'play' })).toBe('resume')
+    expect(musicEvent({ phase: 'ready' }, { phase: 'ready' })).toBeNull()
+  })
+
   it('riaprendo la console a intervallo in corso non riparte', () => {
     expect(musicEvent({ phase: 'intermission' }, { phase: 'intermission' })).toBeNull()
   })
@@ -96,7 +102,7 @@ describe('quando parte la musica', () => {
     s.stopClock()
     expect(s.heard).toEqual(['pause'])
     s.start()
-    expect(s.heard).toEqual(['pause', 'stop'])
+    expect(s.heard).toEqual(['pause', 'resume'])
   })
 
   it('ogni stop è una pausa, anche i successivi', () => {
@@ -105,12 +111,13 @@ describe('quando parte la musica', () => {
     s.stopClock()
     s.start()
     s.stopClock()
-    expect(s.heard).toEqual(['pause', 'stop', 'pause'])
+    expect(s.heard).toEqual(['pause', 'resume', 'pause'])
   })
 
   it('il primo avvio del tempo, o dopo un intervallo, non ferma niente', () => {
     const s = session()
     s.start()
+    // Il via della partita ferma la musica messa a mano nell'attesa.
     expect(s.heard).toEqual([])
     s.playPeriod()
     s.skipBreak()
@@ -138,12 +145,11 @@ describe('quando parte la musica', () => {
 })
 
 describe('quale brano parte', () => {
-  const base = { tracks, lastId: null, played: [], shuffle: false }
+  const base = { tracks, lastId: null, played: [] }
 
-  it('in ordine: quello dopo l’ultimo partito, mai lo stesso', () => {
-    expect(pickNext(base)?.id).toBe('a')
-    expect(pickNext({ ...base, lastId: 'a' })?.id).toBe('b')
-    expect(pickNext({ ...base, lastId: 'c' })?.id).toBe('a')
+  it('la prima volta sceglie a caso tra tutte, non sempre la prima', () => {
+    expect(pickNext(base, none, () => 0)?.id).toBe('a')
+    expect(pickNext(base, none, () => 0.99)?.id).toBe('c')
   })
 
   it('elenco vuoto: nessun brano', () => {
@@ -151,7 +157,7 @@ describe('quale brano parte', () => {
   })
 
   it('casuale: li fa sentire tutti prima di ripeterne uno', () => {
-    let state = { ...base, shuffle: true } as Parameters<typeof pickNext>[0]
+    let state = base as Parameters<typeof pickNext>[0]
     const heard: string[] = []
     for (let i = 0; i < 3; i++) {
       const next = pickNext(state, none, () => 0.5)!
@@ -163,27 +169,34 @@ describe('quale brano parte', () => {
 
   it('casuale: il giro nuovo non comincia con l’ultimo brano', () => {
     for (const r of [0, 0.5, 0.99]) {
-      const next = pickNext(
-        { ...base, shuffle: true, lastId: 'b', played: ['a', 'b', 'c'] },
-        none,
-        () => r,
-      )!
+      const next = pickNext({ ...base, lastId: 'b', played: ['a', 'b', 'c'] }, none, () => r)!
       expect(next.id).not.toBe('b')
       expect(next.played).toEqual([next.id])
     }
   })
 
-  it('le tracce non raggiungibili si saltano senza perdere il punto', () => {
-    expect(pickNext({ ...base, lastId: 'a' }, new Set(['b']))?.id).toBe('c')
-    expect(pickNext({ ...base, lastId: 'b' }, new Set(['b']))?.id).toBe('c')
-    expect(pickNext({ ...base, shuffle: true }, new Set(['a', 'c']))?.id).toBe('b')
+  it('le tracce non raggiungibili si saltano', () => {
+    expect(pickNext(base, new Set(['a', 'c']))?.id).toBe('b')
     expect(pickNext(base, new Set(['a', 'b', 'c']))).toBeNull()
+  })
+
+  it('non ripete una traccia finché non sono state suonate tutte', () => {
+    let state = { ...base } as Parameters<typeof pickNext>[0]
+    for (const r of [0.9, 0.1, 0.5, 0.3, 0.7, 0.2]) {
+      const heard: string[] = []
+      for (let i = 0; i < 3; i++) {
+        const next = pickNext(state, none, () => r)!
+        heard.push(next.id)
+        state = { ...state, lastId: next.id, played: next.played }
+      }
+      expect([...heard].sort()).toEqual(['a', 'b', 'c'])
+    }
   })
 
   it('un solo brano si può ripetere', () => {
     const one = { ...base, tracks: [tracks[0]], lastId: 'a' }
     expect(pickNext(one)?.id).toBe('a')
-    expect(pickNext({ ...one, shuffle: true, played: ['a'] })?.id).toBe('a')
+    expect(pickNext({ ...one, played: ['a'] })?.id).toBe('a')
   })
 })
 
@@ -204,7 +217,5 @@ describe('file e impostazioni', () => {
     expect(clean.tracks).toEqual([{ id: 'a', name: 'a.mp3', path: null, seconds: 0 }])
     expect(clean.played).toEqual(['a'])
     expect(cleanMusicSettings(null).enabled).toBe(true)
-    expect(cleanMusicSettings(null).shuffle).toBe(true)
-    expect(cleanMusicSettings({ shuffle: false }).shuffle).toBe(false)
   })
 })

@@ -1,5 +1,6 @@
 import { desktop } from '../shared/desktop'
 import { audio } from './audio.svelte'
+import { clearTracks, deleteTrack, loadTrack, saveTrack } from './track-store'
 import {
   cleanMusicSettings,
   isAudioFile,
@@ -22,7 +23,8 @@ import {
 
 const SETTINGS_KEY = 'tabellone-hockey:musica:v1'
 const FADE_IN_MS = 1_500
-const FADE_OUT_MS = 2_500
+/** Quando il tempo riparte si deve giocare: stop quasi istantaneo (solo per evitare lo schiocco). */
+const QUICK_STOP_MS = 150
 /** Una sirena registrata può durare molto: la musica non aspetta più di così. */
 const MAX_WAIT_MS = 8_000
 
@@ -62,16 +64,20 @@ class MusicPlayer {
 
   private el: SinkAudio | null = null
   private objectUrl: string | null = null
-  /** Solo nel browser, dove il percorso dei file non è disponibile: valgono fino alla chiusura. */
+  /** Solo nel browser, dove il percorso dei file non è disponibile: copia in archivio interno (track-store). */
   private sessionFiles = new Map<string, File>()
   private sink: string | null = null
   /** Dissolvenza in corso: 0–1, moltiplica il volume. */
   private level = 0
   private fade: ReturnType<typeof setInterval> | undefined
   private waiting: ReturnType<typeof setTimeout> | undefined
+  /** Musica in arrivo (attesa dei 2 secondi): per il feedback subito, prima che parta l'audio. */
+  pending = $state(false)
   /** Cresce a ogni cambio: chi era in attesa capisce di essere stato superato. */
   private token = 0
   private starting = false
+  /** Traccia ferma a metà perché il tempo è ripartito: alla prossima pausa continua da lì. */
+  paused = $state(false)
 
   constructor() {
     // Volume, silenzio e uscita seguono le impostazioni anche a traccia iniziata.
@@ -84,14 +90,27 @@ class MusicPlayer {
     void this.check()
   }
 
-  /** La prossima traccia, quando si può sapere in anticipo. */
-  get nextId(): string | null {
-    return this.settings.shuffle ? null : (pickNext(this.settings, this.missing)?.id ?? null)
+  /** La musica è in corso o sta per partire: serve alla scheda per accendersi subito. */
+  get active(): boolean {
+    return this.pending || (!!this.current && !this.paused)
+  }
+
+  private cancelWait() {
+    clearTimeout(this.waiting)
+    this.pending = false
   }
 
   /** Rilegge quali file ci sono: all'avvio, aprendo la scheda e prima di ogni partenza. */
   async check() {
     const { tracks } = this.settings
+    // Nel browser i file non hanno percorso: si riprendono dall'archivio interno.
+    for (const track of tracks) {
+      if (track.path || this.sessionFiles.has(track.id)) continue
+      const stored = await loadTrack(track.id).catch(() => undefined)
+      if (stored) {
+        this.sessionFiles.set(track.id, new File([stored], track.name, { type: stored.type }))
+      }
+    }
     const paths = tracks.flatMap((t) => (t.path ? [t.path] : []))
     const found = desktop && paths.length ? await desktop.checkFiles(paths).catch(() => []) : []
     const reachable = new Set(paths.filter((_, i) => found[i]))
@@ -107,29 +126,98 @@ class MusicPlayer {
    * la musica dell'intervallo; a tempo fermo l'attesa è sempre `PAUSE_DELAY_MS`.
    */
   handle(event: MusicEvent, waitMs: number) {
-    clearTimeout(this.waiting)
-    if (event === 'stop') {
-      this.stop()
+    this.cancelWait()
+    // Fine intervallo e tempo che riparte sono uguali: musica ferma subito, e con la
+    // spunta "riprendi" la traccia resta a metà per la prossima volta.
+    if (event === 'stop' || event === 'resume') {
+      this.resume()
       return
     }
     if (!this.settings.enabled || !this.settings.tracks.length) return
     const delay = event === 'pause' ? PAUSE_DELAY_MS : Math.min(waitMs, MAX_WAIT_MS)
+    this.pending = true
     this.waiting = setTimeout(() => {
-      if (!this.current) void this.begin()
+      this.pending = false
+      if (this.paused) void this.unpause()
+      else if (!this.current) void this.begin()
     }, delay)
   }
 
-  /** Musica negli intervalli sì o no. Spegnendola, quella in corso sfuma. */
+  /** Il tempo riparte: la musica si ferma subito, senza attese né lunghe dissolvenze. */
+  private resume() {
+    if (!this.current || this.paused) {
+      if (!this.current) this.token++
+      return
+    }
+    if (this.settings.continueTrack) {
+      this.fadeTo(0, QUICK_STOP_MS, () => {
+        this.el?.pause()
+        this.paused = true
+      })
+    } else {
+      this.fadeTo(0, QUICK_STOP_MS, () => this.halt())
+    }
+  }
+
+  /** Riprende la traccia fermata dal tempo che ripartiva, dal punto in cui era. */
+  private async unpause() {
+    const el = this.el
+    if (!el || !this.current) {
+      this.paused = false
+      return void this.begin()
+    }
+    this.paused = false
+    this.starting = true
+    try {
+      await el.play()
+      this.fadeTo(1, FADE_IN_MS)
+    } catch {
+      this.halt()
+      void this.begin()
+    } finally {
+      this.starting = false
+    }
+  }
+
+  /** Musica negli intervalli sì o no. Spegnendola, quella in corso si ferma subito. */
   setEnabled(enabled: boolean) {
     this.update({ enabled })
     if (!enabled) this.stop()
   }
 
-  /** Avvio a mano. */
+  /** Avvio a mano (scheda Musica), per esempio nell'attesa prima della partita. */
   play() {
+    if (!this.settings.enabled || !this.settings.tracks.length) return
     audio.unlock()
-    clearTimeout(this.waiting)
-    if (!this.current) void this.begin()
+    this.cancelWait()
+    if (this.paused) void this.unpause()
+    else if (!this.current) void this.begin()
+  }
+
+  /** Suona proprio questa traccia, anche se è già stata suonata in questo giro. */
+  async playTrack(id: string) {
+    const track = this.settings.tracks.find((t) => t.id === id)
+    if (!track || !this.settings.enabled) return
+    audio.unlock()
+    this.cancelWait()
+    const token = ++this.token
+    this.paused = false
+    this.error = null
+    await this.check()
+    if (token !== this.token) return
+    clearInterval(this.fade)
+    this.level = 0
+    this.applyVolume()
+    const { played } = this.settings
+    this.update({ lastId: id, played: played.includes(id) ? played : [...played, id] })
+    if (await this.startTrack(track)) {
+      if (token === this.token) this.fadeTo(1, FADE_IN_MS)
+      return
+    }
+    if (token !== this.token) return
+    this.missing = new Set([...this.missing, id])
+    this.halt()
+    this.error = 'Nessuna traccia raggiungibile: controlla i file della playlist.'
   }
 
   /** Passa alla traccia successiva, senza dissolvenza. */
@@ -137,11 +225,18 @@ class MusicPlayer {
     if (this.current) void this.playNext()
   }
 
-  /** Sfuma e si ferma. La traccia interrotta non verrà ripresa. */
+  /** Nuova partita: si ferma subito e niente della partita precedente viene ripreso. */
+  reset() {
+    this.cancelWait()
+    this.halt()
+    // Tabula rasa: la nuova partita sceglie a caso tra tutte, senza tener conto delle già suonate.
+    this.update({ lastId: null, played: [] })
+  }
+
+  /** Ferma subito, senza dissolvenza. La traccia interrotta non verrà ripresa. */
   stop() {
-    clearTimeout(this.waiting)
-    if (this.current) this.fadeTo(0, FADE_OUT_MS, () => this.halt())
-    else this.token++
+    this.cancelWait()
+    this.halt()
   }
 
   private async begin() {
@@ -216,6 +311,7 @@ class MusicPlayer {
 
   private halt() {
     this.token++
+    this.paused = false
     clearInterval(this.fade)
     this.level = 0
     this.current = null
@@ -274,13 +370,19 @@ class MusicPlayer {
       )
       if (known) {
         // Già in elenco. Nel browser il file va ridato a ogni apertura: si riaggancia.
-        if (!path) this.sessionFiles.set(known.id, file)
+        if (!path) {
+          this.sessionFiles.set(known.id, file)
+          void saveTrack(known.id, file).catch(() => {})
+        }
         continue
       }
       try {
         const seconds = await probe(file)
         const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
-        if (!path) this.sessionFiles.set(id, file)
+        if (!path) {
+          this.sessionFiles.set(id, file)
+          void saveTrack(id, file).catch(() => {})
+        }
         added.push({ id, name: file.name, path, seconds })
       } catch {
         rejected.push(file.name)
@@ -296,6 +398,7 @@ class MusicPlayer {
     const index = tracks.findIndex((t) => t.id === id)
     if (index < 0) return
     this.sessionFiles.delete(id)
+    void deleteTrack(id).catch(() => {})
     this.update({
       tracks: tracks.filter((t) => t.id !== id),
       // Togliendo l'ultima partita, l'ordine prosegue dal punto in cui era.
@@ -308,18 +411,10 @@ class MusicPlayer {
     }
   }
 
-  move(id: string, delta: -1 | 1) {
-    const tracks = [...this.settings.tracks]
-    const from = tracks.findIndex((t) => t.id === id)
-    const to = from + delta
-    if (from < 0 || to < 0 || to >= tracks.length) return
-    ;[tracks[from], tracks[to]] = [tracks[to], tracks[from]]
-    this.update({ tracks })
-  }
-
   clear() {
     this.halt()
     this.sessionFiles.clear()
+    void clearTracks().catch(() => {})
     this.missing = new Set()
     this.update({ tracks: [], lastId: null, played: [] })
   }
