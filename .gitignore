@@ -29,6 +29,9 @@ release-*
 build/installerSidebar.bmp
 screenshots/
 
+# Appunti di lavoro degli agenti di Claude
+.claude/lavoro/
+
 # Streaming online (pagina generata e file locali di wrangler)
 server/public
 server/.wrangler

@@ -1,0 +1,28 @@
+{
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+  },
+  "permissions": {
+    "deny": [
+      "Read(/package-lock.json)",
+      "Read(/node_modules/**)",
+      "Read(/dist/**)",
+      "Read(/release-*/**)",
+      "Read(/server/public/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/no-letture-intere.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
